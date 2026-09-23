@@ -1,14 +1,12 @@
-# Obsidian Note Player
+# Note Player
 
 **Your notes are your playlist.** Turn any Obsidian note into a music playlist—add YouTube links, play them as audio inside your vault, and keep your music library where your knowledge lives.
 
-![Version](https://img.shields.io/badge/version-0.7.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Desktop Only](https://img.shields.io/badge/platform-desktop--only-gray)
-
-## Why Note Player?
-
-Most music players live in isolation. Obsidian Note Player bridges the gap: your playlists are just Markdown notes. Add YouTube URLs, organize them with your thoughts and metadata, and play them without leaving your vault. It's a minimal, focused audio experience powered by yt-dlp and local caching—no embedded videos, no distractions, just your music.
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Release](https://img.shields.io/github/v/release/Xia-Ataraxia/obsidian-note-player)](https://github.com/Xia-Ataraxia/obsidian-note-player/releases/latest) ![Desktop Only](https://img.shields.io/badge/platform-desktop--only-gray)
 
 ## Features
+
+Most music players live in isolation. Obsidian Note Player bridges the gap: your playlists are just Markdown notes. Add YouTube URLs, organize them with your thoughts and metadata, and play them without leaving your vault. It's a minimal, focused audio experience powered by yt-dlp and local caching—no embedded videos, no distractions, just your music.
 
 - **Turn notes into playlists** — Use Obsidian's native embed syntax (`![]()`) to add YouTube URLs
 - **Minimal audio player** — Pure audio-focused interface, not a video embed
@@ -16,11 +14,12 @@ Most music players live in isolation. Obsidian Note Player bridges the gap: your
 - **Local file support** — Play audio files stored in your vault or elsewhere
 - **Note-backed library** — Your music lives in Markdown alongside your knowledge
 - **Persistent queue** — Your current selection survives between sessions
-- **Keyboard controls** — Full playback control from your keyboard
 - **Companion Bases** — Auto-generate Music and Playlist database views for organization
 - **Flexible schema** — Customize frontmatter properties for URLs, artist, cover art, and more
 
-## Requirements
+## Installation
+
+### Requirements
 
 **Desktop only.** Obsidian Note Player requires:
 
@@ -42,7 +41,6 @@ choco install yt-dlp
 pip install yt-dlp
 ```
 
-## Installation
 
 ### From Community Plugin Browser (Coming Soon)
 
@@ -52,28 +50,17 @@ Obsidian Note Player is in review for the community plugin store. For now, use B
 
 1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat)
 2. Go to **Settings > BRAT > Add a beta plugin**
-3. Paste: `https://github.com/GoBeromsu/obsidian-note-player`
+3. Paste: `https://github.com/Xia-Ataraxia/obsidian-note-player`
 4. Click **Add plugin**
 5. Enable **Obsidian Note Player** in **Settings > Community Plugins**
 
 ### Manual Installation
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/GoBeromsu/obsidian-note-player/releases/latest)
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/Xia-Ataraxia/obsidian-note-player/releases/latest)
 2. Create `.obsidian/plugins/note-player/` in your vault root
 3. Copy the three files into that directory
 4. Restart Obsidian or reload plugins
 5. Enable **Obsidian Note Player** in **Settings > Community Plugins**
-
-### Build from Source
-
-```bash
-git clone https://github.com/GoBeromsu/obsidian-note-player.git
-cd obsidian-note-player
-pnpm install
-pnpm run build
-```
-
-Copy the contents of the output directory to `.obsidian/plugins/note-player/` in your vault.
 
 ## Usage
 
@@ -145,15 +132,15 @@ Two files appear in your playlist folder:
 - **Music.base** — All music tracks with artist, thumbnail, and properties
 - **Playlists.base** — All playlists with track count and metadata
 
-## Configuration
+### Configuration
 
 Open **Settings > Obsidian Note Player** to customize:
 
-### Folder Structure
+#### Folder Structure
 
 **Playlist folder** — Where new playlists are created (default: empty = vault root).
 
-### Music Note Mapping
+#### Music Note Mapping
 
 Define which frontmatter properties the plugin reads:
 
@@ -161,7 +148,7 @@ Define which frontmatter properties the plugin reads:
 - **Thumbnail properties** — Where to look for cover artwork (default: `thumbnail`, `cover`)
 - **Artist properties** — Where to find artist/author metadata (default: `artist`, `author`)
 
-### Playlist Schema
+#### Playlist Schema
 
 Customize the frontmatter structure used in playlist notes:
 
@@ -171,36 +158,16 @@ Customize the frontmatter structure used in playlist notes:
 - **Music note type** — Frontmatter `type` value for music notes (default: `music`)
 - **Playlist note type** — Frontmatter `type` value for playlists (default: `playlist`)
 
-### Playback
+#### Playback
 
 - **Auto-open on startup** — Open the player when Obsidian launches
 - **Audio format** — Choose between MP3 and WAV for cached files
 - **Repeat mode** — Default repeat behavior (Off or Repeat One)
 - **Autoplay** — Automatically play next track when current track ends
 
-## Screenshots
+### Troubleshooting
 
-<!-- screenshot: player view -->
-
-Player showing queue, current track details, and playback controls.
-
-<!-- screenshot: library view -->
-
-Music library with all detected tracks, sortable and searchable.
-
-## Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| **Space** | Play/Pause |
-| **→** | Next track |
-| **←** | Previous track |
-| **R** | Toggle Repeat |
-| **A** | Toggle Autoplay |
-
-## Troubleshooting
-
-### "yt-dlp not found" error
+#### "yt-dlp not found" error
 
 The plugin cannot find `yt-dlp` on your system. Make sure it's installed and in your PATH:
 
@@ -213,20 +180,20 @@ yt-dlp --version
 
 If not installed, see the [Requirements](#requirements) section.
 
-### Audio not playing
+#### Audio not playing
 
 - Ensure yt-dlp is installed and working
 - Check that YouTube URLs are valid and publicly accessible
 - Try **Refresh music library** from the command palette
 - Enable **Debug mode** in settings and check the console for errors
 
-### Playlist not appearing
+#### Playlist not appearing
 
 - Verify the note contains valid YouTube URLs with Obsidian's embed syntax: `![](url)`
 - Check frontmatter `type: playlist` matches your settings
 - Run **Refresh music library** to force a rescan
 
-### Permission errors on audio cache
+#### Permission errors on audio cache
 
 Ensure the plugin has write access to your vault directory. On some systems, the audio cache folder may need explicit permissions:
 
@@ -234,18 +201,31 @@ Ensure the plugin has write access to your vault directory. On some systems, the
 chmod -R u+w .obsidian/plugins/note-player/
 ```
 
-## Privacy
+### Privacy
 
 Obsidian Note Player stores downloaded audio locally on your device. No audio is sent to external servers beyond YouTube for the initial download via yt-dlp.
+
+## Development
+
+```bash
+git clone https://github.com/Xia-Ataraxia/obsidian-note-player.git
+cd obsidian-note-player
+pnpm install
+pnpm run dev        # development build/watch (scripts/dev.mjs)
+pnpm run build      # sync styles, type-check, production bundle
+pnpm run lint       # ESLint
+pnpm run test       # Vitest
+pnpm run ci         # build + lint + test
+```
+
+For manual install, copy `main.js`, `manifest.json`, and `styles.css` into `.obsidian/plugins/note-player/`.
+
+Releases: `pnpm run release:patch|minor|major`.
+
+Issues and pull requests are welcome on [GitHub](https://github.com/Xia-Ataraxia/obsidian-note-player).
 
 ## License
 
 MIT — See [LICENSE](LICENSE) for details.
 
-## Author
-
-[Beomsu Koh](https://beromkoh.medium.com)
-
-## Contributing
-
-Issues and pull requests welcome on [GitHub](https://github.com/GoBeromsu/obsidian-note-player).
+Author: [Beomsu Koh](https://beromkoh.medium.com)
