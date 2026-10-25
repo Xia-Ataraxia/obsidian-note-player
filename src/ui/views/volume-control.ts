@@ -7,7 +7,8 @@ export function renderVolumeControl(container: HTMLElement, volume: VolumePort):
 	const group = container.createDiv({ cls: 'onp-volume' });
 	const button = group.createEl('button', { cls: 'onp-button is-icon-only onp-volume-button', attr: { type: 'button' } });
 	const icon = button.createSpan({ cls: 'onp-button-icon' });
-	const slider = group.createDiv({ cls: 'onp-volume-slot' }).createEl('input', {
+	const slot = group.createDiv({ cls: 'onp-volume-slot' });
+	const slider = slot.createEl('input', {
 		cls: 'onp-volume-slider',
 		attr: { type: 'range', min: '0', max: '100', step: '1', 'aria-label': 'Volume' },
 	});
