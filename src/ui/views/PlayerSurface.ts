@@ -2,6 +2,7 @@ import type { AudioCachePort } from '../../types/view';
 import type { PlaylistTrack } from '../../types/view';
 import type { PlaybackState, RepeatMode } from '../../types/playback';
 import { chooseSource, shouldKeepSaving } from '../../domain/playback-source';
+import { VOLUME_RAMP_MS } from '../../domain/volume';
 import { FADE_IN_MS, leadRemainingMs, FADE_OUT_MS, needleDelayMs, rampRate } from '../../domain/turntable';
 
 export type { PlaybackState };
@@ -38,7 +39,8 @@ export class PlayerSurface {
 	private armMovedAt: number | null = null;
 	private cancelReadyWait: (() => void) | null = null;
 	private fadeToken = 0;
-	private readonly volume = 1;
+	private volume = 1;
+	private leaving = false;
 
 	onDownloadProgress: ((percent: number, error?: string) => void) | null = null;
 	/** Background save of a streamed track; kept separate so it never raises download notices. */
@@ -100,17 +102,13 @@ export class PlayerSurface {
 		}
 
 		this.silentPauseAudio();
+		this.leaving = false;
 		this.audioElement = null;
 		this.lastTrack = track;
 		this.setPhase(autoplayEnabled ? 'connecting' : 'idle');
 
 		if (!this.audioCacheService) {
 			this.setPhase('failed');
-			this.emit('paused');
-			return;
-		}
-		if (!this.audioCacheService.isAvailable()) {
-			this.setPhase('missing');
 			this.emit('paused');
 			return;
 		}
@@ -123,6 +121,12 @@ export class PlayerSurface {
 			this.setPhase('idle');
 			this.mountAudio(this.audioCacheService.getFileUrl(videoId), autoplayEnabled);
 			this.activateTrack(videoId, autoplayEnabled);
+			return;
+		}
+		if (!this.audioCacheService.isAvailable()) {
+			// Only a real play attempt reports the missing tool; browsing stays quiet.
+			this.setPhase(autoplayEnabled ? 'missing' : 'idle');
+			this.emit('paused');
 			return;
 		}
 
@@ -274,8 +278,10 @@ export class PlayerSurface {
 		}
 		if (audio.paused) return true;
 		// Music fades out first; the arm lifts when the `pause` event fires.
+		this.leaving = true;
 		void this.fade(audio, 0, FADE_OUT_MS).then((done) => {
 			if (!done) return;
+			this.leaving = false;
 			audio.pause();
 			audio.volume = this.volume;
 		});
@@ -286,9 +292,18 @@ export class PlayerSurface {
 		return this.volume;
 	}
 
+	/** Ramps a running track to the new level; paused, waiting and fading-out audio just picks it up later. */
+	setVolume(volume: number): void {
+		this.volume = Math.min(1, Math.max(0, volume));
+		const audio = this.audioElement;
+		if (!audio || audio.paused || this.cancelReadyWait || this.leaving) return;
+		void this.fade(audio, this.volume, VOLUME_RAMP_MS);
+	}
+
 	/** Order: arm swings, needle lands, only then the music fades in. */
 	private startAudio(audio: HTMLAudioElement): void {
 		if (this.pendingAudio || this.cancelReadyWait) return;
+		this.leaving = false;
 		if (!audio.paused) {
 			void this.fade(audio, this.volume, FADE_IN_MS);
 			return;

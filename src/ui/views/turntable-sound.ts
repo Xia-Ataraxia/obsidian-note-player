@@ -42,6 +42,13 @@ export class TurntableSound {
     this.groove = { source, gain };
   }
 
+  /** Mute and level changes reach a crackle that is already looping. */
+  applyVolume(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.groove) return;
+    this.groove.gain.gain.setTargetAtTime(soundGain('lift', this.getVolume()) * 0.5, ctx.currentTime, 0.03);
+  }
+
   stopGroove(): void {
     const ctx = this.ctx;
     const groove = this.groove;

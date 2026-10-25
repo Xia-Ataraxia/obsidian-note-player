@@ -897,12 +897,12 @@
 }
 
 .onp-status[data-tone='failed'] {
-	color: var(--text-muted);
+	color: var(--text-normal);
 	cursor: pointer;
 }
 
 .onp-status[data-tone='failed']:hover {
-	color: var(--text-normal);
+	color: var(--interactive-accent);
 }
 
 .onp-status-icon,
@@ -957,5 +957,64 @@
 	.onp-status[data-tone='live'] .onp-status-icon svg,
 	.onp-track-subtitle.is-connecting {
 		animation: none;
+	}
+}
+
+/* Volume */
+.onp-progress-foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.onp-volume {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.onp-volume-button {
+	color: var(--text-muted);
+	transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.onp-volume-button:hover {
+	color: var(--text-normal);
+}
+
+.onp-volume-button:active {
+	transform: scale(0.9);
+}
+
+.onp-volume-button.is-muted {
+	color: var(--text-faint);
+}
+
+.onp-volume-slider {
+	width: 84px;
+	margin: 0;
+}
+
+.onp-volume-slider::-webkit-slider-runnable-track {
+	background: linear-gradient(
+		to right,
+		var(--interactive-accent) var(--onp-volume-fill, 0%),
+		var(--background-modifier-border) var(--onp-volume-fill, 0%)
+	);
+}
+
+.onp-volume-slider:focus-visible {
+	outline: 2px solid var(--background-modifier-border-focus);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.onp-volume-button {
+		transition: color 0.15s ease;
+	}
+
+	.onp-volume-button:active {
+		transform: none;
 	}
 }

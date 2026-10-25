@@ -21,4 +21,6 @@ export interface NotePlayerSettings extends YoutubePlaylistPropertyMapping {
   autoplayEnabled: boolean;
   audioFormat: AudioFormat;
   repeatMode: RepeatMode;
+  volume: number;
+  volumeMuted: boolean;
 }

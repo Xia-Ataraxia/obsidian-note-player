@@ -1,5 +1,6 @@
 import type { NotePlayerSettings, YoutubePlaylistPropertyMapping } from '../types/settings';
 import { dedupe } from '../utils/dedupe';
+import { DEFAULT_VOLUME, normalizeVolume } from './volume';
 
 export const DEFAULT_PROPERTY_MAPPING: YoutubePlaylistPropertyMapping = {
   musicUrlProperties: ['source', 'youtube', 'youtube_url', 'url'],
@@ -22,6 +23,8 @@ export const DEFAULT_SETTINGS: NotePlayerSettings = {
   autoplayEnabled: true,
   audioFormat: 'mp3',
   repeatMode: 'none',
+  volume: DEFAULT_VOLUME.level,
+  volumeMuted: DEFAULT_VOLUME.muted,
 };
 
 export function normalizePropertyList(values: string[], fallback: string[]): string[] {
@@ -38,8 +41,11 @@ export function normalizePropertyName(value: string, fallback: string): string {
 }
 
 export function normalizeSettings(loaded: NotePlayerSettings): NotePlayerSettings {
+  const volume = normalizeVolume(loaded.volume, loaded.volumeMuted);
   return {
     ...loaded,
+    volume: volume.level,
+    volumeMuted: volume.muted,
     musicUrlProperties: normalizePropertyList(
       loaded.musicUrlProperties ?? [],
       DEFAULT_PROPERTY_MAPPING.musicUrlProperties,
