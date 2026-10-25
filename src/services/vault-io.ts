@@ -43,18 +43,20 @@ function nextMetadataChange(app: App, file: TFile, timeoutMs = 2000): Promise<vo
 	});
 }
 
-/** Resolves after the metadata cache has re-parsed the note, so the next read never sees the old frontmatter. */
-export async function rewriteNote(app: App, path: string, transform: (existing: string) => string): Promise<void> {
+/** Edits only the given frontmatter keys; resolves once the metadata cache has re-parsed the note. */
+export async function updateFrontmatter(app: App, path: string, edit: (frontmatter: Record<string, unknown>) => void): Promise<void> {
 	const file = app.vault.getAbstractFileByPath(path);
 	if (!(file instanceof TFile)) {
 		throw new Error(`File not found: ${path}`);
 	}
-	const existing = await app.vault.read(file);
-	const next = transform(existing);
-	if (next === existing) return;
 	const parsed = nextMetadataChange(app, file);
-	await app.vault.modify(file, next);
-	await parsed;
+	let changed = false;
+	await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
+		const before = JSON.stringify(frontmatter);
+		edit(frontmatter);
+		changed = JSON.stringify(frontmatter) !== before;
+	});
+	if (changed) await parsed;
 }
 
 export async function openNoteInTab(app: App, path: string): Promise<void> {
