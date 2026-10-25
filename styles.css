@@ -704,6 +704,32 @@
 		0 0 0 1px color-mix(in srgb, var(--interactive-accent) 40%, transparent);
 }
 
+.onp-turntable-platter {
+	transition: transform 160ms ease;
+}
+
+.onp-turntable:hover .onp-turntable-platter {
+	transform: translateY(-1px);
+}
+
+.onp-turntable:active .onp-turntable-platter {
+	transform: scale(0.98);
+}
+
+.onp-turntable-platter::before {
+	content: "";
+	position: absolute;
+	inset: -4%;
+	border-radius: 50%;
+	pointer-events: none;
+	background: radial-gradient(
+		circle,
+		transparent 90%,
+		color-mix(in srgb, var(--text-normal) 8%, transparent) 91% 96%,
+		transparent 97%
+	);
+}
+
 .onp-turntable-platter::after {
 	content: "";
 	position: absolute;
@@ -768,6 +794,11 @@
 	filter: drop-shadow(0 3px 2px var(--background-modifier-border-hover));
 }
 
+.onp-turntable:not(.is-playing):hover .onp-tonearm {
+	transform: rotate(-7deg);
+	filter: drop-shadow(0 3px 2px var(--background-modifier-border-hover));
+}
+
 .onp-tonearm-pivot {
 	position: absolute;
 	top: 0;
@@ -784,19 +815,21 @@
 	top: 8%;
 	left: 40%;
 	width: 20%;
-	height: 82%;
+	height: 66%;
 	border-radius: var(--radius-s);
 	background: var(--text-muted);
 }
 
 .onp-tonearm-head {
 	position: absolute;
-	bottom: 0;
-	left: 0;
-	width: 100%;
-	height: 14%;
+	top: 72%;
+	left: 15%;
+	width: 70%;
+	height: 17%;
 	border-radius: var(--radius-s);
 	background: var(--interactive-accent);
+	transform-origin: 50% 0;
+	transform: rotate(-22deg);
 }
 
 @keyframes onp-head-settle {
