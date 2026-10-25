@@ -11,8 +11,10 @@ function drawArm(group: SVGElement, prefix: string): void {
   const part = (tag: string, cls: string, attr: Record<string, string>, parent: SVGElement = group) =>
     shape(parent, tag, [prefix, cls], attr);
   part('rect', 'onp-arm-rod', { x: String(PX - 0.6), y: String(PY - 8), width: '1.2', height: '9' });
-  part('rect', 'onp-arm-weight', { x: String(PX - 3.4), y: '2.2', width: '6.8', height: '6.4', rx: '1.3' });
-  for (const y of [3.6, 7.2]) part('rect', 'onp-arm-ring', { x: String(PX - 3.4), y: String(y), width: '6.8', height: '0.35' });
+  part('rect', 'onp-arm-weight', { x: String(PX - 4.4), y: '0.6', width: '8.8', height: '8.6', rx: '1.6' });
+  for (const y of [2.4, 5, 7.6]) part('rect', 'onp-arm-ring', { x: String(PX - 4.4), y: String(y), width: '8.8', height: '0.35' });
+  part('path', 'onp-arm-lever', { d: `M${PX + 3} ${PY + 1.5} L${PX + 10.5} ${PY - 1.5}` });
+  part('circle', 'onp-arm-lever-tip', { cx: String(PX + 10.5), cy: String(PY - 1.5), r: '1.1' });
   part('path', 'onp-arm-tube', { d: `M${PX} ${PY} L${SHELL_X} ${SHELL_Y}` });
   part('path', 'onp-arm-glint', { d: `M${PX - 0.3} ${PY + 3} L${SHELL_X - 0.3} ${SHELL_Y - 2}` });
   const shell = shape(group, 'g', [], { transform: `translate(${SHELL_X} ${SHELL_Y}) rotate(${SHELL_TURN})` });
@@ -34,7 +36,8 @@ export function buildArm(scene: HTMLElement): ArmParts {
   drawArm(shape(layer(rig, 'onp-arm-cast-layer'), 'g', 'onp-arm-shadow'), 'onp-arm-cast');
   const arm = layer(rig, 'onp-tonearm');
   drawArm(shape(arm, 'g', 'onp-arm-body'), 'onp-arm-part');
-  const hub = shape(arm, 'circle', 'onp-arm-hub', { cx: String(PX), cy: String(PY), r: '3.7' });
+  shape(arm, 'circle', 'onp-arm-hub-side', { cx: String(PX), cy: String(PY + 1.8), r: '4.6' });
+  const hub = shape(arm, 'circle', 'onp-arm-hub', { cx: String(PX), cy: String(PY), r: '4.6' });
   shape(arm, 'circle', 'onp-arm-hub-cap', { cx: String(PX), cy: String(PY), r: '1.7' });
   const grab = shape(arm, 'path', 'onp-arm-grab', { d: `M${PX} ${PY + 9} L${PX} 66` });
   return { rig, arm, grab, hub };

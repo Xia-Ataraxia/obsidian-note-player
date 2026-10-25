@@ -11,7 +11,6 @@ export interface TurntableParts extends ArmParts {
   lamp: SVGElement;
 }
 
-const DUST_MOTES = 7;
 const PLATTER_SLICES = 6;
 
 function hardware(deck: HTMLElement): SVGElement {
@@ -57,16 +56,11 @@ function platterStack(scene: HTMLElement): { warp: HTMLElement; platter: HTMLEle
 function lid(scene: HTMLElement): void {
   const el = scene.createDiv({ cls: 'onp-lid' });
   el.createDiv({ cls: 'onp-lid-plate' });
-  el.createDiv({ cls: 'onp-lid-label' });
   for (const side of ['is-left', 'is-right', 'is-front']) el.createDiv({ cls: ['onp-lid-wall', side] });
   for (const side of ['is-left', 'is-right']) el.createDiv({ cls: ['onp-lid-hinge', side] });
 }
 
 export function buildTurntableParts(root: HTMLElement): TurntableParts {
-  root.createDiv({ cls: 'onp-glow' });
-  const dust = root.createDiv({ cls: 'onp-dust' });
-  for (let i = 1; i <= DUST_MOTES; i++) dust.createSpan({ cls: 'onp-mote' }).setCssProps({ '--i': String(i) });
-
   const scene = root.createDiv({ cls: 'onp-scene' });
   scene.createDiv({ cls: 'onp-contact' });
   const front = scene.createDiv({ cls: 'onp-front' });
