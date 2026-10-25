@@ -1604,7 +1604,7 @@
 	}
 
 	.onp-lid {
-		transition: transform 1400ms ease;
+		transition: transform 1400ms ease-in-out;
 	}
 
 	.onp-knob-grip,
