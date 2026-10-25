@@ -12,7 +12,40 @@ export interface QueueContext {
 	setDragFrom: (index: number | null) => void;
 }
 
+const renderedSignatures = new WeakMap<HTMLElement, string>();
+
+function queueSignature(state: PlaylistViewState, ctx: QueueContext): string {
+	const rows = state.queue.map((t) => [t.path, t.title, t.artist, t.thumbnailUrl].join('\u0001'));
+	return [ctx.selectedPlaylist?.path ?? '', state.isLoading, ...rows].join('\u0002');
+}
+
+// Same rows, new current track: toggle in place so the highlight transition can run.
+function syncCurrentRow(panel: HTMLElement, state: PlaylistViewState): boolean {
+	const rows = Array.from(panel.querySelectorAll<HTMLElement>('.onp-queue-list > .onp-track-row'));
+	if (rows.length !== state.queue.length) return false;
+	rows.forEach((row, index) => {
+		const isCurrent = state.currentTrack?.path === state.queue[index]?.path;
+		row.toggleClass('is-current', isCurrent);
+		const actions = row.querySelector<HTMLElement>('.onp-row-actions');
+		const bars = actions?.querySelector('.onp-eq-bars');
+		if (isCurrent && actions && !bars) renderEqBars(actions);
+		if (!isCurrent) bars?.remove();
+	});
+	return true;
+}
+
+function renderEqBars(actions: HTMLElement): void {
+	const eqBars = createDiv({ cls: 'onp-row-state onp-eq-bars' });
+	eqBars.setAttribute('aria-label', 'Playing');
+	eqBars.setAttribute('title', 'Playing');
+	for (let i = 0; i < 3; i++) eqBars.createDiv({ cls: 'onp-eq-bar' });
+	actions.prepend(eqBars);
+}
+
 export function renderQueue(panel: HTMLElement, state: PlaylistViewState, ctx: QueueContext): void {
+	const signature = queueSignature(state, ctx);
+	if (ctx.getDragFrom() === null && renderedSignatures.get(panel) === signature && syncCurrentRow(panel, state)) return;
+	renderedSignatures.set(panel, signature);
 	panel.empty();
 
 	const header = panel.createDiv({ cls: 'onp-section-header' });
@@ -113,10 +146,7 @@ function renderRow(
 
 	const rowActions = row.createDiv({ cls: 'onp-row-actions' });
 	if (isCurrent) {
-		const eqBars = rowActions.createDiv({ cls: 'onp-row-state onp-eq-bars' });
-		eqBars.setAttribute('aria-label', 'Playing');
-		eqBars.setAttribute('title', 'Playing');
-		for (let i = 0; i < 3; i++) eqBars.createDiv({ cls: 'onp-eq-bar' });
+		renderEqBars(rowActions);
 	}
 	rowActions.appendChild(createIconButton('Track actions', 'more-vertical', (event) => {
 		openTrackMenu(event, host, track, run);
