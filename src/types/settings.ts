@@ -19,6 +19,4 @@ export interface NotePlayerSettings extends YoutubePlaylistPropertyMapping {
   autoplayEnabled: boolean;
   audioFormat: AudioFormat;
   repeatMode: RepeatMode;
-  debug: boolean;
-  plugin_notices?: { muted: Record<string, boolean> };
 }

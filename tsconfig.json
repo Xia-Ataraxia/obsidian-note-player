@@ -1,35 +1,35 @@
 {
   "compilerOptions": {
-    "inlineSourceMap": true,
-    "inlineSources": true,
+    "inlineSourceMap": false,
     "module": "ESNext",
     "target": "ES2022",
     "allowJs": true,
-    "strict": false,
-    "types": ["node"],
     "noImplicitAny": true,
     "moduleResolution": "bundler",
     "importHelpers": true,
     "isolatedModules": true,
     "strictNullChecks": true,
-    "noUncheckedIndexedAccess": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "allowSyntheticDefaultImports": true,
     "useUnknownInCatchVariables": true,
     "strictBindCallApply": true,
+    "noUncheckedIndexedAccess": true,
     "paths": {
       "@domain/*": [
         "./src/domain/*"
       ],
-      "@types/*": [
-        "./src/types/*"
+      "@ui/*": [
+        "./src/ui/*"
       ],
       "@utils/*": [
         "./src/utils/*"
-      ],
-      "@shared/*": [
-        "./src/shared/*"
       ]
     },
-    "lib": ["DOM", "ES2022"]
+    "lib": ["DOM", "ES2022"],
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "src/**/*.ts",

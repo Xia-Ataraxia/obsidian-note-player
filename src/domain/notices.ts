@@ -15,3 +15,10 @@ export const NOTICE_CATALOG = {
 	download_cancelled: { template: 'Download cancelled.' },
 	ytdlp_unavailable: { template: 'yt-dlp is not installed. Install via: brew install yt-dlp' },
 } as const;
+
+export type NoticeId = keyof typeof NOTICE_CATALOG;
+
+export function renderNotice(template: string, params: Record<string, string | number> = {}): string {
+	const text = template.replace(/{{\s*([\w.-]+)\s*}}/g, (_match, key: string) => String(params[key] ?? ''));
+	return `[Note Player] ${text}`;
+}

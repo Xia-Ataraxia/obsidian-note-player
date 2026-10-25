@@ -340,9 +340,7 @@
 }
 
 .onp-player-video-shell,
-.onp-player-video,
-.onp-iframe-api-host,
-.onp-video-frame {
+.onp-player-video {
 	width: 100%;
 	aspect-ratio: 16 / 9;
 	border-radius: var(--radius-m);
@@ -355,11 +353,6 @@
 	width: 320px;
 	height: 180px;
 	pointer-events: none;
-}
-
-.onp-video-frame,
-.onp-iframe-api-host iframe {
-	border: 0;
 }
 
 .onp-list {

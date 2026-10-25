@@ -1,6 +1,5 @@
 import {
 	ItemView,
-	Menu,
 	Notice,
 	WorkspaceLeaf,
 	setIcon,
@@ -13,6 +12,9 @@ import type {
 } from '../../types/view';
 import { PlaylistNameModal } from './PlaylistNameModal';
 import { PlayerSurface, formatTime } from './PlayerSurface';
+import { renderQueue } from './queue-list';
+import { openPlaylistMenu } from './view-menus';
+import { createActionButton, createIconButton, renderEmptyState, type RunAction } from './view-parts';
 
 export const VIEW_TYPE_NOTE_PLAYER = 'obsidian-note-player-view';
 export const VIEW_TYPE_LEGACY = 'youtube-note-playlist-view';
@@ -129,7 +131,13 @@ export class NotePlayerView extends ItemView {
 			this.renderToolbar(state);
 			this.renderHero(state);
 			this.renderPlayer(state);
-			this.renderQueue(state);
+			renderQueue(elements.queuePanel, state, {
+					host: this.host,
+					run: this.runAction,
+					selectedPlaylist: this.getSelectedPlaylist(state),
+					getDragFrom: () => this.dragFromIndex,
+					setDragFrom: (index) => { this.dragFromIndex = index; },
+				});
 		} finally {
 			this.isRendering = false;
 		}
@@ -168,17 +176,17 @@ export class NotePlayerView extends ItemView {
 			);
 		});
 
-		controls.appendChild(this.createIconButton('Create playlist', 'plus', () => {
+		controls.appendChild(createIconButton('Create playlist', 'plus', () => {
 			this.openCreatePlaylistModal();
 		}));
 
 		if (this.host.selectActivePlaylist) {
-			controls.appendChild(this.createIconButton('Load active playlist note', 'crosshair', () => {
+			controls.appendChild(createIconButton('Load active playlist note', 'crosshair', () => {
 				void this.runAction('Loaded active playlist', () => this.host.selectActivePlaylist?.() ?? Promise.resolve());
 			}));
 		}
 
-		controls.appendChild(this.createIconButton('Refresh library', 'refresh-cw', () => {
+		controls.appendChild(createIconButton('Refresh library', 'refresh-cw', () => {
 			void this.runAction('Refreshed library', () => this.host.refresh());
 		}));
 	}
@@ -191,17 +199,17 @@ export class NotePlayerView extends ItemView {
 
 		const selectedPlaylist = this.getSelectedPlaylist(state);
 		if (state.isLoading) {
-			this.renderEmptyState(elements.heroPanel, 'Loading playlist', 'Scanning playlists and music notes from the vault.');
+			renderEmptyState(elements.heroPanel, 'Loading playlist', 'Scanning playlists and music notes from the vault.');
 			return;
 		}
 
 		if (state.errorMessage) {
-			this.renderEmptyState(elements.heroPanel, 'Playlist error', state.errorMessage);
+			renderEmptyState(elements.heroPanel, 'Playlist error', state.errorMessage);
 			return;
 		}
 
 		if (!selectedPlaylist) {
-			this.renderEmptyState(elements.heroPanel, 'Choose a playlist', 'Select a playlist note to see its cover, metadata, and ordered tracks.');
+			renderEmptyState(elements.heroPanel, 'Choose a playlist', 'Select a playlist note to see its cover, metadata, and ordered tracks.');
 			return;
 		}
 
@@ -229,15 +237,15 @@ export class NotePlayerView extends ItemView {
 
 		const actions = copy.createDiv({ cls: 'onp-hero-actions' });
 		if (!state.currentTrack && state.queue.length > 0) {
-			actions.appendChild(this.createActionButton('Play all', 'play', () => {
+			actions.appendChild(createActionButton('Play all', 'play', () => {
 				const firstTrack = state.queue[0];
 				if (!firstTrack) return;
 				void this.runAction(`Playing ${firstTrack.title}`, () => this.host.playTrack(firstTrack.path));
 			}, { cta: true, iconOnly: true }));
 		}
 
-		actions.appendChild(this.createIconButton('Playlist actions', 'more-vertical', (event) => {
-			this.openPlaylistMenu(event, selectedPlaylist);
+		actions.appendChild(createIconButton('Playlist actions', 'more-vertical', (event) => {
+			openPlaylistMenu(event, this.host, selectedPlaylist, this.runAction);
 		}));
 	}
 
@@ -296,10 +304,10 @@ export class NotePlayerView extends ItemView {
 		});
 
 		const controls = summary.createDiv({ cls: 'onp-control-row onp-player-controls' });
-		controls.appendChild(this.createActionButton('Previous', 'skip-back', () => {
+		controls.appendChild(createActionButton('Previous', 'skip-back', () => {
 			void this.runAction('Moved to previous track', () => this.host.playPrevious());
 		}, { iconOnly: true }));
-		controls.appendChild(this.createActionButton(
+		controls.appendChild(createActionButton(
 			playbackState === 'playing' ? 'Pause current track' : 'Play current track',
 			playbackState === 'playing' ? 'pause' : 'play',
 			() => {
@@ -307,14 +315,14 @@ export class NotePlayerView extends ItemView {
 			},
 			{ cta: true, iconOnly: true },
 		));
-		controls.appendChild(this.createActionButton('Next', 'skip-forward', () => {
+		controls.appendChild(createActionButton('Next', 'skip-forward', () => {
 			void this.runAction('Moved to next track', () => this.host.playNext());
 		}, { iconOnly: true }));
 		controls.createDiv({ cls: 'onp-controls-spacer' });
-		controls.appendChild(this.createActionButton('Open note', 'file-text', () => {
+		controls.appendChild(createActionButton('Open note', 'file-text', () => {
 			void this.runAction('', () => this.host.openNote(current.path), false);
 		}, { iconOnly: true }));
-		controls.appendChild(this.createActionButton(
+		controls.appendChild(createActionButton(
 			state.autoplayEnabled ? 'Disable autoplay' : 'Enable autoplay',
 			state.autoplayEnabled ? 'radio' : 'circle',
 			() => {
@@ -323,7 +331,7 @@ export class NotePlayerView extends ItemView {
 			{ iconOnly: true, active: state.autoplayEnabled },
 		));
 		if (this.host.toggleRepeatMode) {
-			controls.appendChild(this.createActionButton(
+			controls.appendChild(createActionButton(
 				state.repeatMode === 'one' ? 'Disable repeat' : 'Repeat one',
 				'repeat-1',
 				() => {
@@ -366,298 +374,12 @@ export class NotePlayerView extends ItemView {
 		this.lastRenderedTrackPath = current.path;
 	}
 
-	private renderQueue(state: PlaylistViewState): void {
-		const elements = this.elements;
-		if (!elements) return;
-
-		elements.queuePanel.empty();
-
-		const header = elements.queuePanel.createDiv({ cls: 'onp-section-header' });
-		header.createDiv({ cls: 'onp-section-title', text: 'Tracks' });
-		const selectedPlaylist = this.getSelectedPlaylist(state);
-		header.createDiv({
-			cls: 'onp-section-meta',
-			text: selectedPlaylist ? `${state.queue.length} tracks` : 'Select a playlist first',
-		});
-
-		if (state.isLoading) {
-			this.renderEmptyState(elements.queuePanel, 'Loading playlist', 'Reading playlist note references.');
-			return;
-		}
-
-		if (!selectedPlaylist) {
-			this.renderEmptyState(elements.queuePanel, 'Choose a playlist', 'The playlist rows appear here once you select a playlist.');
-			return;
-		}
-
-		if (state.queue.length === 0) {
-			this.renderEmptyState(elements.queuePanel, 'Playlist is empty', 'Use Music.base or the active-note action to add music notes to this playlist.');
-			return;
-		}
-
-		const list = elements.queuePanel.createDiv({ cls: 'onp-list onp-queue-list' });
-		state.queue.forEach((track, index) => {
-			const row = list.createDiv({
-				cls: this.buildRowClass('onp-track-row', {
-					'is-current': state.currentTrack?.path === track.path,
-					'is-drag-source': this.dragFromIndex === index,
-				}),
-			});
-
-			const grip = row.createDiv({ cls: 'onp-row-grip' });
-			grip.setAttribute('draggable', 'true');
-			grip.setAttribute('aria-label', 'Drag to reorder');
-			grip.setAttribute('title', 'Drag to reorder');
-			setIcon(grip.createDiv({ cls: 'onp-row-grip-icon' }), 'grip-vertical');
-			grip.createSpan({ cls: 'onp-row-order', text: String(index + 1).padStart(2, '0') });
-
-			grip.addEventListener('dragstart', (event) => {
-				this.dragFromIndex = index;
-				row.addClass('is-drag-source');
-				event.dataTransfer!.effectAllowed = 'move';
-				event.dataTransfer?.setData('text/plain', String(index));
-				event.dataTransfer?.setDragImage(row, 28, 28);
-			});
-			grip.addEventListener('dragend', () => {
-				this.dragFromIndex = null;
-				row.removeClass('is-drag-source');
-				row.removeClass('is-drop-target');
-			});
-			row.addEventListener('dragenter', (event) => {
-				event.preventDefault();
-				row.addClass('is-drop-target');
-			});
-			row.addEventListener('dragover', (event) => {
-				event.preventDefault();
-				if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-				row.addClass('is-drop-target');
-			});
-			row.addEventListener('dragleave', () => {
-				row.removeClass('is-drop-target');
-			});
-			row.addEventListener('drop', (event) => {
-				event.preventDefault();
-				row.removeClass('is-drop-target');
-				const rawIndex = event.dataTransfer?.getData('text/plain');
-				const fromIndex = rawIndex ? Number(rawIndex) : this.dragFromIndex;
-				if (fromIndex === null || Number.isNaN(fromIndex) || fromIndex === index) {
-					return;
-				}
-				void this.runAction('Saved new queue order', () => this.host.moveTrackInPlaylist(fromIndex, index));
-			});
-
-			const thumb = row.createDiv({ cls: 'onp-row-thumb' });
-			thumb.setCssProps({ '--onp-thumb-image': `url("${track.thumbnailUrl}")` });
-			const thumbPlay = thumb.createDiv({ cls: 'onp-row-thumb-play' });
-			setIcon(thumbPlay, 'play');
-			thumb.addEventListener('click', () => {
-				void this.runAction(`Playing ${track.title}`, () => this.host.playTrack(track.path));
-			});
-
-			const body = row.createDiv({ cls: 'onp-row-copy' });
-			const title = body.createDiv({ cls: 'onp-row-title', text: track.title });
-			title.setAttribute('title', track.path);
-			body.createDiv({
-				cls: 'onp-row-subtitle',
-				text: track.artist || 'Unknown artist',
-			});
-			body.addEventListener('click', () => {
-				void this.runAction(`Playing ${track.title}`, () => this.host.playTrack(track.path));
-			});
-
-			const rowActions = row.createDiv({ cls: 'onp-row-actions' });
-			if (state.currentTrack?.path === track.path) {
-				const eqBars = rowActions.createDiv({ cls: 'onp-row-state onp-eq-bars' });
-				eqBars.setAttribute('aria-label', 'Playing');
-				eqBars.setAttribute('title', 'Playing');
-				eqBars.createDiv({ cls: 'onp-eq-bar' });
-				eqBars.createDiv({ cls: 'onp-eq-bar' });
-				eqBars.createDiv({ cls: 'onp-eq-bar' });
-			}
-			rowActions.appendChild(this.createIconButton('Track actions', 'more-vertical', (event) => {
-				this.openTrackMenu(event, track);
-			}));
-		});
-	}
-
-	private openPlaylistMenu(event: MouseEvent, selectedPlaylist: PlaylistSummary): void {
-		const menu = new Menu();
-
-		menu.addItem((item) =>
-			item
-				.setTitle('Open playlist note')
-				.setIcon('file-text')
-				.onClick(() => {
-					void this.runAction('', () => this.host.openPlaylist(selectedPlaylist.path), false);
-				}),
-		);
-
-		if (this.host.selectActivePlaylist) {
-			menu.addItem((item) =>
-				item
-					.setTitle('Load active playlist note')
-					.setIcon('crosshair')
-					.onClick(() => {
-						void this.runAction('Loaded active playlist', () => this.host.selectActivePlaylist?.() ?? Promise.resolve());
-					}),
-			);
-		}
-
-		if (this.host.addActiveNoteToPlaylist) {
-			menu.addItem((item) =>
-				item
-					.setTitle('Add active note')
-					.setIcon('plus')
-					.onClick(() => {
-						void this.runAction('Added active note to playlist', () => this.host.addActiveNoteToPlaylist?.() ?? Promise.resolve());
-					}),
-			);
-		}
-
-		if (this.host.openBase) {
-			menu.addItem((item) =>
-				item
-					.setTitle('Open music.base')
-					.setIcon('table-2')
-					.onClick(() => {
-						void this.runAction('', () => this.host.openBase?.('music') ?? Promise.resolve(), false);
-					}),
-			);
-			menu.addItem((item) =>
-				item
-					.setTitle('Open playlists.base')
-					.setIcon('files')
-					.onClick(() => {
-						void this.runAction('', () => this.host.openBase?.('playlists') ?? Promise.resolve(), false);
-					}),
-			);
-		}
-
-		if (this.host.refreshCompanionBases) {
-			menu.addItem((item) =>
-				item
-					.setTitle('Refresh companion bases files')
-					.setIcon('layout-grid')
-					.onClick(() => {
-						void this.runAction('Refreshed companion Bases files', () => this.host.refreshCompanionBases?.() ?? Promise.resolve());
-					}),
-			);
-		}
-
-		menu.addItem((item) =>
-			item
-				.setTitle('Refresh library')
-				.setIcon('refresh-cw')
-				.onClick(() => {
-					void this.runAction('Refreshed library', () => this.host.refresh());
-				}),
-		);
-
-		menu.showAtMouseEvent(event);
-	}
-
-	private openTrackMenu(event: MouseEvent, track: PlaylistTrack): void {
-		const menu = new Menu();
-
-		menu.addItem((item) =>
-			item
-				.setTitle('Play track')
-				.setIcon('play')
-				.onClick(() => {
-					void this.runAction(`Playing ${track.title}`, () => this.host.playTrack(track.path));
-				}),
-		);
-
-		menu.addItem((item) =>
-			item
-				.setTitle('Open note')
-				.setIcon('file-text')
-				.onClick(() => {
-					void this.runAction('', () => this.host.openNote(track.path), false);
-				}),
-		);
-
-		menu.addItem((item) =>
-			item
-				.setTitle('Remove from playlist')
-				.setIcon('minus-circle')
-				.onClick(() => {
-					void this.runAction(`Removed ${track.title}`, () => this.host.removeTrackFromPlaylist(track.path));
-				}),
-		);
-
-		menu.showAtMouseEvent(event);
-	}
-
 	private getSelectedPlaylist(state: PlaylistViewState): PlaylistSummary | undefined {
 		return state.playlists.find((playlist) => playlist.path === state.selectedPlaylistPath);
 	}
 
 	private lookupPlaylistTitle(playlists: PlaylistSummary[], path: string): string {
 		return playlists.find((playlist) => playlist.path === path)?.title ?? 'playlist';
-	}
-
-	private renderEmptyState(container: HTMLElement, title: string, copy: string): void {
-		const state = container.createDiv({ cls: 'onp-empty-state' });
-		const icon = state.createDiv({ cls: 'onp-empty-icon' });
-		setIcon(icon, 'music-4');
-		state.createDiv({ cls: 'onp-empty-title', text: title });
-		state.createDiv({ cls: 'onp-empty-copy', text: copy });
-	}
-
-	private createActionButton(
-		label: string,
-		icon: string,
-		onClick: () => void,
-		options: {
-			active?: boolean;
-			cta?: boolean;
-			iconOnly?: boolean;
-		} = {},
-	): HTMLButtonElement {
-		const button = createEl('button');
-		button.type = 'button';
-		button.className = this.buildRowClass('onp-button', {
-			'is-active': Boolean(options.active),
-			'is-icon-only': Boolean(options.iconOnly),
-			'mod-cta': Boolean(options.cta),
-		});
-		button.setAttribute('aria-label', label);
-		button.setAttribute('title', label);
-		const iconEl = button.createSpan({ cls: 'onp-button-icon' });
-		setIcon(iconEl, icon);
-		if (!options.iconOnly) {
-			button.createSpan({ cls: 'onp-button-label', text: label });
-		}
-		button.addEventListener('click', (event) => {
-			event.preventDefault();
-			event.stopPropagation();
-			onClick();
-		});
-		return button;
-	}
-
-	private createIconButton(
-		label: string,
-		icon: string,
-		onClick: (event: MouseEvent) => void,
-	): HTMLButtonElement {
-		const button = createEl('button');
-		button.type = 'button';
-		button.className = 'clickable-icon onp-icon-button';
-		button.setAttribute('aria-label', label);
-		button.setAttribute('title', label);
-		setIcon(button, icon);
-		button.addEventListener('click', (event) => {
-			event.preventDefault();
-			event.stopPropagation();
-			onClick(event);
-		});
-		return button;
-	}
-
-	private buildRowClass(base: string, flags: Record<string, boolean>): string {
-		return [base, ...Object.entries(flags).filter(([, enabled]) => enabled).map(([name]) => name)].join(' ');
 	}
 
 	private startProgressInterval(): void {
@@ -727,11 +449,7 @@ export class NotePlayerView extends ItemView {
 		}).open();
 	}
 
-	private async runAction(
-		successMessage: string,
-		action: () => Promise<void>,
-		showSuccess = true,
-	): Promise<void> {
+	private readonly runAction: RunAction = async (successMessage, action, showSuccess = true) => {
 		if (this.actionInFlight) return;
 		this.actionInFlight = true;
 
@@ -747,6 +465,5 @@ export class NotePlayerView extends ItemView {
 			this.actionInFlight = false;
 			this.render();
 		}
-	}
+	};
 }
-

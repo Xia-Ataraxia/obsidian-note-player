@@ -20,7 +20,6 @@ export const DEFAULT_SETTINGS: NotePlayerSettings = {
   autoplayEnabled: true,
   audioFormat: 'mp3',
   repeatMode: 'none',
-  debug: false,
 };
 
 export function normalizePropertyList(values: string[], fallback: string[]): string[] {

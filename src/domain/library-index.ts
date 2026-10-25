@@ -3,7 +3,7 @@ import type { MarkdownNoteSnapshot } from '../types/notes';
 import type { YoutubePlaylistPropertyMapping } from '../types/settings';
 import { dedupe } from '../utils/dedupe';
 import { hasType, asStringArray, asTrimmedString } from '../utils/frontmatter';
-import { buildYoutubeEmbedUrl, buildYoutubeThumbnailUrl, buildYoutubeWatchUrl, extractYoutubeVideoId } from '../utils/youtube';
+import { buildYoutubeThumbnailUrl, buildYoutubeWatchUrl, extractYoutubeVideoId } from '../utils/youtube';
 import { canonicalizeNotePath, parsePlaylistTrackReference } from '../utils/wikilink';
 import { DEFAULT_PROPERTY_MAPPING } from './config';
 
@@ -58,7 +58,6 @@ function toMusicTrack(
     artist,
     sourceUrl,
     watchUrl: buildYoutubeWatchUrl(videoId),
-    embedUrl: buildYoutubeEmbedUrl(videoId),
     videoId,
     thumbnailUrl: buildYoutubeThumbnailUrl(videoId),
     imageUrl,
