@@ -6,10 +6,9 @@ import { FADE_IN_MS, leadRemainingMs, FADE_OUT_MS, needleDelayMs, rampRate } fro
 
 export type { PlaybackState };
 
-export type StreamPhase = 'connecting' | 'streaming' | 'failed' | 'idle';
+export type StreamPhase = 'connecting' | 'streaming' | 'failed' | 'missing' | 'idle';
 
 const FADE_STEP_MS = 20;
-const HAVE_FUTURE_DATA = 3;
 
 export function formatTime(seconds: number): string {
 	const s = Math.floor(seconds);
@@ -45,6 +44,9 @@ export class PlayerSurface {
 	/** Background save of a streamed track; kept separate so it never raises download notices. */
 	onSaveProgress: ((percent: number) => void) | null = null;
 	onStreamPhase: ((phase: StreamPhase) => void) | null = null;
+	onPhaseView: ((phase: StreamPhase) => void) | null = null;
+	onNeedSetup: (() => void) | null = null;
+	phase: StreamPhase = 'idle';
 	/** True while the needle is down but the music is not ready yet. */
 	onNeedleWait: ((waiting: boolean) => void) | null = null;
 
@@ -58,6 +60,12 @@ export class PlayerSurface {
 
 	private reducedMotion(): boolean {
 		return this.host.win.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	}
+
+	private setPhase(phase: StreamPhase): void {
+		this.phase = phase;
+		this.onStreamPhase?.(phase);
+		this.onPhaseView?.(phase);
 	}
 
 	private emit(state: PlaybackState): void {
@@ -93,20 +101,26 @@ export class PlayerSurface {
 
 		this.silentPauseAudio();
 		this.audioElement = null;
-		this.onStreamPhase?.('idle');
+		this.lastTrack = track;
+		this.setPhase(autoplayEnabled ? 'connecting' : 'idle');
 
 		if (!this.audioCacheService) {
-			this.onStreamPhase?.('failed');
+			this.setPhase('failed');
+			this.emit('paused');
+			return;
+		}
+		if (!this.audioCacheService.isAvailable()) {
+			this.setPhase('missing');
 			this.emit('paused');
 			return;
 		}
 
 		const videoId = track.videoId;
-		this.lastTrack = track;
 		const token = ++this.downloadToken;
 
 		if (await this.audioCacheService.hasCached(videoId)) {
 			if (token !== this.downloadToken) return;
+			this.setPhase('idle');
 			this.mountAudio(this.audioCacheService.getFileUrl(videoId), autoplayEnabled);
 			this.activateTrack(videoId, autoplayEnabled);
 			return;
@@ -135,12 +149,12 @@ export class PlayerSurface {
 	private async resolveStream(videoId: string): Promise<string | null> {
 		const service = this.audioCacheService;
 		if (typeof service?.resolveStreamUrl !== 'function') return null;
-		this.onStreamPhase?.('connecting');
+		this.setPhase('connecting');
 		try {
 			return await service.resolveStreamUrl(videoId);
 		} catch (e) {
 			console.debug('[note-player] stream unavailable, downloading instead', e);
-			this.onStreamPhase?.('idle');
+			this.setPhase('idle');
 			return null;
 		}
 	}
@@ -148,7 +162,7 @@ export class PlayerSurface {
 	private startStream(videoId: string, url: string, autoplay: boolean): void {
 		this.mountAudio(url, autoplay, () => this.streamFailed(videoId, autoplay));
 		this.activateTrack(videoId, autoplay);
-		this.onStreamPhase?.('streaming');
+		this.setPhase('streaming');
 		this.saveInBackground(videoId);
 	}
 
@@ -188,7 +202,7 @@ export class PlayerSurface {
 		this.silentPauseAudio();
 		this.audioElement = null;
 		this.savingVideoId = null;
-		this.onStreamPhase?.('idle');
+		this.setPhase('idle');
 		this.isDownloading = true;
 		void this.downloadThenPlay(videoId, autoplay, ++this.downloadToken);
 	}
@@ -213,7 +227,7 @@ export class PlayerSurface {
 			if (!this.downloadCancelled) {
 				console.debug('[note-player] playback unavailable', e);
 				this.onDownloadProgress?.(-1);
-				this.onStreamPhase?.('failed');
+				this.setPhase('failed');
 			} else {
 				this.currentVideoId = null;
 			}
@@ -227,6 +241,7 @@ export class PlayerSurface {
 
 	/** Quiet retry for the last track that could not load. */
 	retry(): void {
+		if (this.audioCacheService && !this.audioCacheService.isAvailable()) this.onNeedSetup?.();
 		if (this.lastTrack) void this.render(this.lastTrack, true);
 	}
 
@@ -252,6 +267,8 @@ export class PlayerSurface {
 		const audio = this.audioElement;
 		if (!audio) return false;
 		if (this.cancelPendingStart()) {
+			audio.pause();
+			audio.volume = this.volume;
 			this.emit('paused');
 			return true;
 		}
@@ -271,7 +288,7 @@ export class PlayerSurface {
 
 	/** Order: arm swings, needle lands, only then the music fades in. */
 	private startAudio(audio: HTMLAudioElement): void {
-		if (this.pendingAudio) return;
+		if (this.pendingAudio || this.cancelReadyWait) return;
 		if (!audio.paused) {
 			void this.fade(audio, this.volume, FADE_IN_MS);
 			return;
@@ -307,20 +324,23 @@ export class PlayerSurface {
 		}, leadRemainingMs(performance.now() - this.landedAt));
 	}
 
+	/** The crackle keeps looping from touchdown until the first decoded second, so the needle never sits in silence. */
 	private beginPlayback(audio: HTMLAudioElement): void {
 		if (audio !== this.audioElement) return;
-		const go = () => {
+		this.onNeedleWait?.(true);
+		audio.volume = 0;
+		const onTime = () => {
+			if (audio.currentTime <= 0) return;
+			this.cancelReadyWait?.();
 			this.cancelReadyWait = null;
 			this.onNeedleWait?.(false);
-			audio.volume = 0;
-			audio.play().then(() => this.fade(audio, this.volume, FADE_IN_MS)).catch(() => {
-				audio.volume = this.volume; // interrupted by pause — benign
-			});
+			void this.fade(audio, this.volume, FADE_IN_MS);
 		};
-		if (audio.readyState >= HAVE_FUTURE_DATA) return go();
-		this.onNeedleWait?.(true);
-		audio.addEventListener('canplay', go, { once: true });
-		this.cancelReadyWait = () => audio.removeEventListener('canplay', go);
+		audio.addEventListener('timeupdate', onTime);
+		this.cancelReadyWait = () => audio.removeEventListener('timeupdate', onTime);
+		audio.play().catch(() => {
+			audio.volume = this.volume; // interrupted by pause — benign
+		});
 	}
 
 	private cancelPendingStart(): boolean {

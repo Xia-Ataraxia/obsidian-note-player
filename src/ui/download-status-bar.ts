@@ -3,6 +3,7 @@ import type { Plugin } from 'obsidian';
 
 const COMPLETION_VISIBLE_MS = 1500;
 const SWAP_MS = 140;
+const TITLE_MAX = 28;
 
 type Tone = 'idle' | 'busy' | 'live' | 'done' | 'failed';
 
@@ -15,6 +16,7 @@ export class DownloadStatusBar {
 	private completionTimer: number | null = null;
 	private swapTimer: number | null = null;
 	private pendingText = '';
+	private nowPlaying: string | null = null;
 
 	constructor(plugin: Plugin, onCancel: () => void, onRetry: () => void) {
 		const item = plugin.addStatusBarItem();
@@ -30,14 +32,29 @@ export class DownloadStatusBar {
 	}
 
 	/** Shows the live-source state; progress and completion from `update` take over from it. */
-	showStream(phase: 'connecting' | 'streaming' | 'failed' | 'idle'): void {
+	showStream(phase: 'connecting' | 'streaming' | 'failed' | 'missing' | 'idle'): void {
 		if (phase === 'idle') return this.reset();
 		this.clearCompletionTimer();
 		this.isDownloading = false;
-		this.canRetry = phase === 'failed';
+		this.canRetry = phase === 'failed' || phase === 'missing';
 		if (phase === 'connecting') this.show('loader', 'Connecting…', 'busy');
-		else if (phase === 'streaming') this.show('radio', 'Streaming', 'live');
+		else if (phase === 'streaming') this.show('radio', this.nowPlayingText() ?? 'Streaming', 'live');
+		else if (phase === 'missing') this.show('wrench', 'yt-dlp not found · click for setup', 'failed');
 		else this.show('cloud-off', 'Unavailable · click to retry', 'failed');
+	}
+
+	/** The resting bar names the playing track; busy and failed states keep priority. */
+	setNowPlaying(title: string | null): void {
+		this.nowPlaying = title;
+		const tone = this.container.dataset.tone;
+		if (tone === 'idle') this.reset();
+		else if (tone === 'live') this.show('radio', this.nowPlayingText() ?? 'Streaming', 'live');
+	}
+
+	private nowPlayingText(): string | null {
+		const title = this.nowPlaying;
+		if (!title) return null;
+		return title.length > TITLE_MAX ? `${title.slice(0, TITLE_MAX - 1).trimEnd()}…` : title;
 	}
 
 	update(percent: number, verb = 'Downloading'): void {
@@ -98,6 +115,8 @@ export class DownloadStatusBar {
 		this.completionTimer = null;
 		this.isDownloading = false;
 		this.canRetry = false;
-		this.show('music', 'Note player', 'idle');
+		const title = this.nowPlayingText();
+		if (title) this.show('audio-lines', title, 'idle');
+		else this.show('music', 'Note player', 'idle');
 	}
 }

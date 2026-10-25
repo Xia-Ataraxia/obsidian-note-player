@@ -13,3 +13,29 @@ export function parseYtdlpError(stderr: string): string {
 	if (/Network|Unable to connect|Connection/i.test(stderr)) return 'Network error — check your connection.';
 	return stderr.slice(-100) || 'Unknown error.';
 }
+
+/** Obsidian's PATH often lacks user bins, so probe the usual install spots too. */
+export function ytdlpCandidates(home: string, pathEnv: string): string[] {
+	const dirs = [
+		...pathEnv.split(':').filter(Boolean),
+		`${home}/.local/bin`,
+		`${home}/.local/pipx/venvs/yt-dlp/bin`,
+		'/opt/homebrew/bin',
+		'/usr/local/bin',
+		'/usr/bin',
+	];
+	return [...new Set(dirs)].map((dir) => `${dir}/yt-dlp`);
+}
+
+const STREAM_EXPIRY_MARGIN_MS = 60_000;
+
+/** googlevideo URLs carry `expire=<unix seconds>`; null when absent. */
+export function streamUrlExpiry(url: string): number | null {
+	const match = /[?&]expire=(\d+)/.exec(url);
+	return match ? Number(match[1]) * 1000 : null;
+}
+
+export function isStreamUrlFresh(url: string, nowMs: number): boolean {
+	const expiry = streamUrlExpiry(url);
+	return expiry === null || expiry - STREAM_EXPIRY_MARGIN_MS > nowMs;
+}

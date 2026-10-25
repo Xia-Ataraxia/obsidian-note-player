@@ -76,6 +76,7 @@ export interface AudioCachePort {
 	download(videoId: string, onProgress: (percent: number) => void): Promise<string>;
 	cancel(videoId: string): void;
 	resolveStreamUrl?(videoId: string): Promise<string>;
+	prefetchStream?(videoId: string): void;
 	isAvailable(): boolean;
 	listPlaylist?(listId: string): Promise<string>;
 }

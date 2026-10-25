@@ -14,7 +14,7 @@ import { YoutubeUrlModal } from './YoutubeUrlModal';
 import { Turntable } from './Turntable';
 import { TurntableSound } from './turntable-sound';
 import { parseYoutubeUrl } from '../../utils/youtube';
-import { PlayerSurface, formatTime } from './PlayerSurface';
+import { PlayerSurface, formatTime, type StreamPhase } from './PlayerSurface';
 import { renderHero } from './hero-panel';
 import { renderQueue } from './queue-list';
 import { createActionButton, createIconButton, type RunAction } from './view-parts';
@@ -45,6 +45,8 @@ export class NotePlayerView extends ItemView {
 	private actionInFlight = false;
 	private lastRenderedTrackPath: string | null = null;
 	private progressIntervalId: number | null = null;
+	private subtitleEl: HTMLElement | null = null;
+	private subtitleText = '';
 	private isRendering = false;
 	private readonly sound = new TurntableSound(
 		() => this.playerSurface.getVolume(),
@@ -90,6 +92,7 @@ export class NotePlayerView extends ItemView {
 		this.playerSurface.trackLanding(true);
 		this.turntable.onLanded = () => this.playerSurface.needleLanded();
 		this.playerSurface.onNeedleWait = (waiting) => (waiting ? this.sound.startGroove() : this.sound.stopGroove());
+		this.playerSurface.onPhaseView = (phase) => this.showPhase(phase);
 
 		const toolbarPanel = root.createDiv({ cls: 'onp-pane-section onp-toolbar-panel' });
 		const heroPanel = root.createDiv({ cls: 'onp-pane-section onp-hero-panel' });
@@ -130,6 +133,7 @@ export class NotePlayerView extends ItemView {
 		this.resizeObserver = null;
 		this.stopProgressInterval();
 		this.playerSurface.onNeedleWait = null;
+		this.playerSurface.onPhaseView = null;
 		this.playerSurface.trackLanding(false);
 		this.turntable.destroy();
 		this.sound.close();
@@ -252,16 +256,6 @@ export class NotePlayerView extends ItemView {
 			return;
 		}
 
-		// Show install instructions when yt-dlp is not available
-		const audioCacheService = this.host.getAudioCacheService?.();
-		if (audioCacheService && !audioCacheService.isAvailable()) {
-			elements.playerPanel.removeClass('onp-hidden');
-			const installNotice = elements.playerPanel.createDiv({ cls: 'onp-download-overlay' });
-			installNotice.createDiv({ cls: 'onp-download-text', text: 'Install yt-dlp to play music' });
-			installNotice.createDiv({ cls: 'onp-download-text onp-install-hint', text: 'brew install yt-dlp' });
-			return;
-		}
-
 		const playbackState = state.playbackState;
 
 		elements.playerPanel.removeClass('onp-hidden');
@@ -273,10 +267,9 @@ export class NotePlayerView extends ItemView {
 		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
 		meta.createDiv({ cls: 'onp-track-title', text: current.title });
-		meta.createDiv({
-			cls: 'onp-track-subtitle',
-			text: `${current.artist || 'Unknown artist'} • ${state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'}`,
-		});
+		this.subtitleEl = meta.createDiv({ cls: 'onp-track-subtitle' });
+		this.subtitleText = `${current.artist || 'Unknown artist'} • ${state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'}`;
+		this.showPhase(this.playerSurface.phase);
 
 		const controls = summary.createDiv({ cls: 'onp-control-row onp-player-controls' });
 		controls.appendChild(createActionButton('Previous', 'skip-back', () => {
@@ -347,6 +340,15 @@ export class NotePlayerView extends ItemView {
 		void this.playerSurface.render(current, state.autoplayEnabled);
 
 		this.lastRenderedTrackPath = current.path;
+	}
+
+	/** Updates the subtitle in place so the connecting state appears with no re-render. */
+	private showPhase(phase: StreamPhase): void {
+		const el = this.subtitleEl;
+		if (!el) return;
+		const connecting = phase === 'connecting';
+		el.toggleClass('is-connecting', connecting);
+		el.setText(connecting ? 'Connecting…' : this.subtitleText);
 	}
 
 	private getSelectedPlaylist(state: PlaylistViewState): PlaylistSummary | undefined {
