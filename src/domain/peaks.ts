@@ -4,39 +4,60 @@ const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
 
 /** Bar height = loudness, not peak: mastered music peaks near 0 dBFS everywhere, so peaks flatten into a block. */
 const REFERENCE_PERCENTILE = 0.995;
-/** The quietest 20% of buckets anchor the bottom of the scale, so a uniformly loud track still spreads out. */
+/** Reference sits above the loudest buckets so loud sections stay below the ceiling. */
+const HEADROOM_DB = 1.5;
+/** The quietest 30% of buckets anchor the bottom of the scale, so a uniformly loud track still spreads out. */
 const FLOOR_PERCENTILE = 0.3;
-const MIN_RANGE_DB = 4;
+const MIN_RANGE_DB = 10;
 const MAX_RANGE_DB = 36;
 /** >1 gently pushes mid levels down so loud sections keep texture. */
 const EASE = 1.6;
 /** Height fraction at the anchor level; the loud range uses the rest. */
 const KNEE = 0.3;
-const FORMAT_VERSION = 7;
+const FORMAT_VERSION = 8;
+
+/** Short RMS windows inside a bucket; beats and kicks survive as the bucket's upper percentile. */
+const SUB_WINDOW = 441;
+const TRANSIENT_PERCENTILE = 0.9;
+const TRANSIENT_BLEND = 0.5;
+
+function windowRms(channels: ArrayLike<number>[], from: number, to: number): number {
+  let sum = 0;
+  for (const channel of channels) {
+    for (let j = from; j < to; j++) sum += (channel[j] ?? 0) ** 2;
+  }
+  return Math.sqrt(sum / ((to - from) * channels.length));
+}
+
+/** Blend of the bucket's mean RMS and its p90 short-window RMS, so loud sections keep beat texture. */
+function bucketLevel(channels: ArrayLike<number>[], from: number, to: number): number {
+  const mean = windowRms(channels, from, to);
+  if (to - from < SUB_WINDOW * 2) return mean;
+  const subs: number[] = [];
+  for (let j = from; j < to; j += SUB_WINDOW) subs.push(windowRms(channels, j, Math.min(to, j + SUB_WINDOW)));
+  subs.sort((a, b) => a - b);
+  const peak = subs[Math.min(subs.length - 1, Math.floor(subs.length * TRANSIENT_PERCENTILE))] ?? mean;
+  return mean * (1 - TRANSIENT_BLEND) + peak * TRANSIENT_BLEND;
+}
 
 /** Per-bucket RMS across channels, mapped in dB below a near-max reference and eased, stored as 0..255. */
 export function computePeaks(channels: ArrayLike<number>[], count = PEAK_COUNT): number[] {
   const length = channels[0]?.length ?? 0;
   if (length === 0) return [];
-  const rms = new Array<number>(count).fill(0);
-  for (let i = 0; i < count; i++) {
+  const rms = Array.from({ length: count }, (_, i) => {
     const from = Math.floor((i * length) / count);
     const to = Math.min(length, Math.max(from + 1, Math.floor(((i + 1) * length) / count)));
-    let sum = 0;
-    for (const channel of channels) {
-      for (let j = from; j < to; j++) sum += (channel[j] ?? 0) ** 2;
-    }
-    rms[i] = Math.sqrt(sum / ((to - from) * channels.length));
-  }
+    return bucketLevel(channels, from, to);
+  });
   const sorted = [...rms].sort((a, b) => a - b);
   const at = (q: number): number => sorted[Math.min(count - 1, Math.floor(count * q))] ?? 0;
-  const reference = at(REFERENCE_PERCENTILE);
+  const reference = at(REFERENCE_PERCENTILE) * 10 ** (HEADROOM_DB / 20);
   if (reference === 0) return rms.map(() => 0);
   const floorDb = 20 * Math.log10(Math.max(at(FLOOR_PERCENTILE), 1e-9) / reference);
   const range = Math.min(MAX_RANGE_DB, Math.max(MIN_RANGE_DB, -floorDb));
   return rms.map((v) => {
     const db = v > 0 ? 20 * Math.log10(v / reference) : -Infinity;
-    if (db >= -range) return Math.round((KNEE + (1 - KNEE) * (1 + db / range) ** EASE) * 255);
+    if (db >= -range) return Math.round(clamp01(KNEE + (1 - KNEE) * (1 + db / range) ** EASE) * 255);
     // Below the anchor, quieter passages keep falling so verses stay distinct from silence.
     return Math.round(KNEE * clamp01(1 + (db + range) / (MAX_RANGE_DB - range + 12)) * 255);
   });
