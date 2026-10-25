@@ -14,7 +14,7 @@ import { YoutubeUrlModal } from './YoutubeUrlModal';
 import { Turntable } from './Turntable';
 import { TurntableSound } from './turntable-sound';
 import { parseYoutubeUrl } from '../../utils/youtube';
-import { PlayerSurface, formatTime, type StreamPhase } from './PlayerSurface';
+import { PlayerSurface, type StreamPhase } from './PlayerSurface';
 import { WaveformProgress } from './WaveformProgress';
 import { renderHero } from './hero-panel';
 import { renderQueue } from './queue-list';
