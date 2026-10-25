@@ -8,7 +8,7 @@ import type { AudioFormat } from '../types/audio';
 import { shareInFlight } from '../utils/in-flight';
 
 /** yt-dlp retries unreachable hosts for minutes; first play must not wait on that. */
-const STREAM_RESOLVE_TIMEOUT_MS = 10_000;
+const STREAM_RESOLVE_TIMEOUT_MS = 6_000;
 
 export class AudioCacheService implements AudioCachePort {
 	private cacheDir: string;        // vault-relative
