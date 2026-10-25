@@ -775,7 +775,7 @@
 .onp-scene {
 	position: absolute;
 	left: 6%;
-	top: calc(-63cqw * cos(calc(var(--onp-tilt) + 100deg)) + 35.2cqw * cos(var(--onp-tilt)) - 35.2cqw);
+	top: calc(-63cqw * cos(calc(var(--onp-tilt) + 78deg)) + 35.2cqw * cos(var(--onp-tilt)) - 35.2cqw);
 	width: 88%;
 	aspect-ratio: 100 / 80;
 	transform-style: preserve-3d;
@@ -1314,9 +1314,9 @@
 /* Volume knob: knurled aluminium, 270 degrees of travel */
 .onp-knob {
 	position: absolute;
-	left: 88.5%;
-	top: 81.9%;
-	width: 9%;
+	left: 85.5%;
+	top: 76.5%;
+	width: 12%;
 	aspect-ratio: 1;
 	border-radius: 50%;
 	transform-style: preserve-3d;
@@ -1324,6 +1324,18 @@
 	touch-action: none;
 	box-shadow: 0.9cqw 1.2cqw 1.3cqw -0.1cqw color-mix(in oklab, var(--np-ink) 62%, transparent);
 	outline: none;
+}
+
+.onp-knob::before {
+	content: '';
+	position: absolute;
+	inset: -22%;
+	border-radius: 50%;
+	background: repeating-conic-gradient(from -137deg, color-mix(in oklab, var(--np-key) 70%, var(--np-wood-base)) 0 1.2deg, transparent 1.2deg 27deg);
+	mask-image: conic-gradient(from -135deg, var(--np-ink) 0 270deg, transparent 270deg), radial-gradient(circle closest-side, transparent 0 78%, var(--np-ink) 80%);
+	mask-composite: intersect;
+	opacity: 0.8;
+	pointer-events: none;
 }
 
 .onp-knob-side,
@@ -1404,7 +1416,7 @@
 }
 
 .onp-turntable.is-open .onp-lid {
-	transform: translateZ(var(--onp-lid-z)) rotateX(100deg);
+	transform: translateZ(var(--onp-lid-z)) rotateX(78deg);
 }
 
 .onp-lid-scratch,
