@@ -190,13 +190,13 @@
 	background: var(--background-primary);
 }
 
-.onp-track-card--no-thumb {
-	grid-template-columns: minmax(0, 1fr);
-}
-
 .onp-track-card--compact {
 	grid-template-columns: 56px minmax(0, 1fr);
 	padding: 10px;
+}
+
+.onp-track-card--no-thumb {
+	grid-template-columns: minmax(0, 1fr);
 }
 
 .onp-track-thumb {
