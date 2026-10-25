@@ -15,6 +15,11 @@ describe('parseYtdlpError', () => {
   it('maps known failures to friendly messages', () => {
     expect(parseYtdlpError('ERROR: Video unavailable')).toBe('This video is unavailable or has been removed.');
     expect(parseYtdlpError('ERROR: Private video')).toBe('This video is private.');
+    expect(parseYtdlpError('ERROR: Sign in to confirm your age')).toBe('This video requires age verification.');
+  });
+
+  it('does not read "age" inside other words as age verification', () => {
+    expect(parseYtdlpError('[youtube] abc: Downloading webpage')).not.toBe('This video requires age verification.');
   });
 
   it('falls back to the stderr tail', () => {
