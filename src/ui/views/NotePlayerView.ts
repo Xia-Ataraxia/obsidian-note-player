@@ -79,6 +79,7 @@ export class NotePlayerView extends ItemView {
 		root.empty();
 		root.addClass('onp-view-root');
 		root.tabIndex = -1;
+		root.focus({ preventScroll: true });
 		for (const gesture of ['pointerdown', 'keydown'] as const) {
 			this.registerDomEvent(root, gesture, () => this.sound.unlock(root.win));
 		}
@@ -374,6 +375,7 @@ export class NotePlayerView extends ItemView {
 		const nextTime = `${formatTime(currentTime)} / ${formatTime(duration)}`;
 
 		elements.progressFill.setCssProps({ '--onp-progress-width': nextWidth });
+		this.turntable.setProgress(ratio);
 		if (elements.progressTime.textContent !== nextTime) {
 			elements.progressTime.textContent = nextTime;
 		}

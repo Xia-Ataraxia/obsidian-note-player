@@ -1,4 +1,5 @@
 import { setIcon } from 'obsidian';
+import { plural } from '../../utils/plural';
 import type { PlaylistSummary, PlaylistViewHost, PlaylistViewState } from '../../types/view';
 import { openPlaylistMenu } from './view-menus';
 import { createActionButton, createIconButton, renderEmptyState, type RunAction } from './view-parts';
@@ -42,7 +43,7 @@ export function renderHero(
 	copy.createEl('h2', { cls: 'onp-hero-title', text: selectedPlaylist.title });
 	copy.createDiv({
 		cls: 'onp-hero-meta',
-		text: `${selectedPlaylist.trackCount} tracks • ${state.library.length} music notes`,
+		text: `${plural(selectedPlaylist.trackCount, 'track')} • ${plural(state.library.length, 'music note')}`,
 	});
 
 	if (selectedPlaylist.description) {

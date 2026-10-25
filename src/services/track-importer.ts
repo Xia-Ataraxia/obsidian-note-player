@@ -1,4 +1,5 @@
 import { requestUrl, type App, type TFile } from 'obsidian';
+import { plural } from '../utils/plural';
 import {
   buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed, type TrackMeta,
 } from '../domain/track-import';
@@ -106,7 +107,7 @@ export class TrackImporter {
       return;
     }
     await this.deps.addTracks(playlistPath, paths);
-    showNotice('tracks_imported', { count: paths.length, playlist: playlist.title });
+    showNotice('tracks_imported', { tracks: plural(paths.length, 'track'), playlist: playlist.title });
   }
 
   private async fetchMeta(videoId: string): Promise<TrackMeta> {

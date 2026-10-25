@@ -1,4 +1,5 @@
 import { debounce, Plugin, WorkspaceLeaf } from 'obsidian';
+import { plural } from './utils/plural';
 import { MUSIC_BASE_NAME, PLAYLISTS_BASE_NAME } from './domain/base-files';
 import { DEFAULT_SETTINGS, normalizeSettings } from './domain/config';
 import { buildMusicLibrary } from './domain/library-index';
@@ -168,8 +169,8 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
     if (notify) {
       showNotice('library_refreshed', {
-        trackCount: this.library.tracks.length,
-        playlistCount: this.library.playlists.length,
+        tracks: plural(this.library.tracks.length, 'track'),
+        playlists: plural(this.library.playlists.length, 'playlist'),
       });
     }
   }
