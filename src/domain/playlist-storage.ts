@@ -1,5 +1,5 @@
 import type { YoutubePlaylistPropertyMapping } from '../types/settings';
-import { canonicalizeNotePath, toObsidianWikilink } from '../utils/wikilink';
+import { canonicalizeNotePath, parsePlaylistTrackReference, toObsidianWikilink } from '../utils/wikilink';
 import { DEFAULT_PROPERTY_MAPPING } from './config';
 
 const FRONTMATTER_PATTERN = /^---\n[\s\S]*?\n---\n*/;
@@ -42,7 +42,7 @@ export function updatePlaylistNoteContent(
   return trimmedBody ? `${frontmatter}\n${trimmedBody}` : `${frontmatter}\n`;
 }
 
-function dedupeTrackPaths(trackPaths: string[]): string[] {
+export function dedupeTrackPaths(trackPaths: string[]): string[] {
   const seen = new Set<string>();
   const deduped: string[] = [];
 
@@ -57,6 +57,27 @@ function dedupeTrackPaths(trackPaths: string[]): string[] {
   }
 
   return deduped;
+}
+
+/**
+ * Writes `trackPaths` as links while keeping every entry the plugin doesn't own
+ * (unresolved links, plain text, non-strings) verbatim at its original index.
+ */
+export function mergeTrackEntries(
+  existing: readonly unknown[],
+  trackPaths: readonly string[],
+  isOwned: (entry: string) => boolean,
+): unknown[] {
+  const links = dedupeTrackPaths([...trackPaths]);
+  const written = new Set(trackPaths.map((path) => canonicalizeNotePath(path).toLowerCase()));
+  const merged: unknown[] = [...links];
+  existing.forEach((entry, index) => {
+    if (typeof entry === 'string' && isOwned(entry)) return;
+    const target = typeof entry === 'string' ? parsePlaylistTrackReference(entry)?.normalized.toLowerCase() : undefined;
+    if (target && written.has(target)) return;
+    merged.splice(Math.min(index, merged.length), 0, entry);
+  });
+  return merged;
 }
 
 function stripFrontmatter(content: string): string {

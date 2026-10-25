@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, normalizeSettings } from './domain/config';
 import { buildMusicLibrary } from './domain/library-index';
 import { PlaybackStateManager } from './domain/playback-state';
 import { resolveSelectedPlaylistPath, getPlaylistOrThrow, moveItem, moveValue, toPlaylistSummary, toPlaylistTrack } from './domain/playlist-manager';
-import { createPlaylistNoteContent, updatePlaylistNoteContent } from './domain/playlist-storage';
+import { createPlaylistNoteContent, mergeTrackEntries } from './domain/playlist-storage';
 import type { MusicLibrarySnapshot, PlaylistNote } from './types/music';
 import type { NotePlayerSettings } from './types/settings';
 import type { AudioCachePort, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from './types/view';
@@ -14,10 +14,10 @@ import { AudioCacheService } from './services/audio-cache';
 import { PeaksStore } from './services/peaks-store';
 import { openCompanionBase, writeCompanionBaseFiles } from './services/companion-bases';
 import { TrackImporter } from './services/track-importer';
-import { ensureFolder, getAvailablePath, openNoteInTab, collectNoteSnapshots, rewriteNote, waitForMetadata } from './services/vault-io';
+import { ensureFolder, getAvailablePath, openNoteInTab, collectNoteSnapshots, updateFrontmatter, waitForMetadata } from './services/vault-io';
 import { registerCommands } from './ui/commands';
 import { showNotice } from './ui/notices';
-import { canonicalizeNotePath } from './utils/wikilink';
+import { parsePlaylistTrackReference } from './utils/wikilink';
 import type { PlaybackState } from './types/playback';
 import { NotePlayerSettingsTab } from './ui/settings';
 import { VIEW_TYPE_NOTE_PLAYER, VIEW_TYPE_LEGACY, NotePlayerView } from './ui/views/NotePlayerView';
@@ -468,11 +468,16 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     const run = this.playlistEdits.then(async () => {
       const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
       const trackPaths = edit(playlist.trackPaths);
-      await rewriteNote(this.app, playlistPath, (existing) => updatePlaylistNoteContent(existing, {
-        trackPaths: trackPaths.map((trackPath) => canonicalizeNotePath(trackPath)),
-        coverUrl: playlist.coverUrl || undefined,
-        description: playlist.description || undefined,
-      }, this.settings));
+      const missing = new Set(playlist.missingTrackPaths);
+      const isOwned = (entry: string) => {
+        const reference = parsePlaylistTrackReference(entry);
+        return reference !== null && !missing.has(reference.normalized);
+      };
+      await updateFrontmatter(this.app, playlistPath, (frontmatter) => {
+        const property = this.settings.playlistTrackProperty;
+        const existing: unknown = frontmatter[property];
+        frontmatter[property] = mergeTrackEntries(Array.isArray(existing) ? existing : [], trackPaths, isOwned);
+      });
 
       if (opts.refresh) {
         await this.refreshIndex();

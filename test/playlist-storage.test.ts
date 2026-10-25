@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createPlaylistNoteContent, updatePlaylistNoteContent } from '../src/domain/playlist-storage';
+import { createPlaylistNoteContent, mergeTrackEntries, updatePlaylistNoteContent } from '../src/domain/playlist-storage';
 
 describe('playlist note serialization', () => {
   it('creates canonical frontmatter with wikilink-backed tracks', () => {
@@ -60,5 +60,20 @@ tracks:
     expect(content).toContain('summary: "Custom"');
     expect(content).toContain('artwork: "cover.jpg"');
     expect(content).not.toContain('tracks:');
+  });
+});
+
+describe('mergeTrackEntries', () => {
+  const owned = new Set(['[[a]]', '[[b]]', '[[c]]']);
+  const isOwned = (entry: string) => owned.has(entry);
+
+  it('keeps entries the plugin does not own at their original index', () => {
+    const existing = ['[[a]]', '[[missing]]', '[[b]]', 'plain text', 7, '[[c]]'];
+    expect(mergeTrackEntries(existing, ['c.md', 'a.md'], isOwned))
+      .toEqual(['[[c]]', '[[missing]]', '[[a]]', 'plain text', 7]);
+  });
+
+  it('does not duplicate an unresolved link that is being written', () => {
+    expect(mergeTrackEntries(['[[missing]]'], ['missing.md'], isOwned)).toEqual(['[[missing]]']);
   });
 });
