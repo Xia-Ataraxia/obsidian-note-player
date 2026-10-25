@@ -3,7 +3,7 @@ import { rampRate, SPIN_DOWN_MS, SPIN_UP_MS, SWING_MS } from '../../domain/turnt
 import type { PlaylistTrack } from '../../types/view';
 import type { TurntableSound } from './turntable-sound';
 
-const SETTLE_MS = 120;
+const SETTLE_MS = 260;
 const SPIN_MS = 1800;
 const REDUCED_SPIN_FACTOR = 4;
 
