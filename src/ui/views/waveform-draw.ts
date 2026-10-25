@@ -46,7 +46,7 @@ export function drawWave(ctx: CanvasRenderingContext2D, width: number, height: n
 	ctx.globalAlpha = frame.alpha;
 	for (let i = 0; i < count; i++) {
 		const x = offset + i * BAR_STEP;
-		const half = Math.max(1, Math.min(1, frame.heights[i] ?? 0) * (mid - 1));
+		const half = Math.max(1.5, Math.min(1, frame.heights[i] ?? 0) * (mid - 1));
 		const played = (x + BAR_WIDTH / 2) / width <= frame.progress;
 		ctx.globalAlpha = frame.alpha * (played ? 1 : 0.4);
 		ctx.fillStyle = played ? colors.played : colors.rest;
