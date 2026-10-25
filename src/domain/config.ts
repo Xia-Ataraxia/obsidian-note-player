@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS: NotePlayerSettings = {
   playlistFolder: '90. System/Playlists',
   musicFolder: '',
   turntableSounds: true,
+  turntableStyle: 'realistic',
   lastPlaylistPath: null,
   autoplayEnabled: true,
   audioFormat: 'mp3',
@@ -46,6 +47,7 @@ export function normalizeSettings(loaded: NotePlayerSettings): NotePlayerSetting
     ...loaded,
     volume: volume.level,
     volumeMuted: volume.muted,
+    turntableStyle: loaded.turntableStyle === 'minimal' ? 'minimal' : 'realistic',
     musicUrlProperties: normalizePropertyList(
       loaded.musicUrlProperties ?? [],
       DEFAULT_PROPERTY_MAPPING.musicUrlProperties,

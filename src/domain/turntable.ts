@@ -13,8 +13,8 @@ export function leadRemainingMs(sinceLandedMs: number): number {
 export const FADE_OUT_MS = 250;
 export const GROOVE_SECONDS = 2;
 
-export const REDUCED_SWING_MS = 200;
-const REDUCED_AUDIO_START_MS = 250;
+export const REDUCED_SWING_MS = 900;
+const REDUCED_AUDIO_START_MS = 950;
 
 export function swingMs(reduced: boolean): number {
   return reduced ? REDUCED_SWING_MS : SWING_MS;
@@ -87,4 +87,9 @@ export function renderGroove(sampleRate: number, seconds: number, rng: Rng): Flo
     out[i] = hiss + pop;
   }
   return out;
+}
+
+/** Strobe dots blur out as the platter nears speed: 1 crisp when still, 0.2 at full speed. */
+export function strobeSharpness(speed: number): number {
+  return Math.max(0.2, 1 - Math.min(Math.abs(speed), 1) * 0.8);
 }

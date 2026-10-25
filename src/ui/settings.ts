@@ -9,7 +9,7 @@ import {
 import { DEFAULT_PROPERTY_MAPPING } from '../domain/config';
 import { parsePropertyList } from '../utils/property-list';
 import type { AudioFormat } from '../types/audio';
-import type { NotePlayerSettings } from '../types/settings';
+import type { NotePlayerSettings, TurntableStyle } from '../types/settings';
 
 interface SettingsHost extends Plugin {
 	settings: NotePlayerSettings;
@@ -29,6 +29,7 @@ type TextKey =
 
 const LIST_KEYS: readonly string[] = ['musicUrlProperties', 'musicThumbnailProperties', 'musicArtistProperties'];
 const NO_REFRESH_KEYS: readonly string[] = ['audioFormat', 'autoOpenOnStartup', 'musicFolder', 'turntableSounds'];
+const TURNTABLE_STYLE_OPTIONS: Record<TurntableStyle, string> = { realistic: 'Realistic', minimal: 'Minimal' };
 const AUDIO_FORMAT_OPTIONS: Record<AudioFormat, string> = { mp3: 'MP3', wav: 'WAV', opus: 'OPUS', aac: 'AAC' };
 
 function collectVaultProperties(app: App): string[] {
@@ -162,6 +163,11 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 						name: 'Autoplay next track',
 						desc: 'Advance to the next queued track when the player reports the current track ended.',
 						control: { type: 'toggle', key: 'autoplayEnabled' },
+					},
+					{
+						name: 'Turntable style',
+						desc: 'Realistic is a 3D deck with a lid and a volume knob. Minimal is a flat record and arm.',
+						control: { type: 'dropdown', key: 'turntableStyle', options: TURNTABLE_STYLE_OPTIONS },
 					},
 					{
 						name: 'Turntable sounds',

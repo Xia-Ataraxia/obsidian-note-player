@@ -55,7 +55,15 @@ export class NotePlayerView extends ItemView {
 		() => this.playerSurface.getVolume(),
 		() => this.contentEl.win.matchMedia('(prefers-reduced-motion: reduce)').matches,
 	);
-	private readonly turntable = new Turntable(this.sound);
+	private readonly turntable = new Turntable(this.sound, {
+		position: () => {
+			const duration = this.playerSurface.getDuration();
+			return duration > 0 ? { time: this.playerSurface.getCurrentTime(), duration } : null;
+		},
+		seekTo: (ratio) => this.playerSurface.seekTo(ratio),
+		dropNeedle: () => this.setNeedle(true),
+		liftNeedle: () => this.setNeedle(false),
+	});
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -98,6 +106,7 @@ export class NotePlayerView extends ItemView {
 		this.playerSurface.onCached = (videoId) => void this.loadPeaks(videoId);
 		this.registerEvent(this.app.workspace.on('css-change', () => this.wave?.ui.refreshColors()));
 		this.turntable.onLanded = () => this.playerSurface.needleLanded();
+		this.turntable.attachVolume(this.volume);
 		this.playerSurface.onNeedleWait = (waiting) => (waiting ? this.sound.startGroove() : this.sound.stopGroove());
 		this.playerSurface.onPhaseView = (phase) => this.showPhase(phase);
 		this.unsubscribeSound = this.volume.subscribe(() => this.sound.applyVolume());
@@ -258,11 +267,20 @@ export class NotePlayerView extends ItemView {
 
 		const current = state.currentTrack;
 		if (!current) {
-			elements.playerPanel.addClass('onp-hidden');
+			// Keep the slot (and its height) so the track list never jumps when playback starts.
+			elements.playerPanel.removeClass('onp-hidden');
+			const idleRail = elements.playerPanel.createDiv({ cls: 'onp-now-playing-shell' });
+			idleRail.prepend(this.turntable.el);
+			const idleMeta = idleRail.createDiv({ cls: 'onp-now-playing-summary' })
+				.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb' })
+				.createDiv({ cls: 'onp-track-meta' });
+			idleMeta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
+			idleMeta.createDiv({ cls: 'onp-track-title', text: 'Nothing playing' });
+			idleMeta.createDiv({ cls: 'onp-track-subtitle', text: 'Pick a track to drop the needle' });
 			this.lastRenderedTrackPath = null;
 			this.disposeWave();
 			this.stopProgressInterval();
-			this.turntable.update(null, state.playbackState, state.turntableSounds);
+			this.turntable.update(null, state.playbackState, state.turntableSounds, state.turntableStyle);
 			// Only clear the surface when it actually has a track loaded.
 			// Calling clear() unconditionally triggers onPlaybackChange('idle') -> notifyChange -> render -> infinite loop.
 			if (state.playbackState !== 'idle') {
@@ -276,7 +294,7 @@ export class NotePlayerView extends ItemView {
 		elements.playerPanel.removeClass('onp-hidden');
 		const playerRail = elements.playerPanel.createDiv({ cls: 'onp-now-playing-shell' });
 		playerRail.prepend(this.turntable.el);
-		this.turntable.update(current, playbackState, state.turntableSounds);
+		this.turntable.update(current, playbackState, state.turntableSounds, state.turntableStyle);
 		const summary = playerRail.createDiv({ cls: 'onp-now-playing-summary' });
 		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb onp-player-track-card' });
 		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });
@@ -407,6 +425,12 @@ export class NotePlayerView extends ItemView {
 	private disposeWave(): void {
 		this.wave?.ui.destroy();
 		this.wave = null;
+	}
+
+	private setNeedle(down: boolean): void {
+		const current = this.host.getState().currentTrack;
+		if (!current || (this.host.getState().playbackState === 'playing') === down) return;
+		void this.toggleCurrentPlayback(current);
 	}
 
 	private async toggleCurrentPlayback(current: PlaylistTrack): Promise<void> {

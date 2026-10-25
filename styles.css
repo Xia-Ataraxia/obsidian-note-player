@@ -159,6 +159,7 @@
 }
 
 .onp-hero-actions {
+	min-height: 30px;
 	margin-top: 4px;
 	gap: 6px;
 }
@@ -173,10 +174,17 @@
 
 .onp-now-playing-shell {
 	display: grid;
-	grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+	grid-template-columns: minmax(180px, 340px) minmax(0, 1fr);
 	gap: 16px;
 	align-items: center;
 	padding: 14px;
+}
+
+.onp-now-playing-summary {
+	min-height: 150px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
 }
 
 .onp-track-card {
@@ -648,7 +656,7 @@
 }
 
 .onp-view-root.is-narrow .onp-turntable {
-	max-width: 200px;
+	max-width: 300px;
 	justify-self: center;
 }
 
@@ -668,7 +676,7 @@
 }
 
 .onp-view-root.is-compact .onp-turntable {
-	max-width: 140px;
+	max-width: 240px;
 }
 
 .onp-view-root.is-compact .onp-toolbar-description,
@@ -715,204 +723,874 @@
 	width: 100%;
 }
 
-/* Turntable */
+/* Turntable: a walnut deck lit by one warm key light from the upper left. */
 .onp-turntable {
+	--np-ink: var(--color-base-100);
+	--np-paper: var(--color-base-00);
+	--np-wood-base: color-mix(in oklab, var(--color-orange) 30%, color-mix(in oklab, var(--color-yellow) 8%, var(--np-ink)));
+	--np-wood-dark: color-mix(in oklab, var(--color-red) 20%, color-mix(in oklab, var(--color-orange) 8%, var(--np-ink)));
+	--np-wood-light: color-mix(in oklab, var(--color-orange) 54%, color-mix(in oklab, var(--color-yellow) 12%, var(--np-ink)));
+	--np-wood-edge: color-mix(in oklab, var(--np-wood-dark) 62%, var(--np-ink));
+	--np-key: color-mix(in oklab, var(--color-yellow) 30%, var(--np-paper));
+	--np-chrome: color-mix(in oklab, var(--np-paper) 20%, color-mix(in oklab, var(--color-yellow) 18%, var(--color-base-50)));
+	--np-chrome-lo: color-mix(in oklab, var(--color-base-50) 70%, var(--np-ink));
+	--np-alu: color-mix(in oklab, var(--np-paper) 38%, var(--color-base-50));
+	--np-bakelite: color-mix(in oklab, var(--color-orange) 9%, var(--np-ink));
+	--np-vinyl: var(--np-ink);
+	--np-lamp: var(--color-orange);
+	--np-glass-edge: color-mix(in oklab, var(--np-ink) 38%, transparent);
+	--np-smoke: color-mix(in oklab, var(--color-blue) 6%, color-mix(in oklab, var(--np-ink) 5%, transparent));
+	--onp-thick: 21cqw;
+	--onp-tilt: 52deg;
+	--onp-yaw: -22deg;
+	--onp-arm-swing: 600ms;
+	--onp-bounce: 0.9;
+	--onp-spring-lid: linear(0, 0.045, 0.152, 0.29, 0.435, 0.573, 0.695, 0.797, 0.878, 0.939, 0.982, 1.011, 1.028, 1.036, 1.038, 1.037, 1.033, 1.027, 1.022, 1.016, 1.012, 1.008, 1.005, 1.002, 1.001, 1, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 1);
+	--onp-spring-knob: linear(0, 0.092, 0.301, 0.544, 0.767, 0.939, 1.052, 1.11, 1.126, 1.115, 1.088, 1.057, 1.029, 1.008, 0.993, 0.986, 0.984, 0.986, 0.989, 0.993, 0.996, 0.999, 1.001, 1.002, 1.002, 1.002, 1.001, 1.001, 1, 1, 1, 1, 1, 1, 1);
+	--onp-paper: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.38'/></filter><rect width='96' height='96' filter='url(%23n)'/></svg>");
 	position: relative;
 	width: 100%;
-	aspect-ratio: 1;
 }
 
-.onp-turntable-platter {
-	position: absolute;
-	inset: 6% 6% 6% 6%;
-}
-
-.onp-turntable {
-	--onp-vinyl-color: var(--color-base-100);
-	--onp-vinyl-light: var(--color-base-00);
+.onp-turntable.is-realistic {
+	aspect-ratio: 1 / 1.3;
+	container-type: inline-size;
+	perspective: 190cqw;
 }
 
 .theme-dark .onp-turntable {
-	--onp-vinyl-color: var(--color-base-00);
-	--onp-vinyl-light: var(--color-base-100);
+	--np-ink: var(--color-base-00);
+	--np-paper: var(--color-base-100);
+	--np-alu: color-mix(in oklab, var(--np-paper) 30%, var(--color-base-50));
+	--np-smoke: color-mix(in oklab, var(--np-paper) 7%, transparent);
+	--np-wood-base: color-mix(in oklab, var(--np-paper) 5%, var(--np-ink));
+	--np-wood-dark: color-mix(in oklab, var(--np-paper) 2%, var(--np-ink));
+	--np-wood-light: color-mix(in oklab, var(--np-paper) 13%, var(--np-ink));
+	--np-wood-edge: var(--np-ink);
+	--np-glass-edge: color-mix(in oklab, var(--np-paper) 34%, transparent);
+}
+
+.onp-scene {
+	position: absolute;
+	left: 15%;
+	top: calc(-43.7cqw * cos(calc(var(--onp-tilt) + 102deg)) + 28.8cqw * cos(var(--onp-tilt)) - 28.8cqw + 15cqw);
+	width: 70%;
+	aspect-ratio: 100 / 80;
+	transform-style: preserve-3d;
+	transform: rotateX(calc(var(--onp-tilt) - var(--onp-py, 0) * 1deg)) rotateZ(calc(var(--onp-yaw) + var(--onp-px, 0) * 1deg));
+	transition: transform 520ms cubic-bezier(0.3, 1.35, 0.4, 1);
+}
+
+/* Black finish: a crisp 1px catch-light on the top and front edges so the plinth separates from the panel. */
+.theme-dark .onp-deck {
+	outline: 1px solid color-mix(in oklab, var(--np-paper) 22%, transparent);
+	outline-offset: -1px;
+}
+
+.theme-dark .onp-front {
+	border-top: 1px solid color-mix(in oklab, var(--np-paper) 30%, transparent);
+	outline: 1px solid color-mix(in oklab, var(--np-paper) 12%, transparent);
+}
+
+/* Plinth */
+.onp-deck,
+.onp-contact {
+	position: absolute;
+	inset: 0;
+	border-radius: 1.8cqw;
+}
+
+.onp-contact {
+	transform: translateZ(calc(var(--onp-thick) * -1 - 1.6cqw));
+	background: color-mix(in oklab, var(--np-ink) 55%, transparent);
+	box-shadow:
+		0 0.8cqw 0.9cqw -0.3cqw color-mix(in oklab, var(--np-ink) 70%, transparent);
+}
+
+.onp-deck {
+	overflow: hidden;
+	box-shadow:
+		inset 0 0.25cqw 0.2cqw -0.05cqw color-mix(in oklab, var(--np-key) 70%, transparent),
+		inset 0.2cqw 0 0.2cqw -0.05cqw color-mix(in oklab, var(--np-key) 38%, transparent),
+		inset 0 -0.4cqw 0.5cqw -0.1cqw color-mix(in oklab, var(--np-ink) 55%, transparent);
+}
+
+.onp-wood,
+.onp-deck-gloss,
+.onp-deck-top {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.onp-wood-base {
+	fill: var(--np-wood-base);
+}
+
+.onp-wood-flood-dark {
+	flood-color: var(--np-wood-dark);
+	flood-opacity: 0.8;
+}
+
+.onp-wood-flood-light {
+	flood-color: var(--np-wood-light);
+	flood-opacity: 0.55;
+}
+
+/* Clear coat: key-light bloom, Fresnel brightening toward the far edge, falloff to the front, slim inset seam. */
+.onp-deck-gloss {
+	pointer-events: none;
+	background:
+		linear-gradient(118deg, transparent 22%, color-mix(in oklab, var(--np-key) 26%, transparent) 30%, transparent 40%),
+		linear-gradient(160deg, transparent 52%, color-mix(in oklab, var(--np-key) 16%, transparent) 60%, transparent 70%),
+		linear-gradient(112deg, color-mix(in oklab, var(--np-key) 20%, transparent), transparent 40%),
+		linear-gradient(180deg, color-mix(in oklab, var(--np-key) 14%, transparent), transparent 18% 72%, color-mix(in oklab, var(--np-ink) 32%, transparent));
+}
+
+.theme-dark .onp-deck-gloss {
+	opacity: 0.45;
+}
+
+.onp-deck-gloss::after {
+	content: '';
+	position: absolute;
+	inset: 2.4%;
+	border-radius: 1.2cqw;
+	border: 1px solid color-mix(in oklab, var(--np-ink) 45%, transparent);
+	box-shadow:
+		0 1px 0 color-mix(in oklab, var(--np-key) 35%, transparent),
+		inset 0 1px 0 color-mix(in oklab, var(--np-key) 18%, transparent);
+}
+
+.onp-front {
+	position: absolute;
+	left: 0;
+	top: 100%;
+	width: 100%;
+	height: var(--onp-thick);
+	transform-origin: top;
+	transform: rotateX(-90deg);
+	border-radius: 0 0 1.8cqw 1.8cqw;
+	background:
+		linear-gradient(180deg, transparent 80%, color-mix(in oklab, var(--np-key) 42%, transparent) 80% 82%, color-mix(in oklab, var(--np-ink) 38%, transparent) 82%),
+		repeating-linear-gradient(90deg, color-mix(in oklab, var(--np-wood-light) 20%, transparent) 0 1px, transparent 1px 3.3px),
+		linear-gradient(180deg, color-mix(in oklab, var(--np-wood-light) 34%, var(--np-wood-base)), color-mix(in oklab, var(--np-wood-dark) 80%, var(--np-ink)));
+	box-shadow: inset 0 0.22cqw 0 color-mix(in oklab, var(--np-key) 60%, transparent), inset 0 -0.3cqw 0.4cqw color-mix(in oklab, var(--np-ink) 50%, transparent);
+}
+
+/* Recessed speaker cloth in a thin bronze trim. */
+.onp-grille {
+	position: absolute;
+	inset: 12% 3.5% 26%;
+	border-radius: 0.8cqw;
+	border: 0.35cqw solid color-mix(in oklab, var(--color-orange) 38%, color-mix(in oklab, var(--np-key) 22%, var(--np-wood-dark)));
+	background:
+		repeating-linear-gradient(45deg, color-mix(in oklab, var(--np-paper) 7%, transparent) 0 0.5px, transparent 0.5px 2px),
+		repeating-linear-gradient(-45deg, color-mix(in oklab, var(--np-paper) 5%, transparent) 0 0.5px, transparent 0.5px 2px),
+		linear-gradient(180deg, color-mix(in oklab, var(--np-ink) 82%, transparent), var(--np-ink));
+	box-shadow:
+		inset 0 0.5cqw 0.8cqw color-mix(in oklab, var(--np-ink) 90%, transparent),
+		0 0.15cqw 0 color-mix(in oklab, var(--np-key) 35%, transparent);
+}
+
+.onp-grille-mark {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	display: flex;
+	align-items: center;
+	gap: 1.6cqw;
+	transform: translate(-50%, -50%);
+	white-space: nowrap;
+	font-family: var(--font-interface);
+	font-size: 2.1cqw;
+	font-style: italic;
+	letter-spacing: 0.08em;
+	color: color-mix(in oklab, var(--np-paper) 55%, var(--np-ink));
+}
+
+.onp-grille-mark::before,
+.onp-grille-mark::after {
+	content: '';
+	width: 9cqw;
+	height: 1px;
+	background: color-mix(in oklab, var(--np-paper) 38%, transparent);
+}
+
+.onp-foot {
+	position: absolute;
+	top: 100%;
+	width: 4cqw;
+	height: 1.6cqw;
+	border-radius: 0 0 0.9cqw 0.9cqw;
+	background: linear-gradient(90deg, var(--np-chrome-lo), var(--np-chrome) 40%, var(--np-chrome-lo));
+}
+
+.onp-foot.is-left {
+	left: 5%;
+}
+
+.onp-foot.is-right {
+	right: 5%;
+}
+
+.onp-side {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: var(--onp-thick);
+	height: 100%;
+	transform-origin: left;
+	transform: rotateY(90deg);
+	border-radius: 1.8cqw 0 0 1.8cqw;
+	background:
+		repeating-linear-gradient(0deg, color-mix(in oklab, var(--np-wood-light) 22%, transparent) 0 1px, transparent 1px 3.6px),
+		linear-gradient(90deg, color-mix(in oklab, var(--np-wood-dark) 90%, var(--np-ink)), color-mix(in oklab, var(--np-wood-base) 60%, var(--np-ink)));
+	box-shadow: inset 0.22cqw 0 0 color-mix(in oklab, var(--np-key) 40%, transparent);
+}
+
+/* Static deck hardware */
+.onp-deck-top,
+.onp-spindle-layer,
+.onp-arm-cast-layer,
+.onp-tonearm {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	pointer-events: none;
+}
+
+.onp-deck-well {
+	fill: color-mix(in oklab, var(--np-ink) 55%, transparent);
+	stroke: color-mix(in oklab, var(--np-ink) 40%, transparent);
+	stroke-width: 0.6;
+}
+
+.onp-base {
+	fill: var(--np-bakelite);
+	stroke: color-mix(in oklab, var(--np-key) 20%, transparent);
+	stroke-width: 0.25;
+}
+
+.onp-base-ring,
+.onp-rest-ring {
+	fill: none;
+	stroke: var(--np-chrome);
+	stroke-width: 0.7;
+}
+
+.onp-rest-pin {
+	fill: var(--np-bakelite);
+}
+
+.onp-hinge {
+	fill: var(--np-chrome);
+	stroke: var(--np-chrome-lo);
+	stroke-width: 0.2;
+}
+
+.onp-screw {
+	fill: var(--np-chrome-lo);
+}
+
+.onp-plate {
+	fill: var(--np-bakelite);
+	stroke: color-mix(in oklab, var(--np-paper) 22%, transparent);
+	stroke-width: 0.25;
+}
+
+.onp-speed {
+	fill: var(--np-bakelite);
+	stroke: var(--np-chrome-lo);
+	stroke-width: 0.35;
+}
+
+.onp-speed.is-on {
+	stroke: var(--np-chrome);
+}
+
+.onp-speed-label {
+	fill: color-mix(in oklab, var(--np-key) 72%, var(--np-wood-base));
+	font-family: var(--font-interface);
+	font-size: 2.1px;
+	font-weight: 600;
+	opacity: 0.8;
+}
+
+.onp-lamp {
+	fill: color-mix(in oklab, var(--np-lamp) 26%, var(--np-ink));
+	stroke: var(--np-chrome-lo);
+	stroke-width: 0.3;
+	transition: fill 400ms ease, filter 400ms ease, opacity 400ms ease;
+}
+
+.onp-turntable.is-armed .onp-lamp {
+	fill: var(--np-lamp);
+	filter: drop-shadow(0 0 1.1px var(--np-lamp));
+}
+
+.onp-turntable.is-armed.is-quiet .onp-lamp {
+	opacity: 0.55;
+	filter: none;
+}
+
+/* Platter: brushed aluminium rim with strobe dots, then the record */
+.onp-platter-slice {
+	transform: translateZ(calc(var(--s) * 0.5cqw));
+	background: linear-gradient(color-mix(in oklab, var(--np-ink) calc((5 - var(--s)) * 9%), transparent) 0 0), conic-gradient(from 0deg, var(--np-chrome-lo), var(--np-alu) 60deg, var(--np-chrome) 100deg, var(--np-chrome-lo) 170deg, var(--np-alu) 250deg, var(--np-chrome) 300deg, var(--np-chrome-lo));
+}
+
+.onp-platter-slice.is-base {
+	box-shadow: 0 0.8cqw 0.8cqw -0.3cqw color-mix(in oklab, var(--np-ink) 70%, transparent);
+}
+
+.onp-warp,
+.onp-sheen,
+.onp-platter-slice {
+	position: absolute;
+	left: 8%;
+	top: 12.5%;
+	width: 64%;
+	aspect-ratio: 1;
+	border-radius: 50%;
+}
+
+.onp-warp {
+	transform: translateZ(3cqw) rotateX(var(--onp-tilt-x, 0deg)) rotateY(var(--onp-tilt-y, 0deg));
+	will-change: transform;
+}
+
+.onp-platter-ring,
+.onp-platter,
+.onp-strobe {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+}
+
+.onp-platter-ring {
+		background:
+		repeating-conic-gradient(from 0deg, transparent 0 0.5deg, color-mix(in oklab, var(--np-paper) 8%, transparent) 0.5deg 1deg),
+		conic-gradient(
+			from 0deg,
+			var(--np-alu) 0deg,
+			var(--np-chrome) 28deg,
+			var(--np-alu) 60deg,
+			var(--np-chrome-lo) 110deg,
+			var(--np-chrome) 135deg,
+			var(--np-chrome-lo) 170deg,
+			var(--np-alu) 250deg,
+			var(--np-chrome) 315deg,
+			var(--np-alu) 360deg
+		);
+	box-shadow:
+		inset 0 0 0 0.25cqw color-mix(in oklab, var(--np-paper) 38%, transparent),
+		0 0 0 0.3cqw color-mix(in oklab, var(--np-ink) 55%, transparent),
+		0 0.5cqw 0.9cqw color-mix(in oklab, var(--np-ink) 50%, transparent);
+}
+
+.onp-platter {
+	transform: rotate(var(--onp-angle, 0deg));
+	will-change: transform;
+}
+
+.onp-strobe {
+	opacity: var(--onp-strobe, 1);
+	background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--np-ink) 70%, transparent) 0 1deg, transparent 1deg 3.6deg);
+	mask-image: radial-gradient(circle closest-side, transparent 0 92.2%, var(--np-ink) 93.5% 97.5%, transparent 98.5%);
 }
 
 .onp-vinyl {
-	position: relative;
-	width: 100%;
-	aspect-ratio: 1;
-	border-radius: 50%;
-	background: radial-gradient(
-		circle at 36% 34%,
-		color-mix(in srgb, var(--onp-vinyl-light) 18%, var(--onp-vinyl-color)),
-		var(--onp-vinyl-color) 64%
-	);
-	border: 1px solid var(--background-modifier-border);
-	box-shadow: var(--shadow-l);
-	transition: box-shadow 400ms ease;
-}
-
-.onp-turntable.is-playing .onp-vinyl {
-	box-shadow:
-		var(--shadow-l),
-		0 0 0 1px color-mix(in srgb, var(--interactive-accent) 40%, transparent);
-}
-
-.onp-turntable-platter {
-	transition: transform 160ms ease;
-}
-
-.onp-turntable:hover .onp-turntable-platter {
-	transform: translateY(-1px);
-}
-
-.onp-turntable:active .onp-turntable-platter {
-	transform: scale(0.98);
-}
-
-.onp-turntable-platter::before {
-	content: "";
 	position: absolute;
-	inset: -4%;
+	inset: 3.9%;
 	border-radius: 50%;
-	pointer-events: none;
-	background: radial-gradient(
-		circle,
-		transparent 90%,
-		color-mix(in srgb, var(--text-normal) 8%, transparent) 91% 96%,
-		transparent 97%
-	);
+	background: var(--np-vinyl);
+	box-shadow:
+		inset 0 0 0 1px color-mix(in oklab, var(--np-paper) 14%, transparent),
+		inset 0 0 0.9cqw color-mix(in oklab, var(--np-paper) 9%, transparent),
+		0 0 0.3cqw 0.1cqw color-mix(in oklab, var(--np-ink) 60%, transparent);
 }
 
-.onp-turntable-platter::after {
-	content: "";
+.onp-vinyl-grooves,
+.onp-vinyl-bands,
+.onp-vinyl-wear {
 	position: absolute;
 	inset: 0;
 	border-radius: 50%;
-	pointer-events: none;
-	background: conic-gradient(
-		from 210deg,
-		transparent 0 18%,
-		color-mix(in srgb, var(--onp-vinyl-light) 10%, transparent) 29%,
-		transparent 40% 58%,
-		color-mix(in srgb, var(--onp-vinyl-light) 6%, transparent) 70%,
-		transparent 82%
-	);
 }
 
 .onp-vinyl-grooves {
-	position: absolute;
-	inset: 0;
-	border-radius: 50%;
-	background: repeating-radial-gradient(
-		circle,
-		transparent 0 2.4px,
-		color-mix(in srgb, var(--onp-vinyl-light) 5%, transparent) 2.4px 3px
+	background: repeating-radial-gradient(circle closest-side, transparent 0 0.3cqw, color-mix(in oklab, var(--np-paper) 6%, transparent) 0.3cqw 0.42cqw);
+}
+
+/* Smooth run-out, wide gaps between tracks and the lead-in rim: stretches of record with no groove. */
+.onp-vinyl-bands {
+	background: radial-gradient(
+		circle closest-side,
+		transparent 0 33%,
+		color-mix(in oklab, var(--np-vinyl) 94%, transparent) 33% 40%,
+		color-mix(in oklab, var(--np-paper) 11%, transparent) 40% 40.6%,
+		transparent 40.6% 54%,
+		color-mix(in oklab, var(--np-vinyl) 86%, transparent) 54% 56%,
+		color-mix(in oklab, var(--np-paper) 8%, transparent) 56% 56.4%,
+		transparent 56.4% 69%,
+		color-mix(in oklab, var(--np-vinyl) 86%, transparent) 69% 71%,
+		color-mix(in oklab, var(--np-paper) 8%, transparent) 71% 71.4%,
+		transparent 71.4% 84%,
+		color-mix(in oklab, var(--np-vinyl) 86%, transparent) 84% 85.8%,
+		transparent 85.8% 96.4%,
+		color-mix(in oklab, var(--np-vinyl) 94%, transparent) 96.4% 100%
 	);
+}
+
+/* Hairline scuffs that turn with the record: the cue that sells the spin. */
+.onp-vinyl-wear {
+	background:
+		repeating-conic-gradient(from 11deg, transparent 0 7.3deg, color-mix(in oklab, var(--np-paper) 7%, transparent) 7.3deg 7.45deg),
+		repeating-conic-gradient(from 40deg, transparent 0 11.9deg, color-mix(in oklab, var(--np-paper) 5%, transparent) 11.9deg 12.02deg);
+	mask-image: radial-gradient(circle closest-side, transparent 0 36%, var(--np-ink) 40% 96%, transparent 100%);
 }
 
 .onp-vinyl-label {
 	position: absolute;
-	inset: 32%;
+	inset: 33%;
 	border-radius: 50%;
-	border: 1px solid var(--background-modifier-border);
-	background-color: color-mix(in srgb, var(--interactive-accent) 70%, var(--onp-vinyl-color));
-	background-image: var(--onp-label-image);
-	background-size: cover;
-	background-position: center;
+	overflow: hidden;
+	background-color: color-mix(in oklab, var(--interactive-accent) 70%, var(--np-ink));
+	box-shadow: 0 0 0 1px color-mix(in oklab, var(--np-ink) 70%, transparent);
 }
 
-.onp-vinyl-spindle {
+.onp-vinyl-label-art,
+.onp-vinyl-label-paper {
 	position: absolute;
-	inset: 48%;
+	inset: 0;
+}
+
+.onp-vinyl-label-art {
+	background-image: var(--onp-label-image, none);
+	background-size: cover;
+	background-position: center;
+	transition: opacity 400ms ease;
+}
+
+/* Matte, softly aged paper: warm cast, grain, printed ring and edge darkening. */
+.onp-vinyl-label-paper {
+	background:
+		radial-gradient(circle closest-side, transparent 0 80%, color-mix(in oklab, var(--np-paper) 22%, transparent) 81% 82%, transparent 83%),
+		radial-gradient(circle closest-side, transparent 55%, color-mix(in oklab, var(--np-ink) 38%, transparent) 100%),
+		linear-gradient(135deg, color-mix(in oklab, var(--color-yellow) 14%, transparent), color-mix(in oklab, var(--color-orange) 10%, transparent)),
+		var(--onp-paper);
+	opacity: 0.92;
+}
+
+.onp-vinyl-hole {
+	position: absolute;
+	inset: 45.6%;
 	border-radius: 50%;
-	background: var(--background-primary);
+	background: var(--np-ink);
+	box-shadow: 0 0 0 1px color-mix(in oklab, var(--np-ink) 60%, transparent);
+}
+
+/* Light that does not rotate with the record: a pair of soft lobes from the key light. */
+.onp-sheen {
+	transform: translateZ(3.7cqw);
+	pointer-events: none;
+	background: conic-gradient(
+		from 0deg,
+		transparent 0deg 100deg,
+		color-mix(in oklab, var(--np-key) 30%, transparent) 135deg,
+		transparent 168deg 282deg,
+		color-mix(in oklab, var(--np-key) 52%, transparent) 315deg,
+		transparent 346deg 360deg
+	);
+	mask-image: radial-gradient(circle closest-side, transparent 0 33%, var(--np-ink) 38% 90%, transparent 92%);
+}
+
+.onp-turntable.is-live .onp-platter {
+	cursor: grab;
+	touch-action: none;
+}
+
+.onp-turntable.is-scrubbing .onp-platter {
+	cursor: grabbing;
+}
+
+.onp-spindle-layer {
+	transform: translateZ(4.1cqw);
+}
+
+.onp-spindle {
+	fill: var(--np-chrome);
+	stroke: var(--np-chrome-lo);
+	stroke-width: 0.25;
+}
+
+.onp-spindle-glint {
+	fill: var(--np-paper);
+	opacity: 0.85;
+}
+
+/* Tonearm: the rig swings in the deck plane; the metal body floats above it, the cast shadow stays on it. */
+.onp-arm-rig {
+	--onp-arm-hi: 6.5cqw;
+	--onp-arm-lo: 4.4cqw;
+	position: absolute;
+	inset: 0;
+	transform-style: preserve-3d;
+	transform-origin: 88% 20%;
+	transform: rotate(var(--onp-arm-rest, 10deg));
+	transition: transform var(--onp-arm-swing) cubic-bezier(0.3, 0.7, 0.2, 1);
+	will-change: transform;
+}
+
+.onp-arm-cast-layer {
+	transform: translateZ(3.8cqw);
 }
 
 .onp-tonearm {
-	position: absolute;
-	top: 2%;
-	right: 2%;
-	width: 8%;
-	height: 62%;
-	transform-origin: 50% 8%;
-	transform: rotate(-12deg);
+	translate: 0 0 var(--onp-arm-hi);
+	transition: translate 260ms ease;
+}
+
+.onp-turntable:not(.is-armed).is-live:hover .onp-arm-rig {
+	transform: rotate(calc(var(--onp-arm-rest, 10deg) + 3deg));
+}
+
+.onp-turntable.is-armed .onp-arm-rig {
+	transition-timing-function: cubic-bezier(0.3, 0.9, 0.35, 1.18);
+	transform: rotate(calc(var(--onp-arm-start, 33deg) + var(--onp-arm-creep, 0) * var(--onp-arm-span, 14deg)));
+}
+
+.onp-turntable.is-grabbing-arm .onp-arm-rig {
+	transition: none;
+	transform: rotate(var(--onp-arm-drag, 10deg));
+}
+
+.onp-arm-shadow {
 	transition:
-		transform 600ms cubic-bezier(0.3, 0.7, 0.2, 1),
+		translate 260ms ease,
+		opacity 260ms ease,
 		filter 260ms ease;
-	filter: drop-shadow(0 1px 1px var(--background-modifier-border-hover));
+	translate: -2.6px 3.4px;
+	opacity: 0.16;
+	filter: blur(1px);
 }
 
-.onp-turntable.is-playing .onp-tonearm {
-	transition-timing-function: cubic-bezier(0.3, 0.9, 0.35, 1.2), ease;
-	transform: rotate(calc(8deg + var(--onp-arm-creep, 0) * 7deg));
-	filter: drop-shadow(0 3px 2px var(--background-modifier-border-hover));
+.onp-turntable.is-armed .onp-tonearm {
+	translate: 0 0 var(--onp-arm-lo);
+	transition-delay: calc(var(--onp-arm-swing) * 0.75);
 }
 
-.onp-turntable:not(.is-playing):hover .onp-tonearm {
-	transform: rotate(-7deg);
-	filter: drop-shadow(0 3px 2px var(--background-modifier-border-hover));
+.onp-turntable.is-armed .onp-arm-shadow {
+	translate: -0.7px 0.9px;
+	opacity: 0.38;
+	filter: blur(0.45px);
+	transition-delay: calc(var(--onp-arm-swing) * 0.75);
 }
 
-.onp-tonearm-pivot {
+.onp-turntable.is-grabbing-arm .onp-tonearm {
+	translate: 0 0 var(--onp-arm-hi);
+	transition-delay: 0s;
+}
+
+.onp-turntable.is-grabbing-arm .onp-arm-shadow {
+	translate: -2.6px 3.4px;
+	opacity: 0.16;
+	filter: blur(1px);
+	transition-delay: 0s;
+}
+
+.onp-arm-cast {
+	fill: var(--np-ink);
+}
+
+.onp-arm-cast.onp-arm-tube {
+	fill: none;
+	stroke: var(--np-ink);
+}
+
+.onp-arm-cast.onp-arm-glint {
+	display: none;
+}
+
+.onp-arm-tube,
+.onp-arm-glint {
+	fill: none;
+	stroke-linecap: round;
+}
+
+.onp-arm-part.onp-arm-tube {
+	stroke: var(--np-bakelite);
+	stroke-width: 1.5;
+}
+
+.onp-arm-part.onp-arm-glint {
+	stroke: var(--np-paper);
+	stroke-width: 0.3;
+	opacity: 0.35;
+	transform: translate(-0.4px, 0);
+}
+
+.onp-arm-part.onp-arm-rod {
+	fill: var(--np-chrome-lo);
+}
+
+.onp-arm-part.onp-arm-ring {
+	fill: color-mix(in oklab, var(--np-paper) 22%, var(--np-bakelite));
+}
+
+.onp-arm-part.onp-arm-weight {
+	fill: var(--np-bakelite);
+	stroke: color-mix(in oklab, var(--np-paper) 18%, transparent);
+	stroke-width: 0.3;
+}
+
+.onp-arm-part.onp-arm-shell {
+	fill: var(--np-bakelite);
+	stroke: color-mix(in oklab, var(--np-key) 28%, transparent);
+	stroke-width: 0.2;
+}
+
+.onp-arm-part.onp-arm-lift {
+	fill: var(--np-bakelite);
+}
+
+.onp-arm-part.onp-arm-cartridge {
+	fill: color-mix(in oklab, var(--np-paper) 82%, var(--color-base-50));
+}
+
+.onp-arm-part.onp-arm-stylus {
+	fill: var(--np-paper);
+}
+
+.onp-arm-hub-side {
+	fill: color-mix(in oklab, var(--np-ink) 70%, var(--np-bakelite));
+}
+
+.onp-arm-part.onp-arm-lever {
+	fill: none;
+	stroke: var(--np-bakelite);
+	stroke-width: 0.9;
+	stroke-linecap: round;
+}
+
+.onp-arm-part.onp-arm-lever-tip {
+	fill: var(--np-bakelite);
+	stroke: color-mix(in oklab, var(--np-paper) 30%, transparent);
+	stroke-width: 0.25;
+}
+
+.onp-arm-hub {
+	fill: var(--np-bakelite);
+	stroke: var(--np-chrome);
+	stroke-width: 0.3;
+}
+
+.onp-arm-hub-cap {
+	fill: var(--np-bakelite);
+}
+
+.onp-arm-grab {
+	fill: none;
+	stroke: transparent;
+	stroke-width: 16;
+	stroke-linecap: round;
+}
+
+.onp-turntable.is-live .onp-arm-grab {
+	pointer-events: stroke;
+	cursor: grab;
+}
+
+.onp-turntable.is-grabbing-arm .onp-arm-grab {
+	cursor: grabbing;
+}
+
+@keyframes onp-arm-bounce {
+	35% { translate: 0 0 calc(var(--onp-arm-lo) + (var(--onp-arm-hi) - var(--onp-arm-lo)) * 0.16 * var(--onp-bounce)); }
+	65% { translate: 0 0 var(--onp-arm-lo); }
+	82% { translate: 0 0 calc(var(--onp-arm-lo) + (var(--onp-arm-hi) - var(--onp-arm-lo)) * 0.05 * var(--onp-bounce)); }
+}
+
+@keyframes onp-cast-bounce {
+	35% { translate: -2px 2.6px; opacity: 0.22; }
+	65% { translate: -0.7px 0.9px; opacity: 0.38; }
+	82% { translate: -1.1px 1.5px; opacity: 0.3; }
+}
+
+.onp-turntable.is-landing .onp-tonearm {
+	animation: onp-arm-bounce 260ms ease-out;
+}
+
+.onp-turntable.is-landing .onp-arm-shadow {
+	animation: onp-cast-bounce 260ms ease-out;
+}
+
+/* Volume knob: knurled aluminium, 270 degrees of travel */
+.onp-knob {
 	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
+	left: 85.5%;
+	top: 76.5%;
+	width: 12%;
 	aspect-ratio: 1;
 	border-radius: 50%;
-	background: var(--text-faint);
-	box-shadow: var(--shadow-s);
+	transform-style: preserve-3d;
+	cursor: ns-resize;
+	touch-action: none;
+	box-shadow: 0.9cqw 1.2cqw 1.3cqw -0.1cqw color-mix(in oklab, var(--np-ink) 62%, transparent);
+	outline: none;
 }
 
-.onp-tonearm-arm {
+.onp-knob::before {
+	content: '';
 	position: absolute;
-	top: 8%;
-	left: 40%;
-	width: 20%;
-	height: 66%;
-	border-radius: var(--radius-s);
-	background: var(--text-muted);
+	inset: -22%;
+	border-radius: 50%;
+	background: repeating-conic-gradient(from -137deg, color-mix(in oklab, var(--np-key) 70%, var(--np-wood-base)) 0 1.2deg, transparent 1.2deg 27deg);
+	mask-image: conic-gradient(from -135deg, var(--np-ink) 0 270deg, transparent 270deg), radial-gradient(circle closest-side, transparent 0 78%, var(--np-ink) 80%);
+	mask-composite: intersect;
+	opacity: 0.8;
+	pointer-events: none;
 }
 
-.onp-tonearm-head {
+.onp-knob-side,
+.onp-knob-cap,
+.onp-knob-grip,
+.onp-knob-mark {
 	position: absolute;
-	top: 72%;
-	left: 15%;
-	width: 70%;
-	height: 17%;
-	border-radius: var(--radius-s);
-	background: var(--interactive-accent);
+	inset: 0;
+	border-radius: 50%;
+}
+
+.onp-knob-side {
+	transform: translateZ(0.8cqw);
+	background: conic-gradient(from 300deg, var(--np-chrome-lo), var(--np-alu), var(--np-chrome-lo) 120deg, var(--np-bakelite) 200deg, var(--np-chrome-lo));
+}
+
+.onp-knob-cap {
+	transform: translateZ(1.9cqw);
+	background:
+		radial-gradient(circle closest-side, transparent 0 70%, color-mix(in oklab, var(--np-ink) 28%, transparent) 100%),
+		conic-gradient(from 0deg, var(--np-alu), var(--np-chrome) 40deg, var(--np-alu) 90deg, var(--np-chrome-lo) 150deg, var(--np-chrome) 135deg, var(--np-alu) 210deg, var(--np-chrome) 315deg, var(--np-alu));
+	box-shadow:
+		inset 0 0 0 0.12cqw color-mix(in oklab, var(--np-paper) 45%, transparent),
+		inset 0 -0.25cqw 0.3cqw color-mix(in oklab, var(--np-ink) 35%, transparent);
+	transition: box-shadow 160ms ease;
+}
+
+.onp-knob-grip,
+.onp-knob-mark {
+	transform: translateZ(1.95cqw) rotate(var(--onp-knob, 0deg));
+	transition: transform 420ms var(--onp-spring-knob);
+}
+
+.onp-knob.is-turning .onp-knob-grip,
+.onp-knob.is-turning .onp-knob-mark {
+	transition-duration: 90ms;
+}
+
+.onp-knob-grip {
+	background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--np-ink) 40%, transparent) 0 2deg, transparent 2deg 6deg);
+	mask-image: radial-gradient(circle closest-side, transparent 0 80%, var(--np-ink) 82% 100%);
+}
+
+.onp-knob-mark::before {
+	content: '';
+	position: absolute;
+	left: 46.5%;
+	top: 10%;
+	width: 7%;
+	height: 26%;
+	border-radius: 999px;
+	background: var(--np-lamp);
+	box-shadow: 0 0 0.4cqw color-mix(in oklab, var(--np-lamp) 70%, transparent);
+}
+
+.onp-knob:focus-visible .onp-knob-cap {
+	box-shadow: 0 0 0 0.35cqw var(--interactive-accent);
+}
+
+/* Acrylic lid: a smoked box hinged on two black blocks at the back edge. Never takes clicks. */
+.onp-lid {
+	--onp-lid-z: 7cqw;
+	position: absolute;
+	left: 2%;
+	top: 0;
+	width: 96%;
+	height: 78%;
+	pointer-events: none;
+	transform-style: preserve-3d;
 	transform-origin: 50% 0;
-	transform: rotate(20deg);
+	transform: rotateX(0deg);
+	transition: transform 1000ms var(--onp-spring-lid);
+	will-change: transform;
 }
 
-@keyframes onp-head-settle {
-	0% { transform: translateY(0) rotate(20deg); }
-	30% { transform: translateY(-9%) rotate(20deg); }
-	55% { transform: translateY(0) rotate(20deg); }
-	75% { transform: translateY(-3%) rotate(20deg); }
-	100% { transform: translateY(0) rotate(20deg); }
+.onp-turntable.is-open .onp-lid {
+	transform: rotateX(102deg);
 }
 
-.onp-turntable.is-landing .onp-tonearm-head {
-	animation: onp-head-settle 260ms ease-out;
+.onp-lid-plate,
+.onp-lid-wall,
+.onp-lid-hinge {
+	position: absolute;
+	background: var(--np-smoke);
+	border: 1px solid var(--np-glass-edge);
+	box-shadow: inset 0 0 0.8cqw var(--np-glass-edge);
 }
 
-@keyframes onp-platter-wobble {
-	0% { scale: 1; }
-	30% { scale: var(--onp-wobble-peak); }
-	65% { scale: var(--onp-wobble-dip); }
-	100% { scale: 1; }
+.onp-lid-plate {
+	inset: 0;
+	border-radius: 0.8cqw;
+	transform: translateZ(var(--onp-lid-z));
+	background:
+		linear-gradient(112deg, transparent 18%, color-mix(in oklab, var(--np-glass-edge) 40%, transparent) 24%, transparent 33%),
+		linear-gradient(112deg, transparent 52%, color-mix(in oklab, var(--np-glass-edge) 22%, transparent) 55%, transparent 59%),
+		var(--np-smoke);
 }
 
-.onp-turntable {
-	--onp-wobble-peak: 1.012;
-	--onp-wobble-dip: 0.994;
+.onp-lid-wall {
+	width: var(--onp-lid-z);
+	height: 100%;
+	top: 0;
+	left: 0;
+	transform-origin: left;
+	transform: rotateY(-90deg);
 }
 
-.onp-turntable.is-paused .onp-turntable-platter {
-	animation: onp-platter-wobble 520ms ease-out;
+.onp-lid-wall.is-right {
+	left: 100%;
+}
+
+.onp-lid-wall.is-front {
+	width: 100%;
+	height: var(--onp-lid-z);
+	top: 100%;
+	transform-origin: top;
+	transform: rotateX(90deg);
+	border-width: 2px;
+}
+
+.onp-lid-hinge {
+	top: 0;
+	width: 11%;
+	height: var(--onp-lid-z);
+	transform-origin: top;
+	transform: rotateX(90deg);
+	border: 0;
+	background: linear-gradient(180deg, color-mix(in oklab, var(--np-paper) 14%, var(--np-bakelite)), var(--np-bakelite));
+	box-shadow: inset 0 0.25cqw 0 color-mix(in oklab, var(--np-paper) 25%, transparent);
+}
+
+.onp-lid-hinge.is-left {
+	left: 12%;
+}
+
+.onp-lid-hinge.is-right {
+	left: 77%;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -921,17 +1599,196 @@
 	}
 
 	.onp-turntable {
-		--onp-wobble-peak: 1.004;
-		--onp-wobble-dip: 0.998;
+		--onp-arm-swing: 900ms;
+		--onp-bounce: 0.4;
 	}
 
-	.onp-turntable.is-playing .onp-tonearm,
-	.onp-tonearm {
-		transition-duration: 200ms, 200ms;
+	.onp-lid {
+		transition: transform 1400ms ease-in-out;
 	}
 
-	.onp-turntable.is-playing .onp-tonearm {
+	.onp-knob-grip,
+	.onp-knob-mark {
+		transition-duration: 120ms;
+	}
+
+	.onp-turntable.is-armed .onp-arm-rig {
 		transition-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1);
+	}
+}
+
+/* Minimal turntable: a flat record and arm. With no lid, the arm and needle are the state cue. */
+.onp-turntable.is-minimal {
+	aspect-ratio: 1;
+	container-type: inline-size;
+}
+
+.onp-min {
+	position: absolute;
+	inset: 0;
+}
+
+.onp-min-platter {
+	position: absolute;
+	inset: 6%;
+	transition: transform 160ms ease;
+}
+
+.onp-turntable.is-minimal:hover .onp-min-platter {
+	transform: translateY(-1px);
+}
+
+.onp-turntable.is-paused .onp-min-platter {
+	animation: onp-platter-wobble 520ms ease-out;
+}
+
+.onp-min-vinyl {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 1;
+	border-radius: 50%;
+	rotate: var(--onp-angle, 0deg);
+	background: radial-gradient(circle at 36% 34%, color-mix(in oklab, var(--np-paper) 14%, var(--np-ink)), var(--np-ink) 64%);
+	border: 1px solid color-mix(in oklab, var(--np-paper) 16%, var(--background-modifier-border));
+	box-shadow: 0 0.6cqw 0.5cqw -0.3cqw color-mix(in oklab, var(--np-ink) 45%, transparent);
+	transition: border-color 400ms ease;
+}
+
+.theme-dark .onp-min-vinyl {
+	border-color: color-mix(in oklab, var(--np-paper) 34%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--np-ink) 70%, transparent);
+}
+
+.onp-turntable.is-armed .onp-min-vinyl {
+	border-color: var(--interactive-accent);
+}
+
+.onp-min-grooves,
+.onp-min-sheen {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	pointer-events: none;
+}
+
+.onp-min-grooves {
+	background: repeating-radial-gradient(circle closest-side, transparent 0 0.5cqw, color-mix(in oklab, var(--np-paper) 5%, transparent) 0.9cqw, transparent 1.3cqw);
+}
+
+.onp-min-sheen {
+	background: conic-gradient(
+		from 210deg,
+		transparent 0 18%,
+		color-mix(in oklab, var(--np-paper) 12%, transparent) 29%,
+		transparent 40% 58%,
+		color-mix(in oklab, var(--np-paper) 7%, transparent) 70%,
+		transparent 82%
+	);
+}
+
+.onp-min-label {
+	position: absolute;
+	inset: 32%;
+	border-radius: 50%;
+	border: 1px solid var(--background-modifier-border);
+	background-color: color-mix(in oklab, var(--interactive-accent) 70%, var(--np-ink));
+	background-image: var(--onp-label-image);
+	background-size: cover;
+	background-position: center;
+}
+
+.onp-min-spindle {
+	position: absolute;
+	inset: 48.5%;
+	border-radius: 50%;
+	background: var(--background-primary);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+}
+
+.onp-min-arm {
+	position: absolute;
+	top: 12%;
+	right: 6%;
+	width: 7%;
+	height: 56%;
+	transform-origin: 50% 0;
+	transform: rotate(-12deg);
+	transition: transform var(--onp-arm-swing) cubic-bezier(0.3, 0.7, 0.2, 1);
+	pointer-events: none;
+}
+
+.onp-turntable.is-armed .onp-min-arm {
+	transition-timing-function: cubic-bezier(0.3, 0.9, 0.35, 1.2);
+	transform: rotate(calc(8deg + var(--onp-arm-creep, 0) * 7deg));
+}
+
+.onp-turntable.is-minimal.is-live:not(.is-armed):hover .onp-min-arm {
+	transform: rotate(-7deg);
+}
+
+.onp-min-base,
+.onp-min-pivot {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	border-radius: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.onp-min-base {
+	width: 9cqw;
+	aspect-ratio: 1;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.onp-min-pivot {
+	width: 4.5cqw;
+	aspect-ratio: 1;
+	background: var(--text-faint);
+}
+
+.onp-min-weight {
+	position: absolute;
+	left: 50%;
+	bottom: 100%;
+	width: 4cqw;
+	height: 6cqw;
+	margin-bottom: 1.5cqw;
+	transform: translateX(-50%);
+	border-radius: var(--radius-s);
+	background: var(--text-faint);
+}
+
+.onp-min-tube {
+	position: absolute;
+	top: 0;
+	left: 40%;
+	width: 20%;
+	height: 78%;
+	border-radius: var(--radius-s);
+	background: var(--text-muted);
+}
+
+.onp-min-head {
+	position: absolute;
+	top: 76%;
+	left: 10%;
+	width: 80%;
+	height: 17%;
+	border-radius: var(--radius-s);
+	background: var(--interactive-accent);
+	transform-origin: 50% 0;
+	transform: rotate(20deg);
+}
+
+.onp-turntable.is-landing .onp-min-head {
+	animation: onp-head-settle 260ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.onp-min-arm {
+		--onp-arm-swing: 900ms;
 	}
 }
 
@@ -991,6 +1848,12 @@
 	animation: onp-status-pulse 1.6s ease-in-out infinite;
 }
 
+@keyframes onp-status-pulse-soft {
+	50% {
+		opacity: 0.75;
+	}
+}
+
 @keyframes onp-status-spin {
 	to {
 		transform: rotate(360deg);
@@ -1010,7 +1873,7 @@
 
 	.onp-status[data-tone='live'] .onp-status-icon svg,
 	.onp-track-subtitle.is-connecting {
-		animation: none;
+		animation: onp-status-pulse-soft 4s ease-in-out infinite;
 	}
 }
 
@@ -1102,4 +1965,19 @@ input[type="range"].onp-volume-slider:focus-visible {
 	input[type="range"].onp-volume-slider:active::-webkit-slider-thumb {
 		transform: none;
 	}
+}
+
+@keyframes onp-head-settle {
+	0% { transform: translateY(0) rotate(20deg); }
+	30% { transform: translateY(-9%) rotate(20deg); }
+	55% { transform: translateY(0) rotate(20deg); }
+	75% { transform: translateY(-3%) rotate(20deg); }
+	100% { transform: translateY(0) rotate(20deg); }
+}
+
+@keyframes onp-platter-wobble {
+	0% { scale: 1; }
+	30% { scale: 1.012; }
+	65% { scale: 0.994; }
+	100% { scale: 1; }
 }

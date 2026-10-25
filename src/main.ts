@@ -179,6 +179,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       playbackState: this.viewPlaybackState,
       repeatMode: this.settings.repeatMode,
       turntableSounds: this.settings.turntableSounds,
+      turntableStyle: this.settings.turntableStyle,
     };
   }
 
