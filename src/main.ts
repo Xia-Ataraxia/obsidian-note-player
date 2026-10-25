@@ -113,7 +113,8 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     this.addSettingTab(new NotePlayerSettingsTab(this.app, this));
     this.registerVaultRefreshEvents();
 
-    if (this.settings.autoOpenOnStartup) {
+    // Enabling mid-session (reload, update) runs this before Obsidian restores the existing leaf, which would duplicate the view.
+    if (this.settings.autoOpenOnStartup && !this.app.workspace.layoutReady) {
       this.app.workspace.onLayoutReady(() => {
         void this.activateView();
       });
