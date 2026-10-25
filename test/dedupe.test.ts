@@ -32,6 +32,10 @@ describe('sanitizeFileName', () => {
 		expect(sanitizeFileName('a\\b/c:d*e?f"g<h>i|j')).toBe('a b c d e f g h i j');
 	});
 
+	it('replaces characters that break wikilinks', () => {
+		expect(sanitizeFileName('Song #1 ^live')).toBe('Song 1 live');
+	});
+
 	it('collapses multiple spaces', () => {
 		expect(sanitizeFileName('hello   world')).toBe('hello world');
 	});
