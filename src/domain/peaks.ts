@@ -4,11 +4,13 @@ const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
 
 /** Bar height = loudness, not peak: mastered music peaks near 0 dBFS everywhere, so peaks flatten into a block. */
 const REFERENCE_PERCENTILE = 0.995;
-/** Loudness below this many dB under the reference draws as the minimum bar. */
-const DB_RANGE = 36;
+/** The quietest 20% of buckets anchor the bottom of the scale, so a uniformly loud track still spreads out. */
+const FLOOR_PERCENTILE = 0.2;
+const MIN_RANGE_DB = 8;
+const MAX_RANGE_DB = 36;
 /** >1 gently pushes mid levels down so loud sections keep texture. */
-const EASE = 1.3;
-const FORMAT_VERSION = 3;
+const EASE = 1.6;
+const FORMAT_VERSION = 5;
 
 /** Per-bucket RMS across channels, mapped in dB below a near-max reference and eased, stored as 0..255. */
 export function computePeaks(channels: ArrayLike<number>[], count = PEAK_COUNT): number[] {
@@ -25,11 +27,14 @@ export function computePeaks(channels: ArrayLike<number>[], count = PEAK_COUNT):
     rms[i] = Math.sqrt(sum / ((to - from) * channels.length));
   }
   const sorted = [...rms].sort((a, b) => a - b);
-  const reference = sorted[Math.min(count - 1, Math.floor(count * REFERENCE_PERCENTILE))] ?? 0;
+  const at = (q: number): number => sorted[Math.min(count - 1, Math.floor(count * q))] ?? 0;
+  const reference = at(REFERENCE_PERCENTILE);
   if (reference === 0) return rms.map(() => 0);
+  const floorDb = 20 * Math.log10(Math.max(at(FLOOR_PERCENTILE), 1e-9) / reference);
+  const range = Math.min(MAX_RANGE_DB, Math.max(MIN_RANGE_DB, -floorDb));
   return rms.map((v) => {
     const db = v > 0 ? 20 * Math.log10(v / reference) : -Infinity;
-    return Math.round(clamp01(1 + db / DB_RANGE) ** EASE * 255);
+    return Math.round(clamp01(1 + db / range) ** EASE * 255);
   });
 }
 
