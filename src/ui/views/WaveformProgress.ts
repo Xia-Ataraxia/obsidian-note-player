@@ -5,7 +5,6 @@ import { barCountFor, drawMeter, drawWave, readColors, type WaveColors } from '.
 const SEEK_STEP_SECONDS = 5;
 const FADE_SECONDS = 0.25;
 const METER_HOLD_FALL = 0.6;
-/** Loud masters peak almost everywhere; an expansion curve keeps the dynamics visible. */
 
 export interface WaveformHooks {
 	getTime(): number;

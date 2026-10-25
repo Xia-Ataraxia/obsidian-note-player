@@ -5,12 +5,14 @@ const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
 /** Bar height = loudness, not peak: mastered music peaks near 0 dBFS everywhere, so peaks flatten into a block. */
 const REFERENCE_PERCENTILE = 0.995;
 /** The quietest 20% of buckets anchor the bottom of the scale, so a uniformly loud track still spreads out. */
-const FLOOR_PERCENTILE = 0.2;
-const MIN_RANGE_DB = 8;
+const FLOOR_PERCENTILE = 0.3;
+const MIN_RANGE_DB = 4;
 const MAX_RANGE_DB = 36;
 /** >1 gently pushes mid levels down so loud sections keep texture. */
 const EASE = 1.6;
-const FORMAT_VERSION = 5;
+/** Height fraction at the anchor level; the loud range uses the rest. */
+const KNEE = 0.3;
+const FORMAT_VERSION = 7;
 
 /** Per-bucket RMS across channels, mapped in dB below a near-max reference and eased, stored as 0..255. */
 export function computePeaks(channels: ArrayLike<number>[], count = PEAK_COUNT): number[] {
@@ -34,7 +36,9 @@ export function computePeaks(channels: ArrayLike<number>[], count = PEAK_COUNT):
   const range = Math.min(MAX_RANGE_DB, Math.max(MIN_RANGE_DB, -floorDb));
   return rms.map((v) => {
     const db = v > 0 ? 20 * Math.log10(v / reference) : -Infinity;
-    return Math.round(clamp01(1 + db / range) ** EASE * 255);
+    if (db >= -range) return Math.round((KNEE + (1 - KNEE) * (1 + db / range) ** EASE) * 255);
+    // Below the anchor, quieter passages keep falling so verses stay distinct from silence.
+    return Math.round(KNEE * clamp01(1 + (db + range) / (MAX_RANGE_DB - range + 12)) * 255);
   });
 }
 
