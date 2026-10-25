@@ -56,7 +56,15 @@ export class NotePlayerView extends ItemView {
 		() => this.playerSurface.getVolume(),
 		() => this.contentEl.win.matchMedia('(prefers-reduced-motion: reduce)').matches,
 	);
-	private readonly turntable = new Turntable(this.sound);
+	private readonly turntable = new Turntable(this.sound, {
+		position: () => {
+			const duration = this.playerSurface.getDuration();
+			return duration > 0 ? { time: this.playerSurface.getCurrentTime(), duration } : null;
+		},
+		seekTo: (ratio) => this.playerSurface.seekTo(ratio),
+		dropNeedle: () => this.setNeedle(true),
+		liftNeedle: () => this.setNeedle(false),
+	});
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -408,6 +416,12 @@ export class NotePlayerView extends ItemView {
 	private disposeWave(): void {
 		this.wave?.ui.destroy();
 		this.wave = null;
+	}
+
+	private setNeedle(down: boolean): void {
+		const current = this.host.getState().currentTrack;
+		if (!current || (this.host.getState().playbackState === 'playing') === down) return;
+		void this.toggleCurrentPlayback(current);
 	}
 
 	private async toggleCurrentPlayback(current: PlaylistTrack): Promise<void> {
