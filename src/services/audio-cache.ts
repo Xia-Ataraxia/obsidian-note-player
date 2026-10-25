@@ -1,8 +1,9 @@
-import { spawn, spawnSync, type ChildProcess } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from 'fs';
+import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { FLAT_PLAYLIST_PRINT } from '../domain/track-import';
-import { parseYtdlpError, parseYtdlpProgress } from '../domain/ytdlp';
+import { isStreamUrlFresh, parseYtdlpError, parseYtdlpProgress, ytdlpCandidates } from '../domain/ytdlp';
 import type { AudioCachePort, VaultAdapter } from '../types/view';
 import type { AudioFormat } from '../types/audio';
 import { shareInFlight } from '../utils/in-flight';
@@ -18,6 +19,7 @@ export class AudioCacheService implements AudioCachePort {
 	private downloadPromises = new Map<string, Promise<string>>();
 	private progressListeners = new Map<string, Set<(percent: number) => void>>();
 	private streamPromises = new Map<string, Promise<string>>();
+	private streamUrls = new Map<string, string>();
 	private resolvers = new Set<ChildProcess>();
 	private adapter: VaultAdapter;
 	private absBase: string;
@@ -25,7 +27,7 @@ export class AudioCacheService implements AudioCachePort {
 	constructor(vaultBasePath: string, adapter: VaultAdapter, format: AudioFormat, pluginDir: string, configDir: string, ytdlpPath?: string) {
 		this.adapter = adapter;
 		this.format = format;
-		this.ytdlpPath = ytdlpPath ?? AudioCacheService.discoverYtdlpPath();
+		this.ytdlpPath = ytdlpPath ?? AudioCacheService.locateYtdlp() ?? '';
 		this.absBase = vaultBasePath;
 		this.cacheDir = `${pluginDir}/audio-cache`;
 		const absPath = join(vaultBasePath, this.cacheDir);
@@ -41,12 +43,9 @@ export class AudioCacheService implements AudioCachePort {
 		}
 	}
 
-	private static discoverYtdlpPath(): string {
-		const result = spawnSync('which', ['yt-dlp'], { encoding: 'utf-8' });
-		if (result.status === 0 && result.stdout.trim()) {
-			return result.stdout.trim();
-		}
-		return '/opt/homebrew/bin/yt-dlp'; // fallback for macOS
+	/** Existence checks only: a spawn here would block the main thread on every render. */
+	private static locateYtdlp(): string | null {
+		return ytdlpCandidates(homedir(), process.env.PATH ?? '').find((path) => existsSync(path)) ?? null;
 	}
 
 	async hasCached(videoId: string): Promise<boolean> {
@@ -125,6 +124,8 @@ export class AudioCacheService implements AudioCachePort {
 
 	/** Direct audio URL for live playback. googlevideo URLs expire, so never persist them. */
 	resolveStreamUrl(videoId: string): Promise<string> {
+		const cached = this.streamUrls.get(videoId);
+		if (cached && isStreamUrlFresh(cached, Date.now())) return Promise.resolve(cached);
 		return shareInFlight(this.streamPromises, videoId, () => new Promise<string>((resolve, reject) => {
 			let stdout = '';
 			let stderr = '';
@@ -139,10 +140,15 @@ export class AudioCacheService implements AudioCachePort {
 			proc.on('close', (code) => {
 				this.resolvers.delete(proc);
 				const url = stdout.trim().split('\n')[0];
-				if (code === 0 && url) resolve(url);
+				if (code === 0 && url) { this.streamUrls.set(videoId, url); resolve(url); }
 				else reject(new Error(parseYtdlpError(stderr)));
 			});
 		}));
+	}
+
+	/** Warms the stream-URL cache so the next click skips the yt-dlp round trip. */
+	prefetchStream(videoId: string): void {
+		this.resolveStreamUrl(videoId).catch(() => undefined);
 	}
 
 	/** Kills every in-flight yt-dlp process; called on plugin unload. */
@@ -183,7 +189,9 @@ export class AudioCacheService implements AudioCachePort {
 	}
 
 	isAvailable(): boolean {
-		return AudioCacheService.isAvailable(this.ytdlpPath);
+		if (this.ytdlpPath && existsSync(this.ytdlpPath)) return true;
+		this.ytdlpPath = AudioCacheService.locateYtdlp() ?? '';
+		return this.ytdlpPath !== '';
 	}
 
 	/** Obsidian's process.env.PATH often excludes Homebrew/user paths.
@@ -203,11 +211,5 @@ export class AudioCacheService implements AudioCachePort {
 				unlinkSync(join(absDir, file));
 			}
 		}
-	}
-
-	static isAvailable(ytdlpPath?: string): boolean {
-		const path = ytdlpPath ?? AudioCacheService.discoverYtdlpPath();
-		const result = spawnSync(path, ['--version'], { stdio: 'ignore' });
-		return result.status === 0;
 	}
 }

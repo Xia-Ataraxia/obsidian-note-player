@@ -67,6 +67,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
         if (this.viewPlaybackState === state) return;
         this.viewPlaybackState = state;
         this.notifyChange();
+        if (state === 'playing') void this.prefetchNext();
       },
     });
     this.playerSurface = player.surface;
@@ -130,7 +131,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   }
 
   private createAudioCache(): AudioCacheService | null {
-    if (!this.vaultBasePath || !AudioCacheService.isAvailable()) return null;
+    if (!this.vaultBasePath) return null;
     const pluginDir = this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`;
     return new AudioCacheService(this.vaultBasePath, this.app.vault.adapter, this.settings.audioFormat, pluginDir, this.app.vault.configDir);
   }
@@ -210,12 +211,14 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   playTrack(path: string): Promise<void> {
     this.playback.play(path, this.library.tracks);
     this.notifyChange();
+    void this.prefetchNext();
     return Promise.resolve();
   }
 
   playPrevious(): Promise<void> {
     if (this.playback.previous(this.currentQueue())) {
       this.notifyChange();
+      void this.prefetchNext();
     }
     return Promise.resolve();
   }
@@ -223,6 +226,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   playNext(): Promise<void> {
     if (this.playback.next(this.currentQueue(), this.settings.repeatMode)) {
       this.notifyChange();
+      void this.prefetchNext();
     }
     return Promise.resolve();
   }
@@ -472,7 +476,23 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     return this.selectedPlaylist()?.tracks.map(toPlaylistTrack) ?? [];
   }
 
+  /** Warms the next track's stream URL so Next and auto-advance skip the yt-dlp round trip. */
+  private async prefetchNext(): Promise<void> {
+    const cache = this.audioCacheService;
+    const queue = this.currentQueue();
+    const index = queue.findIndex((track) => track.path === this.playback.currentTrackPath);
+    const next = index >= 0 ? queue[index + 1] : undefined;
+    if (!cache?.prefetchStream || !next?.videoId || !cache.isAvailable()) return;
+    if (!(await cache.hasCached(next.videoId))) cache.prefetchStream(next.videoId);
+  }
+
+  private syncStatusBar(): void {
+    const title = this.viewPlaybackState === 'playing' ? this.getState().currentTrack?.title : null;
+    this.downloadStatusBar?.setNowPlaying(title ?? null);
+  }
+
   private notifyChange(): void {
+    this.syncStatusBar();
     for (const listener of this.changeListeners) {
       listener();
     }

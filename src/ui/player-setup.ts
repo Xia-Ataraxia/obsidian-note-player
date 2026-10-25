@@ -1,6 +1,7 @@
 import type { Plugin } from 'obsidian';
 import type { PlaybackState } from '../types/playback';
 import { DownloadStatusBar } from './download-status-bar';
+import { showNotice } from './notices';
 import { PlayerSurface } from './views/PlayerSurface';
 
 interface PlayerCallbacks {
@@ -17,6 +18,7 @@ export function createPlayer(plugin: Plugin, callbacks: PlayerCallbacks) {
 
 	surface.onSaveProgress = (percent: number) => statusBar.update(percent, 'Saving');
 	surface.onStreamPhase = (phase) => statusBar.showStream(phase);
+	surface.onNeedSetup = () => showNotice('ytdlp_unavailable');
 
 	return { surface, hostEl, statusBar };
 }
