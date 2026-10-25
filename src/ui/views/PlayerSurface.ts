@@ -2,7 +2,7 @@ import type { AudioCachePort } from '../../types/view';
 import type { PlaylistTrack } from '../../types/view';
 import type { PlaybackState, RepeatMode } from '../../types/playback';
 import { chooseSource, shouldKeepSaving } from '../../domain/playback-source';
-import { FADE_IN_MS, FADE_OUT_MS, needleDelayMs, rampRate } from '../../domain/turntable';
+import { FADE_IN_MS, leadRemainingMs, FADE_OUT_MS, needleDelayMs, rampRate } from '../../domain/turntable';
 
 export type { PlaybackState };
 
@@ -32,6 +32,7 @@ export class PlayerSurface {
 	private startTimer: number | null = null;
 	private pendingAudio: HTMLAudioElement | null = null;
 	private landed = false;
+	private landedAt = 0;
 	private landingTracked = false;
 	private savingVideoId: string | null = null;
 	private lastTrack: PlaylistTrack | null = null;
@@ -280,11 +281,12 @@ export class PlayerSurface {
 		if (this.landed) return this.releasePending();
 		// Without a turntable view to report the touchdown, fall back to the nominal swing time.
 		if (this.landingTracked) return;
-		this.startTimer = window.setTimeout(() => this.releasePending(), needleDelayMs(performance.now() - (this.armMovedAt ?? performance.now()), this.reducedMotion()));
+		this.startTimer = window.setTimeout(() => this.needleLanded(), needleDelayMs(performance.now() - (this.armMovedAt ?? performance.now()), this.reducedMotion()));
 	}
 
 	/** The turntable reports touchdown; this is the only gate that lets music start. */
 	needleLanded(): void {
+		if (!this.landed) this.landedAt = performance.now();
 		this.landed = true;
 		this.releasePending();
 	}
@@ -297,8 +299,12 @@ export class PlayerSurface {
 		if (this.startTimer !== null) window.clearTimeout(this.startTimer);
 		this.startTimer = null;
 		const audio = this.pendingAudio;
-		this.pendingAudio = null;
-		if (audio) this.beginPlayback(audio);
+		if (!audio) return;
+		this.startTimer = window.setTimeout(() => {
+			this.startTimer = null;
+			this.pendingAudio = null;
+			this.beginPlayback(audio);
+		}, leadRemainingMs(performance.now() - this.landedAt));
 	}
 
 	private beginPlayback(audio: HTMLAudioElement): void {

@@ -4,6 +4,12 @@ export const SPIN_UP_MS = 900;
 export const SPIN_DOWN_MS = 700;
 export const CRACKLE_SECONDS = 1.8;
 export const FADE_IN_MS = 350;
+/** Thock and run-in crackle are heard this long before the music starts. */
+export const NEEDLE_LEAD_MS = 200;
+
+export function leadRemainingMs(sinceLandedMs: number): number {
+  return Math.max(0, NEEDLE_LEAD_MS - sinceLandedMs);
+}
 export const FADE_OUT_MS = 250;
 export const GROOVE_SECONDS = 2;
 

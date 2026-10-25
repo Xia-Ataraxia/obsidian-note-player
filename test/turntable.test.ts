@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   AUDIO_START_MS, easeOut, needleDelayMs, rampRate, renderCrackle, renderGroove, renderNoiseBurst, renderThump, soundGain,
-  SWING_MS, swingMs,
+  SWING_MS, swingMs, leadRemainingMs, NEEDLE_LEAD_MS,
 } from '../src/domain/turntable';
 
 const seeded = (): (() => number) => {
@@ -73,6 +73,13 @@ describe('needleDelayMs', () => {
     expect(swingMs(true)).toBeLessThan(SWING_MS);
     expect(needleDelayMs(0, true)).toBeGreaterThan(swingMs(true));
     expect(needleDelayMs(0, true)).toBeLessThan(needleDelayMs(0));
+  });
+});
+
+describe('leadRemainingMs', () => {
+  it('leaves a gap after touchdown and never goes negative', () => {
+    expect(leadRemainingMs(0)).toBe(NEEDLE_LEAD_MS);
+    expect(leadRemainingMs(NEEDLE_LEAD_MS + 50)).toBe(0);
   });
 });
 
