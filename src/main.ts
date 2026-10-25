@@ -58,6 +58,9 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     getAudioCache: () => this.audioCacheService,
     createPlaylist: (name) => this.createPlaylistNote(name),
     addTracks: (playlistPath, paths) => this.addPathsToPlaylist(playlistPath, paths),
+    playIfIdle: (path) => {
+      if (this.viewPlaybackState !== 'playing') void this.playTrack(path);
+    },
   });
 
   async onload(): Promise<void> {
@@ -471,7 +474,6 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
       if (opts.refresh) {
         await this.refreshIndex();
-        showNotice('playlist_saved', { name: playlist.title });
       }
     });
     this.playlistEdits = run.catch(() => undefined);
