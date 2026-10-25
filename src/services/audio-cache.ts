@@ -13,7 +13,7 @@ const STREAM_RESOLVE_TIMEOUT_MS = 6_000;
 
 export class AudioCacheService implements AudioCachePort {
 	private cacheDir: string;        // vault-relative
-	private format: AudioFormat;
+	readonly format: AudioFormat;
 	private ytdlpPath: string;
 	private activeDownloads = new Map<string, ChildProcess>();
 	private downloadPromises = new Map<string, Promise<string>>();
