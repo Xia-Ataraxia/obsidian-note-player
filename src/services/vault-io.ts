@@ -26,8 +26,12 @@ export function getAvailablePath(app: App, folder: string, baseName: string): st
 
 /** Resolves once the metadata cache has parsed a freshly written note, or after `timeoutMs`. */
 export function waitForMetadata(app: App, file: TFile, timeoutMs = 2000): Promise<void> {
+	if (app.metadataCache.getFileCache(file)?.frontmatter) return Promise.resolve();
+	return nextMetadataChange(app, file, timeoutMs);
+}
+
+function nextMetadataChange(app: App, file: TFile, timeoutMs = 2000): Promise<void> {
 	const { metadataCache } = app;
-	if (metadataCache.getFileCache(file)?.frontmatter) return Promise.resolve();
 	return new Promise((resolve) => {
 		const done = () => {
 			window.clearTimeout(timer);
@@ -39,12 +43,18 @@ export function waitForMetadata(app: App, file: TFile, timeoutMs = 2000): Promis
 	});
 }
 
+/** Resolves after the metadata cache has re-parsed the note, so the next read never sees the old frontmatter. */
 export async function rewriteNote(app: App, path: string, transform: (existing: string) => string): Promise<void> {
 	const file = app.vault.getAbstractFileByPath(path);
 	if (!(file instanceof TFile)) {
 		throw new Error(`File not found: ${path}`);
 	}
-	await app.vault.modify(file, transform(await app.vault.read(file)));
+	const existing = await app.vault.read(file);
+	const next = transform(existing);
+	if (next === existing) return;
+	const parsed = nextMetadataChange(app, file);
+	await app.vault.modify(file, next);
+	await parsed;
 }
 
 export async function openNoteInTab(app: App, path: string): Promise<void> {
