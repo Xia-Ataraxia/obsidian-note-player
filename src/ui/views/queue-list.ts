@@ -34,19 +34,27 @@ function syncCurrentRow(panel: HTMLElement, state: PlaylistViewState): boolean {
 		const isCurrent = state.currentTrack?.path === state.queue[index]?.path;
 		row.toggleClass('is-current', isCurrent);
 		const actions = row.querySelector<HTMLElement>('.onp-row-actions');
-		const bars = actions?.querySelector('.onp-eq-bars');
-		if (isCurrent && actions && !bars) renderEqBars(actions);
+		const bars = actions?.querySelector<HTMLElement>('.onp-eq-bars');
+		if (isCurrent && actions && !bars) renderEqBars(actions, state);
+		else if (isCurrent && bars) syncEqBars(bars, state);
 		if (!isCurrent) bars?.remove();
 	});
 	return true;
 }
 
-function renderEqBars(actions: HTMLElement): void {
+function renderEqBars(actions: HTMLElement, state: PlaylistViewState): void {
 	const eqBars = createDiv({ cls: 'onp-row-state onp-eq-bars' });
-	eqBars.setAttribute('aria-label', 'Playing');
-	eqBars.setAttribute('title', 'Playing');
 	for (let i = 0; i < 3; i++) eqBars.createDiv({ cls: 'onp-eq-bar' });
+	syncEqBars(eqBars, state);
 	actions.prepend(eqBars);
+}
+
+function syncEqBars(eqBars: HTMLElement, state: PlaylistViewState): void {
+	const playing = state.playbackState === 'playing';
+	const label = playing ? 'Playing' : 'Paused';
+	eqBars.toggleClass('is-paused', !playing);
+	eqBars.setAttribute('aria-label', label);
+	eqBars.setAttribute('title', label);
 }
 
 export function renderQueue(panel: HTMLElement, state: PlaylistViewState, ctx: QueueContext): void {
@@ -149,7 +157,7 @@ function renderRow(
 	});
 
 	const play = () => {
-		void run(`Playing ${track.title}`, () => host.playTrack(track.path));
+		void run('', () => host.playTrack(track.path), false);
 	};
 
 	const thumb = row.createDiv({ cls: 'onp-row-thumb' });
@@ -164,7 +172,7 @@ function renderRow(
 
 	const rowActions = row.createDiv({ cls: 'onp-row-actions' });
 	if (isCurrent) {
-		renderEqBars(rowActions);
+		renderEqBars(rowActions, state);
 	}
 	rowActions.appendChild(createIconButton('Track actions', 'more-vertical', (event) => {
 		openTrackMenu(event, host, track, run);

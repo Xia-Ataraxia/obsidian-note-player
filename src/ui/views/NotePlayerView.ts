@@ -237,12 +237,12 @@ export class NotePlayerView extends ItemView {
 
 		if (this.host.selectActivePlaylist) {
 			controls.appendChild(createIconButton('Load active playlist note', 'crosshair', () => {
-				void this.runAction('Loaded active playlist', () => this.host.selectActivePlaylist?.() ?? Promise.resolve());
+				void this.runAction('', () => this.host.selectActivePlaylist?.() ?? Promise.resolve(), false);
 			}));
 		}
 
 		controls.appendChild(createIconButton('Refresh library', 'refresh-cw', () => {
-			void this.runAction('Refreshed library', () => this.host.refresh());
+			void this.runAction('', () => this.host.refresh(true), false);
 		}));
 	}
 
@@ -307,7 +307,7 @@ export class NotePlayerView extends ItemView {
 		const controls = summary.createDiv({ cls: 'onp-control-row onp-player-controls' });
 		const transport = controls.createDiv({ cls: 'onp-controls-group' });
 		transport.appendChild(createActionButton('Previous', 'skip-back', () => {
-			void this.runAction('Moved to previous track', () => this.host.playPrevious());
+			void this.runAction('', () => this.host.playPrevious(), false);
 		}, { iconOnly: true }));
 		transport.appendChild(createActionButton(
 			playbackState === 'playing' ? 'Pause current track' : 'Play current track',
@@ -318,7 +318,7 @@ export class NotePlayerView extends ItemView {
 			{ cta: true, iconOnly: true },
 		));
 		transport.appendChild(createActionButton('Next', 'skip-forward', () => {
-			void this.runAction('Moved to next track', () => this.host.playNext());
+			void this.runAction('', () => this.host.playNext(), false);
 		}, { iconOnly: true }));
 		const extras = controls.createDiv({ cls: 'onp-controls-group onp-controls-group--end' });
 		this.disposeVolumeControl = renderVolumeControl(extras, this.volume);
@@ -482,7 +482,7 @@ export class NotePlayerView extends ItemView {
 
 	private openCreatePlaylistModal(): void {
 		new PlaylistNameModal(this.app, (name) => {
-			void this.runAction(`Created ${name}`, () => this.host.createPlaylist(name));
+			void this.runAction('', () => this.host.createPlaylist(name), false);
 		}).open();
 	}
 

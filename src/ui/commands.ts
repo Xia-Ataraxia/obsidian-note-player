@@ -8,6 +8,9 @@ export interface CommandActions {
 	addActiveNote: () => Promise<void>;
 	loadActivePlaylist: () => Promise<void>;
 	addTrackFromUrl: (input: string) => Promise<void>;
+	togglePlayback: () => Promise<void>;
+	playNext: () => Promise<void>;
+	playPrevious: () => Promise<void>;
 }
 
 export function registerCommands(plugin: Plugin, actions: CommandActions): void {
@@ -17,6 +20,9 @@ export function registerCommands(plugin: Plugin, actions: CommandActions): void 
 		['refresh-youtube-playlist-bases', 'Create or refresh companion bases files', actions.refreshBases],
 		['add-active-note-to-selected-playlist', 'Add active note to selected playlist', actions.addActiveNote],
 		['load-active-playlist-note', 'Load active playlist note into player', actions.loadActivePlaylist],
+		['toggle-playback', 'Play or pause', actions.togglePlayback],
+		['next-track', 'Next track', actions.playNext],
+		['previous-track', 'Previous track', actions.playPrevious],
 	];
 
 	for (const [id, name, run] of commands) {

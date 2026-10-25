@@ -48,6 +48,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private viewPlaybackState: PlaybackState = 'idle';
   /** Set by an explicit play so the track starts even with autoplay off. */
   private playIntent = false;
+  private playingPlaylistPath: string | null = null;
   private downloadStatusBar: DownloadStatusBar | null = null;
   private volume: VolumeController | null = null;
   private readonly importer = new TrackImporter({
@@ -111,6 +112,9 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       addActiveNote: () => this.addActiveNoteToSelectedPlaylist(),
       loadActivePlaylist: () => this.activateActivePlaylist(),
       addTrackFromUrl: (input) => this.addTrackFromUrl(input),
+      togglePlayback: () => this.togglePlayback(),
+      playNext: () => this.playNext(),
+      playPrevious: () => this.playPrevious(),
     });
 
     this.addSettingTab(new NotePlayerSettingsTab(this.app, this));
@@ -211,8 +215,6 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   async selectPlaylist(path: string | null): Promise<void> {
     this.settings.lastPlaylistPath = path;
     await this.saveSettings();
-    this.playback.currentTrackPath = null;
-    this.playIntent = false;
     this.notifyChange();
   }
 
@@ -237,8 +239,23 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     await this.createPlaylistNote(name);
   }
 
+  togglePlayback(): Promise<void> {
+    if (this.viewPlaybackState === 'playing') {
+      this.playerSurface?.pause();
+      return Promise.resolve();
+    }
+    const path = this.playback.currentTrackPath ?? this.currentQueue()[0]?.path;
+    if (!path) {
+      showNotice('playlist_missing');
+      return Promise.resolve();
+    }
+    return this.playTrack(path);
+  }
+
   playTrack(path: string): Promise<void> {
     this.playIntent = true;
+    const selected = this.selectedPlaylist();
+    if (selected?.trackPaths.includes(path)) this.playingPlaylistPath = selected.path;
     // The surface keeps the loaded track, so re-rendering it would not resume a paused one.
     if (path === this.playback.currentTrackPath && this.playerSurface?.play()) return Promise.resolve();
     this.playback.play(path, this.library.tracks);
@@ -249,6 +266,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
   playPrevious(): Promise<void> {
     if (this.playback.previous(this.currentQueue())) {
+      this.playingPlaylistPath ??= this.selectedPlaylist()?.path ?? null;
       this.playIntent = true;
       this.notifyChange();
       void this.prefetchNext();
@@ -259,6 +277,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   /** `explicit` is false when a track ends on its own, so autoplay alone decides whether the next one starts. */
   playNext(explicit = true): Promise<void> {
     if (this.playback.next(this.currentQueue())) {
+      this.playingPlaylistPath ??= this.selectedPlaylist()?.path ?? null;
       this.playIntent = explicit;
       this.notifyChange();
       void this.prefetchNext();
@@ -519,8 +538,10 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     return this.library.playlists.find((playlist) => playlist.path === selectedPlaylistPath) ?? null;
   }
 
+  // Next/previous follow the playlist the track was started from, not the one being browsed.
   private currentQueue(): PlaylistTrack[] {
-    return this.selectedPlaylist()?.tracks.map(toPlaylistTrack) ?? [];
+    const playing = this.library.playlists.find((playlist) => playlist.path === this.playingPlaylistPath);
+    return (playing ?? this.selectedPlaylist())?.tracks.map(toPlaylistTrack) ?? [];
   }
 
   /** Warms the next track's stream URL so Next and auto-advance skip the yt-dlp round trip. */

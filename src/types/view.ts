@@ -58,7 +58,7 @@ export interface PlaylistViewState {
 export interface PlaylistViewHost {
 	getState(): PlaylistViewState;
 	subscribe(onChange: () => void): () => void;
-	refresh(): Promise<void>;
+	refresh(notify?: boolean): Promise<void>;
 	selectPlaylist(path: string | null): Promise<void>;
 	selectActivePlaylist?(): Promise<void>;
 	createPlaylist(name: string): Promise<void>;
