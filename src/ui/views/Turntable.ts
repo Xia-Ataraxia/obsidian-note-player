@@ -5,6 +5,7 @@ import type { TurntableSound } from './turntable-sound';
 
 const SETTLE_MS = 120;
 const SPIN_MS = 1800;
+const REDUCED_SPIN_FACTOR = 4;
 
 /**
  * Persistent record player. The view detaches and re-attaches `el` on every render,
@@ -15,6 +16,7 @@ export class Turntable {
   private readonly vinyl: HTMLElement;
   private spin: Animation | null = null;
   private spinDoc: Document | null = null;
+  private spinDuration = 0;
   private state: PlaybackState = 'idle';
   private videoId = '';
   private rate = 0;
@@ -103,18 +105,15 @@ export class Turntable {
 
   private ensureSpin(): Animation | null {
     const doc = this.vinyl.ownerDocument;
-    if (doc.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      this.spin?.cancel();
-      this.spin = null;
-      return null;
-    }
-    if (this.spin && this.spinDoc === doc) return this.spin;
+    const reduced = doc.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
+    const duration = reduced ? SPIN_MS * REDUCED_SPIN_FACTOR : SPIN_MS;
+    if (this.spin && this.spinDoc === doc && this.spinDuration === duration) return this.spin;
     this.spin?.cancel();
-    this.spin = null;
     this.spin = this.vinyl.animate(
       [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }],
-      { duration: SPIN_MS, iterations: Infinity },
+      { duration, iterations: Infinity },
     );
+    this.spinDuration = duration;
     this.spin.pause();
     this.spinDoc = doc;
     return this.spin;

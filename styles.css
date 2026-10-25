@@ -782,12 +782,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.onp-tonearm {
-		transition: none;
-	}
-
-	.onp-turntable.is-landing .onp-tonearm-head,
 	.onp-eq-bar:nth-child(n) {
-		animation: none;
+		animation-duration: 2.4s;
 	}
 }
