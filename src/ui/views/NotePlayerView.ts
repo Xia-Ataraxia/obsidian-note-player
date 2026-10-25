@@ -107,6 +107,7 @@ export class NotePlayerView extends ItemView {
 		this.playerSurface.onCached = (videoId) => void this.loadPeaks(videoId);
 		this.registerEvent(this.app.workspace.on('css-change', () => this.wave?.ui.refreshColors()));
 		this.turntable.onLanded = () => this.playerSurface.needleLanded();
+		this.turntable.attachVolume(this.volume);
 		this.playerSurface.onNeedleWait = (waiting) => (waiting ? this.sound.startGroove() : this.sound.stopGroove());
 		this.playerSurface.onPhaseView = (phase) => this.showPhase(phase);
 		this.unsubscribeSound = this.volume.subscribe(() => this.sound.applyVolume());

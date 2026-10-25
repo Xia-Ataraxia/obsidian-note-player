@@ -12,6 +12,7 @@ export interface TurntableParts extends ArmParts {
 }
 
 const DUST_MOTES = 7;
+const PLATTER_SLICES = 6;
 
 function hardware(deck: HTMLElement): SVGElement {
   const svg = layer(deck, 'onp-deck-top');
@@ -37,6 +38,7 @@ function hardware(deck: HTMLElement): SVGElement {
 }
 
 function platterStack(scene: HTMLElement): { warp: HTMLElement; platter: HTMLElement } {
+  for (let i = 0; i < PLATTER_SLICES; i++) scene.createDiv({ cls: i === 0 ? ['onp-platter-slice', 'is-base'] : 'onp-platter-slice' }).setCssProps({ '--s': String(i) });
   const warp = scene.createDiv({ cls: 'onp-warp' });
   warp.createDiv({ cls: 'onp-platter-ring' });
   const platter = warp.createDiv({ cls: 'onp-platter' });
