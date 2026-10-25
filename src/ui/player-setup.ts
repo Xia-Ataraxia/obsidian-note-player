@@ -26,5 +26,8 @@ export function createPlayer(plugin: Plugin, callbacks: PlayerCallbacks) {
 		statusBar.update(percent);
 	};
 
+	surface.onSaveProgress = (percent: number) => statusBar.update(percent, 'Saving');
+	surface.onStreamPhase = (phase) => statusBar.showStream(phase);
+
 	return { surface, hostEl, statusBar };
 }

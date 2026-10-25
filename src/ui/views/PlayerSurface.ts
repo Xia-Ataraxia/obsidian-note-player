@@ -1,9 +1,12 @@
 import type { AudioCachePort } from '../../types/view';
 import type { PlaylistTrack } from '../../types/view';
 import type { PlaybackState, RepeatMode } from '../../types/playback';
+import { chooseSource, shouldKeepSaving } from '../../domain/playback-source';
 import { AUDIO_START_MS } from '../../domain/turntable';
 
 export type { PlaybackState };
+
+export type StreamPhase = 'connecting' | 'streaming' | 'idle';
 
 export function formatTime(seconds: number): string {
 	const s = Math.floor(seconds);
@@ -24,8 +27,12 @@ export class PlayerSurface {
 	private downloadCancelled = false;
 	private repeatMode: RepeatMode = 'none';
 	private startTimer: number | null = null;
+	private savingVideoId: string | null = null;
 
 	onDownloadProgress: ((percent: number, error?: string) => void) | null = null;
+	/** Background save of a streamed track; kept separate so it never raises download notices. */
+	onSaveProgress: ((percent: number) => void) | null = null;
+	onStreamPhase: ((phase: StreamPhase) => void) | null = null;
 
 	constructor(
 		host: HTMLElement,
@@ -49,11 +56,12 @@ export class PlayerSurface {
 		// Cancel any in-flight download for a different track and invalidate its callbacks
 		if (this.currentVideoId && this.currentVideoId !== track.videoId) {
 			this.downloadToken++; // immediately invalidate stale callbacks
-			this.audioCacheService?.cancel(this.currentVideoId);
+			this.releasePrevious(this.currentVideoId);
 		}
 
 		this.silentPauseAudio();
 		this.audioElement = null;
+		this.onStreamPhase?.('idle');
 
 		if (!this.audioCacheService) {
 			this.renderUnavailable();
@@ -61,8 +69,10 @@ export class PlayerSurface {
 		}
 
 		const videoId = track.videoId;
+		const token = ++this.downloadToken;
 
 		if (await this.audioCacheService.hasCached(videoId)) {
+			if (token !== this.downloadToken) return;
 			this.mountAudio(this.audioCacheService.getFileUrl(videoId), autoplayEnabled);
 			this.activateTrack(videoId, autoplayEnabled);
 			return;
@@ -71,8 +81,82 @@ export class PlayerSurface {
 		this.currentVideoId = videoId;
 		this.currentAutoplay = autoplayEnabled;
 		this.isDownloading = true;
-		const token = ++this.downloadToken;
 		this.onPlaybackChange('paused');
+
+		const streamUrl = await this.resolveStream(videoId);
+		if (token !== this.downloadToken) return;
+		if (chooseSource(false, streamUrl) === 'stream' && streamUrl) {
+			this.isDownloading = false;
+			this.startStream(videoId, streamUrl, autoplayEnabled);
+			return;
+		}
+		await this.downloadThenPlay(videoId, autoplayEnabled, token);
+	}
+
+	private async resolveStream(videoId: string): Promise<string | null> {
+		const service = this.audioCacheService;
+		if (typeof service?.resolveStreamUrl !== 'function') return null;
+		this.onStreamPhase?.('connecting');
+		try {
+			return await service.resolveStreamUrl(videoId);
+		} catch (e) {
+			console.debug('[note-player] stream unavailable, downloading instead', e);
+			this.onStreamPhase?.('idle');
+			return null;
+		}
+	}
+
+	private startStream(videoId: string, url: string, autoplay: boolean): void {
+		this.mountAudio(url, autoplay, () => this.streamFailed(videoId, autoplay));
+		this.activateTrack(videoId, autoplay);
+		this.onStreamPhase?.('streaming');
+		this.saveInBackground(videoId);
+	}
+
+	/** Never swaps the source mid-song; the cached file is used from the next play. */
+	private saveInBackground(videoId: string): void {
+		const service = this.audioCacheService;
+		if (!service) return;
+		this.savingVideoId = videoId;
+		service.download(videoId, (percent) => {
+			if (this.savingVideoId === videoId) this.onSaveProgress?.(percent);
+		}).then(() => {
+			if (this.savingVideoId === videoId) this.onSaveProgress?.(100);
+		}).catch((e: unknown) => {
+			console.debug('[note-player] background save failed', e);
+			if (this.savingVideoId === videoId) this.onSaveProgress?.(-1);
+		}).finally(() => {
+			if (this.savingVideoId === videoId) this.savingVideoId = null;
+		});
+	}
+
+	/** Leaving a track: stop its foreground download, or its background save if it was skipped early. */
+	private releasePrevious(videoId: string): void {
+		const skipped = this.savingVideoId === videoId && !shouldKeepSaving(this.getCurrentTime());
+		if (this.isDownloading || skipped) {
+			this.audioCacheService?.cancel(videoId);
+			if (skipped) {
+				this.savingVideoId = null;
+				this.onSaveProgress?.(-1);
+			}
+		}
+	}
+
+	/** A stream that dies before producing sound falls back to the download path. */
+	private streamFailed(videoId: string, autoplay: boolean): void {
+		if (this.currentVideoId !== videoId || this.getCurrentTime() > 0) return;
+		console.debug('[note-player] stream failed, falling back to download');
+		this.silentPauseAudio();
+		this.audioElement = null;
+		this.savingVideoId = null;
+		this.onStreamPhase?.('idle');
+		this.isDownloading = true;
+		this.onPlaybackChange('paused');
+		void this.downloadThenPlay(videoId, autoplay, ++this.downloadToken);
+	}
+
+	private async downloadThenPlay(videoId: string, autoplayEnabled: boolean, token: number): Promise<void> {
+		if (!this.audioCacheService) return;
 		this.onDownloadProgress?.(0);
 
 		try {
@@ -102,7 +186,11 @@ export class PlayerSurface {
 	}
 
 	cancelDownload(): void {
-		if (this.currentVideoId) {
+		if (this.savingVideoId) {
+			this.audioCacheService?.cancel(this.savingVideoId);
+			this.savingVideoId = null;
+			this.onSaveProgress?.(-1);
+		} else if (this.currentVideoId) {
 			this.downloadCancelled = true;
 			this.onDownloadProgress?.(-1);
 			this.audioCacheService?.cancel(this.currentVideoId);
@@ -173,6 +261,8 @@ export class PlayerSurface {
 	}
 
 	destroy(): void {
+		this.downloadToken++;
+		this.savingVideoId = null;
 		this.silentPauseAudio();
 		this.audioElement = null;
 	}
@@ -191,7 +281,7 @@ export class PlayerSurface {
 		}
 	}
 
-	private mountAudio(url: string, autoplay: boolean): void {
+	private mountAudio(url: string, autoplay: boolean, onError?: () => void): void {
 		this.silentPauseAudio();
 		this.audioElement?.remove();
 
@@ -214,6 +304,7 @@ export class PlayerSurface {
 			if (this.suppressCallbacks) return;
 			this.onPlaybackChange('paused');
 		});
+		if (onError) audio.addEventListener('error', onError);
 		this.audioElement = audio;
 
 		if (autoplay) this.startAudio(audio);

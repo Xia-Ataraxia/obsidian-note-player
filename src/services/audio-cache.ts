@@ -5,6 +5,10 @@ import { FLAT_PLAYLIST_PRINT } from '../domain/track-import';
 import { parseYtdlpError, parseYtdlpProgress } from '../domain/ytdlp';
 import type { AudioCachePort, VaultAdapter } from '../types/view';
 import type { AudioFormat } from '../types/audio';
+import { shareInFlight } from '../utils/in-flight';
+
+/** yt-dlp retries unreachable hosts for minutes; first play must not wait on that. */
+const STREAM_RESOLVE_TIMEOUT_MS = 10_000;
 
 export class AudioCacheService implements AudioCachePort {
 	private cacheDir: string;        // vault-relative
@@ -12,6 +16,9 @@ export class AudioCacheService implements AudioCachePort {
 	private ytdlpPath: string;
 	private activeDownloads = new Map<string, ChildProcess>();
 	private downloadPromises = new Map<string, Promise<string>>();
+	private progressListeners = new Map<string, Set<(percent: number) => void>>();
+	private streamPromises = new Map<string, Promise<string>>();
+	private resolvers = new Set<ChildProcess>();
 	private adapter: VaultAdapter;
 	private absBase: string;
 
@@ -58,17 +65,19 @@ export class AudioCacheService implements AudioCachePort {
 		return join(this.absBase, this.vaultRelativePath(videoId));
 	}
 
-	async download(videoId: string, onProgress: (percent: number) => void): Promise<string> {
+	download(videoId: string, onProgress: (percent: number) => void): Promise<string> {
 		const output = this.absolutePath(videoId);
-		if (existsSync(output)) return output;
+		if (existsSync(output)) return Promise.resolve(output);
 
-		if (this.downloadPromises.has(videoId)) {
-			return this.downloadPromises.get(videoId)!;
-		}
+		const listeners = this.progressListeners.get(videoId) ?? new Set();
+		listeners.add(onProgress);
+		this.progressListeners.set(videoId, listeners);
+		return shareInFlight(this.downloadPromises, videoId, () => this.runDownload(videoId, output));
+	}
 
+	private runDownload(videoId: string, output: string): Promise<string> {
 		this.cleanIntermediate(videoId);
-
-		const p = new Promise<string>((resolve, reject) => {
+		return new Promise<string>((resolve, reject) => {
 			let stderrOutput = '';
 			const proc = spawn(this.ytdlpPath, [
 				'-x', '--audio-format', this.format, '--audio-quality', '0',
@@ -83,7 +92,7 @@ export class AudioCacheService implements AudioCachePort {
 				const line = data.toString();
 				stderrOutput += line;
 				const percent = parseYtdlpProgress(line);
-				if (percent !== null) onProgress(percent);
+				if (percent !== null) this.progressListeners.get(videoId)?.forEach((notify) => notify(percent));
 			});
 
 			proc.stdout.on('data', (data: Buffer) => {
@@ -91,7 +100,7 @@ export class AudioCacheService implements AudioCachePort {
 			});
 
 			proc.on('close', (code) => {
-				this.activeDownloads.delete(videoId);
+				this.forget(videoId, proc);
 				if (code === 0 && existsSync(output)) {
 					this.cleanIntermediate(videoId);
 					resolve(output);
@@ -101,14 +110,46 @@ export class AudioCacheService implements AudioCachePort {
 			});
 
 			proc.on('error', (err) => {
-				this.activeDownloads.delete(videoId);
+				this.forget(videoId, proc);
 				reject(err);
 			});
-		}).finally(() => {
-			this.downloadPromises.delete(videoId);
 		});
-		this.downloadPromises.set(videoId, p);
-		return p;
+	}
+
+	/** Ignores late events from a cancelled process so they cannot clear a newer run's state. */
+	private forget(videoId: string, proc: ChildProcess): void {
+		if (this.activeDownloads.get(videoId) !== proc) return;
+		this.activeDownloads.delete(videoId);
+		this.progressListeners.delete(videoId);
+	}
+
+	/** Direct audio URL for live playback. googlevideo URLs expire, so never persist them. */
+	resolveStreamUrl(videoId: string): Promise<string> {
+		return shareInFlight(this.streamPromises, videoId, () => new Promise<string>((resolve, reject) => {
+			let stdout = '';
+			let stderr = '';
+			const proc = spawn(this.ytdlpPath, [
+				'-f', 'bestaudio[ext=m4a]/bestaudio', '-g', '--no-playlist',
+				`https://www.youtube.com/watch?v=${videoId}`,
+			], { env: this.spawnEnv(), timeout: STREAM_RESOLVE_TIMEOUT_MS });
+			this.resolvers.add(proc);
+			proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
+			proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+			proc.on('error', (err) => { this.resolvers.delete(proc); reject(err); });
+			proc.on('close', (code) => {
+				this.resolvers.delete(proc);
+				const url = stdout.trim().split('\n')[0];
+				if (code === 0 && url) resolve(url);
+				else reject(new Error(parseYtdlpError(stderr)));
+			});
+		}));
+	}
+
+	/** Kills every in-flight yt-dlp process; called on plugin unload. */
+	dispose(): void {
+		for (const videoId of [...this.activeDownloads.keys()]) this.cancel(videoId);
+		for (const proc of this.resolvers) proc.kill('SIGTERM');
+		this.resolvers.clear();
 	}
 
 	/** Raw flat-playlist rows (`id<TAB>title<TAB>uploader<TAB>playlist_title`). */
@@ -132,6 +173,7 @@ export class AudioCacheService implements AudioCachePort {
 
 	cancel(videoId: string): void {
 		this.downloadPromises.delete(videoId);
+		this.progressListeners.delete(videoId);
 		const proc = this.activeDownloads.get(videoId);
 		if (proc) {
 			proc.kill('SIGTERM');

@@ -21,20 +21,26 @@ export class DownloadStatusBar {
 		});
 	}
 
-	update(percent: number): void {
-		if (this.completionTimer !== null) {
-			window.clearTimeout(this.completionTimer);
-			this.completionTimer = null;
-		}
+	/** Shows the live-source state; progress and completion from `update` take over from it. */
+	showStream(phase: 'connecting' | 'streaming' | 'idle'): void {
+		if (phase === 'idle') return this.reset();
+		this.clearCompletionTimer();
+		this.isDownloading = false;
+		setIcon(this.iconEl, phase === 'connecting' ? 'loader' : 'radio');
+		this.msgEl.setText(phase === 'connecting' ? ' Connecting…' : ' Streaming');
+	}
+
+	update(percent: number, verb = 'Downloading'): void {
+		this.clearCompletionTimer();
 
 		if (percent >= 0 && percent < 100) {
 			this.isDownloading = true;
 			setIcon(this.iconEl, 'loader');
-			this.msgEl.setText(` Downloading ${Math.round(percent)}%`);
+			this.msgEl.setText(` ${verb} ${Math.round(percent)}%`);
 		} else if (percent === 100) {
 			this.isDownloading = false;
 			setIcon(this.iconEl, 'check');
-			this.msgEl.setText(' Downloaded ✓');
+			this.msgEl.setText(verb === 'Saving' ? ' Saved ✓' : ' Downloaded ✓');
 			this.completionTimer = window.setTimeout(() => this.reset(), COMPLETION_VISIBLE_MS);
 		} else {
 			// percent === -1 (error) or cancel — Notice toast in main.ts handles messaging
@@ -43,10 +49,13 @@ export class DownloadStatusBar {
 	}
 
 	destroy(): void {
-		if (this.completionTimer !== null) {
-			window.clearTimeout(this.completionTimer);
-			this.completionTimer = null;
-		}
+		this.clearCompletionTimer();
+	}
+
+	private clearCompletionTimer(): void {
+		if (this.completionTimer === null) return;
+		window.clearTimeout(this.completionTimer);
+		this.completionTimer = null;
 	}
 
 	private reset(): void {
