@@ -11,6 +11,7 @@ import type { NotePlayerSettings } from './types/settings';
 import type { AudioCachePort, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from './types/view';
 import { dedupe, sanitizeFileName } from './utils/dedupe';
 import { AudioCacheService } from './services/audio-cache';
+import { PeaksStore } from './services/peaks-store';
 import { openCompanionBase, writeCompanionBaseFiles } from './services/companion-bases';
 import { TrackImporter } from './services/track-importer';
 import { ensureFolder, getAvailablePath, openNoteInTab, collectNoteSnapshots, rewriteNote, waitForMetadata } from './services/vault-io';
@@ -39,6 +40,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private isLoading = false;
   private errorMessage: string | null = null;
   private audioCacheService: AudioCacheService | null = null;
+  private peaksStore: PeaksStore | null = null;
   private vaultBasePath = '';
   private playerSurface: PlayerSurface | null = null;
   private playerHostEl: HTMLDivElement | null = null;
@@ -308,6 +310,14 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     this.playerSurface?.setRepeatMode(this.settings.repeatMode);
     await this.saveSettings();
     this.notifyChange();
+  }
+
+  getPeaksStore(): PeaksStore | null {
+    const cache = this.audioCacheService;
+    if (!cache) return null;
+    const cacheDir = `${this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`}/audio-cache`;
+    this.peaksStore ??= new PeaksStore(this.app.vault.adapter, cacheDir, (id) => `${cacheDir}/${id}.${this.settings.audioFormat}`);
+    return this.peaksStore;
   }
 
   getAudioCacheService(): AudioCachePort | null {
