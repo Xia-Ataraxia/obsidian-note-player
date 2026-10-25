@@ -17,5 +17,6 @@ export function sanitizeFileName(input: string, fallback = 'New Playlist'): stri
 		return fallback;
 	}
 
-	return trimmed.replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
+	// `#` and `^` would turn the note's wikilink into a heading or block reference.
+	return trimmed.replace(/[\\/:*?"<>|#^]/g, ' ').replace(/\s+/g, ' ').trim();
 }
