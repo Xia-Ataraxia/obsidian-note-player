@@ -103,10 +103,14 @@ export class Turntable {
 
   private ensureSpin(): Animation | null {
     const doc = this.vinyl.ownerDocument;
+    if (doc.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.spin?.cancel();
+      this.spin = null;
+      return null;
+    }
     if (this.spin && this.spinDoc === doc) return this.spin;
     this.spin?.cancel();
     this.spin = null;
-    if (doc.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
     this.spin = this.vinyl.animate(
       [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }],
       { duration: SPIN_MS, iterations: Infinity },

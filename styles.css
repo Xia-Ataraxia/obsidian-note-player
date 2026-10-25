@@ -673,6 +673,14 @@
 	inset: 6% 6% 6% 6%;
 }
 
+.onp-turntable {
+	--onp-vinyl-color: var(--color-base-100);
+}
+
+.theme-dark .onp-turntable {
+	--onp-vinyl-color: var(--color-base-00);
+}
+
 .onp-vinyl {
 	position: relative;
 	width: 100%;
@@ -681,8 +689,9 @@
 	background: radial-gradient(
 		circle,
 		transparent 34%,
-		color-mix(in srgb, var(--text-normal) 88%, var(--background-primary)) 35%
+		var(--onp-vinyl-color) 35%
 	);
+	border: 1px solid var(--background-modifier-border);
 	box-shadow: var(--shadow-s);
 }
 
