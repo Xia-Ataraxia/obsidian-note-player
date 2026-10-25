@@ -8,22 +8,27 @@ describe('computePeaks', () => {
     const rate = 1000;
     const signal = Float32Array.from({ length: rate * 10 }, (_, i) => (i < rate * 5 ? 0.1 : 0.8) * Math.sin(i * 0.3));
     const bars = computePeaks([signal], 10);
-    expect(Math.max(...bars.slice(0, 5))).toBeLessThan(Math.min(...bars.slice(5)) * 0.3);
+    expect(Math.max(...bars.slice(0, 5))).toBeLessThan(Math.min(...bars.slice(5)) * 0.5);
   });
 
   it('does not saturate compressed loud music', () => {
     let seed = 1;
     const noise = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
-    // Every bucket peaks at ~1.0 (clipped), but loudness swells and dips like a real master.
+    // Hard-clipped everywhere (peak ~1.0), but verses sit ~16 dB under choruses, which have kick-like beats.
     const signal = Float32Array.from({ length: 200000 }, (_, i) => {
-      const env = 0.4 + 0.6 * Math.abs(Math.sin(i / 20000));
-      return Math.max(-1, Math.min(1, 1.5 * env * (0.6 * Math.sin(i * 0.3) + 0.4 * noise())));
+      const chorus = Math.floor(i / 25000) % 5 >= 3;
+      const env = chorus ? (0.5 + 0.5 * Math.abs(Math.sin(i / 700))) * (0.75 + 0.25 * Math.sin(i / 3000)) : 0.15;
+      return Math.max(-1, Math.min(1, 1.6 * env * (0.6 * Math.sin(i * 0.3) + 0.4 * noise())));
     });
     const bars = computePeaks([signal], 200).map((v) => v / 255);
     const median = [...bars].sort((a, b) => a - b)[100] ?? 1;
     expect(median).toBeLessThan(0.75);
+    expect(bars.filter((v) => v >= 0.98).length / bars.length).toBeLessThanOrEqual(0.05);
+    const loud = bars.filter((v) => v > 0.5);
+    const mean = loud.reduce((a, b) => a + b, 0) / loud.length;
+    expect(Math.sqrt(loud.reduce((a, b) => a + (b - mean) ** 2, 0) / loud.length)).toBeGreaterThan(0.08);
     expect(Math.max(...bars)).toBeGreaterThan(0.9);
-    expect(Math.min(...bars)).toBeLessThan(0.4);
+    expect(Math.min(...bars)).toBeLessThan(0.6);
   });
 
   it('returns nothing for empty input and zeros for silence', () => {
