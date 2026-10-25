@@ -24,7 +24,6 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "^26.6.5",
-    "builtin-modules": "5.4.0",
     "esbuild": "0.28.2",
     "eslint": "^10.13.0",
     "eslint-plugin-obsidianmd": "^0.4.2",
@@ -36,5 +35,8 @@
     "typescript-eslint": "8.72.0",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
+  },
+  "overrides": {
+    "moment": "2.31.0"
   }
 }
