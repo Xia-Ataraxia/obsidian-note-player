@@ -108,6 +108,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     this.downloadStatusBar = null;
     this.playerSurface?.destroy();
     this.playerSurface = null;
+    this.audioCacheService?.dispose();
     this.playerHostEl = null;
     this.scheduleRefresh.cancel();
   }
