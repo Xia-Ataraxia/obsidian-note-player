@@ -3,9 +3,10 @@ import type { Plugin } from 'obsidian';
 
 const COMPLETION_VISIBLE_MS = 1500;
 const SWAP_MS = 140;
+const FLASH_MS = 1400;
 const TITLE_MAX = 28;
 
-type Tone = 'idle' | 'busy' | 'live' | 'done' | 'failed';
+export type Tone = 'idle' | 'busy' | 'live' | 'done' | 'failed';
 
 export class DownloadStatusBar {
 	private readonly container: HTMLElement;
@@ -17,6 +18,8 @@ export class DownloadStatusBar {
 	private swapTimer: number | null = null;
 	private pendingText = '';
 	private nowPlaying: string | null = null;
+	private base = { icon: 'music', text: 'Note player', tone: 'idle' as Tone };
+	private flashTimer: number | null = null;
 
 	constructor(plugin: Plugin, onCancel: () => void, onRetry: () => void) {
 		const item = plugin.addStatusBarItem();
@@ -29,6 +32,20 @@ export class DownloadStatusBar {
 			if (this.isDownloading) onCancel();
 			else if (this.canRetry) onRetry();
 		});
+	}
+
+	get el(): HTMLElement {
+		return this.container;
+	}
+
+	/** Momentary feedback (e.g. the volume); the underlying state returns afterwards. */
+	flash(icon: string, text: string, tone: Tone = 'done'): void {
+		this.clearFlashTimer();
+		this.paint(icon, text, tone);
+		this.flashTimer = window.setTimeout(() => {
+			this.flashTimer = null;
+			this.paint(this.base.icon, this.base.text, this.base.tone);
+		}, FLASH_MS);
 	}
 
 	/** Shows the live-source state; progress and completion from `update` take over from it. */
@@ -46,7 +63,7 @@ export class DownloadStatusBar {
 	/** The resting bar names the playing track; busy and failed states keep priority. */
 	setNowPlaying(title: string | null): void {
 		this.nowPlaying = title;
-		const tone = this.container.dataset.tone;
+		const tone = this.base.tone;
 		if (tone === 'idle') this.reset();
 		else if (tone === 'live') this.show('radio', this.nowPlayingText() ?? 'Streaming', 'live');
 	}
@@ -75,12 +92,18 @@ export class DownloadStatusBar {
 	}
 
 	destroy(): void {
+		this.clearFlashTimer();
 		this.clearCompletionTimer();
 		this.clearSwapTimer();
 	}
 
 	/** Fades the text out and back in on a change; plain updates (progress ticks) skip the fade. */
 	private show(icon: string, text: string, tone: Tone): void {
+		this.base = { icon, text, tone };
+		if (this.flashTimer === null) this.paint(icon, text, tone);
+	}
+
+	private paint(icon: string, text: string, tone: Tone): void {
 		const changed = this.container.dataset.tone !== tone || this.container.dataset.icon !== icon;
 		this.container.dataset.tone = tone;
 		this.container.dataset.icon = icon;
@@ -97,6 +120,12 @@ export class DownloadStatusBar {
 			this.msgEl.setText(this.pendingText);
 			this.container.removeClass('is-swapping');
 		}, SWAP_MS);
+	}
+
+	private clearFlashTimer(): void {
+		if (this.flashTimer === null) return;
+		window.clearTimeout(this.flashTimer);
+		this.flashTimer = null;
 	}
 
 	private clearCompletionTimer(): void {

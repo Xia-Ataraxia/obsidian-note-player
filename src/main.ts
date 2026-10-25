@@ -24,6 +24,7 @@ import { VIEW_TYPE_NOTE_PLAYER, VIEW_TYPE_LEGACY, NotePlayerView } from './ui/vi
 import type { PlayerSurface } from './ui/views/PlayerSurface';
 import type { DownloadStatusBar } from './ui/download-status-bar';
 import { createPlayer } from './ui/player-setup';
+import type { VolumeController } from './ui/volume';
 
 const EMPTY_LIBRARY: MusicLibrarySnapshot = {
   tracks: [],
@@ -46,6 +47,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private playerHostEl: HTMLDivElement | null = null;
   private viewPlaybackState: PlaybackState = 'idle';
   private downloadStatusBar: DownloadStatusBar | null = null;
+  private volume: VolumeController | null = null;
   private readonly importer = new TrackImporter({
     app: this.app,
     getSettings: () => this.settings,
@@ -71,14 +73,24 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
         this.notifyChange();
         if (state === 'playing') void this.prefetchNext();
       },
+      volume: {
+        level: this.settings.volume,
+        muted: this.settings.volumeMuted,
+        persist: (state) => {
+          this.settings.volume = state.level;
+          this.settings.volumeMuted = state.muted;
+          void this.saveData(this.settings);
+        },
+      },
     });
+    this.volume = player.volume;
     this.playerSurface = player.surface;
     this.playerHostEl = player.hostEl;
     this.downloadStatusBar = player.statusBar;
     if (this.audioCacheService) this.playerSurface.setAudioCacheService(this.audioCacheService);
     this.playerSurface.setRepeatMode(this.settings.repeatMode);
 
-    const createView = (leaf: WorkspaceLeaf) => new NotePlayerView(leaf, this, this.playerSurface!, this.playerHostEl!);
+    const createView = (leaf: WorkspaceLeaf) => new NotePlayerView(leaf, this, this.playerSurface!, this.playerHostEl!, this.volume!);
     this.registerView(VIEW_TYPE_NOTE_PLAYER, createView);
     this.registerView(VIEW_TYPE_LEGACY, createView);
 
@@ -106,6 +118,8 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   }
 
   onunload(): void {
+    this.volume?.flush();
+    this.volume = null;
     this.downloadStatusBar?.destroy();
     this.downloadStatusBar = null;
     this.playerSurface?.destroy();

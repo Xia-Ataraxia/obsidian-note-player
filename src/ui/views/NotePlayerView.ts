@@ -9,6 +9,8 @@ import type {
 	PlaylistViewHost,
 	PlaylistViewState,
 } from '../../types/view';
+import type { VolumePort } from '../../types/volume';
+import { renderVolumeControl } from './volume-control';
 import { PlaylistNameModal } from './PlaylistNameModal';
 import { YoutubeUrlModal } from './YoutubeUrlModal';
 import { Turntable } from './Turntable';
@@ -36,6 +38,9 @@ export class NotePlayerView extends ItemView {
 	private readonly host: PlaylistViewHost;
 	private readonly playerSurface: PlayerSurface;
 	private readonly playerHostEl: HTMLElement;
+	private readonly volume: VolumePort;
+	private disposeVolumeControl: (() => void) | null = null;
+	private unsubscribeSound: (() => void) | null = null;
 	private elements: ViewElements | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private resizeObserver: ResizeObserver | null = null;
@@ -58,11 +63,13 @@ export class NotePlayerView extends ItemView {
 		host: PlaylistViewHost,
 		playerSurface: PlayerSurface,
 		playerHostEl: HTMLElement,
+		volume: VolumePort,
 	) {
 		super(leaf);
 		this.host = host;
 		this.playerSurface = playerSurface;
 		this.playerHostEl = playerHostEl;
+		this.volume = volume;
 		this.navigation = false;
 	}
 
@@ -94,6 +101,7 @@ export class NotePlayerView extends ItemView {
 		this.turntable.onLanded = () => this.playerSurface.needleLanded();
 		this.playerSurface.onNeedleWait = (waiting) => (waiting ? this.sound.startGroove() : this.sound.stopGroove());
 		this.playerSurface.onPhaseView = (phase) => this.showPhase(phase);
+		this.unsubscribeSound = this.volume.subscribe(() => this.sound.applyVolume());
 
 		const toolbarPanel = root.createDiv({ cls: 'onp-pane-section onp-toolbar-panel' });
 		const heroPanel = root.createDiv({ cls: 'onp-pane-section onp-hero-panel' });
@@ -108,6 +116,10 @@ export class NotePlayerView extends ItemView {
 			playerVideo: this.playerHostEl,
 			queuePanel,
 		};
+		this.registerDomEvent(playerPanel, 'wheel', (event) => {
+			event.preventDefault();
+			this.volume.wheel(event);
+		}, { passive: false });
 
 		this.resizeObserver = new ResizeObserver((entries) => {
 			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
@@ -130,6 +142,10 @@ export class NotePlayerView extends ItemView {
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = null;
 		this.stopProgressInterval();
+		this.disposeVolumeControl?.();
+		this.disposeVolumeControl = null;
+		this.unsubscribeSound?.();
+		this.unsubscribeSound = null;
 		this.disposeWave();
 		this.playerSurface.onCached = null;
 		this.playerSurface.onNeedleWait = null;
@@ -237,6 +253,8 @@ export class NotePlayerView extends ItemView {
 			this.playerHostEl.parentElement.removeChild(this.playerHostEl);
 		}
 
+		this.disposeVolumeControl?.();
+		this.disposeVolumeControl = null;
 		elements.playerPanel.empty();
 
 		const current = state.currentTrack;
@@ -285,6 +303,7 @@ export class NotePlayerView extends ItemView {
 			void this.runAction('Moved to next track', () => this.host.playNext());
 		}, { iconOnly: true }));
 		controls.createDiv({ cls: 'onp-controls-spacer' });
+		this.disposeVolumeControl = renderVolumeControl(controls, this.volume);
 		controls.appendChild(createActionButton('Open note', 'file-text', () => {
 			void this.runAction('', () => this.host.openNote(current.path), false);
 		}, { iconOnly: true }));
