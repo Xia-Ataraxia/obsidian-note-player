@@ -22,6 +22,14 @@ export interface PlaylistTrack {
 	tags: string[];
 }
 
+export interface PendingImport {
+	id: number;
+	/** Null for playlist imports. */
+	videoId: string | null;
+	/** Filled once oEmbed answers (or times out to the placeholder). */
+	title: string | null;
+}
+
 export interface PlaylistViewState {
 	errorMessage: string | null;
 	playlists: PlaylistSummary[];
@@ -36,6 +44,7 @@ export interface PlaylistViewState {
 	repeatMode: RepeatMode;
 	turntableSounds: boolean;
 	turntableStyle: TurntableStyle;
+	pendingImports: readonly PendingImport[];
 }
 
 /**

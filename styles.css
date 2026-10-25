@@ -483,6 +483,59 @@
 .onp-eq-bar:nth-child(2) { animation: onp-eq-bar2 0.8s ease-in-out infinite; }
 .onp-eq-bar:nth-child(3) { animation: onp-eq-bar3 1.0s ease-in-out infinite; }
 
+/* Import placeholder: a pasted URL gets a row at once while its note is written. */
+.onp-track-row.is-importing {
+	cursor: progress;
+	animation: onp-row-arrive 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.onp-track-row.is-importing .onp-row-thumb {
+	cursor: progress;
+}
+
+.onp-track-row.is-importing .onp-row-thumb::after {
+	opacity: 1;
+	background: linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--background-primary) 60%, transparent) 50%, transparent 75%);
+	background-size: 250% 100%;
+	animation: onp-import-shimmer 1.4s ease-in-out infinite;
+}
+
+.onp-track-row.is-importing .onp-row-title {
+	color: var(--text-muted);
+	animation: onp-status-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes onp-import-shimmer {
+	from { background-position: 100% 0; }
+	to { background-position: 0 0; }
+}
+
+@keyframes onp-row-arrive {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.onp-track-row.is-importing {
+		animation-name: onp-row-fade;
+	}
+
+	.onp-track-row.is-importing .onp-row-thumb::after {
+		background: color-mix(in srgb, var(--background-primary) 35%, transparent);
+		animation: onp-status-pulse 3s ease-in-out infinite;
+	}
+
+	.onp-track-row.is-importing .onp-row-title {
+		animation-duration: 3s;
+	}
+}
+
+@keyframes onp-row-fade {
+	from { opacity: 0; }
+}
+
 .onp-track-row.is-drag-source {
 	opacity: 0.45;
 	transform: scale(0.98);

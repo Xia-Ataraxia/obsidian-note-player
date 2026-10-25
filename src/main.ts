@@ -61,6 +61,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     playIfIdle: (path) => {
       if (this.viewPlaybackState !== 'playing') void this.playTrack(path);
     },
+    onPendingChange: () => this.notifyChange(),
   });
 
   async onload(): Promise<void> {
@@ -181,6 +182,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       repeatMode: this.settings.repeatMode,
       turntableSounds: this.settings.turntableSounds,
       turntableStyle: this.settings.turntableStyle,
+      pendingImports: this.importer.getPending(),
     };
   }
 
