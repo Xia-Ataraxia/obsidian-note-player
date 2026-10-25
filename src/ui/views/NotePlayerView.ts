@@ -46,7 +46,10 @@ export class NotePlayerView extends ItemView {
 	private lastRenderedTrackPath: string | null = null;
 	private progressIntervalId: number | null = null;
 	private isRendering = false;
-	private readonly sound = new TurntableSound(() => this.playerSurface.getVolume());
+	private readonly sound = new TurntableSound(
+		() => this.playerSurface.getVolume(),
+		() => this.contentEl.win.matchMedia('(prefers-reduced-motion: reduce)').matches,
+	);
 	private readonly turntable = new Turntable(this.sound);
 
 	constructor(
@@ -84,6 +87,9 @@ export class NotePlayerView extends ItemView {
 			this.registerDomEvent(root, gesture, () => this.sound.unlock(root.win));
 		}
 		this.registerDomEvent(root, 'paste', (event) => this.handlePaste(event));
+		this.playerSurface.trackLanding(true);
+		this.turntable.onLanded = () => this.playerSurface.needleLanded();
+		this.playerSurface.onNeedleWait = (waiting) => (waiting ? this.sound.startGroove() : this.sound.stopGroove());
 
 		const toolbarPanel = root.createDiv({ cls: 'onp-pane-section onp-toolbar-panel' });
 		const heroPanel = root.createDiv({ cls: 'onp-pane-section onp-hero-panel' });
@@ -123,6 +129,8 @@ export class NotePlayerView extends ItemView {
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = null;
 		this.stopProgressInterval();
+		this.playerSurface.onNeedleWait = null;
+		this.playerSurface.trackLanding(false);
 		this.turntable.destroy();
 		this.sound.close();
 		if (this.playerHostEl.parentElement) {

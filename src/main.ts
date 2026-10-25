@@ -68,7 +68,6 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
         this.viewPlaybackState = state;
         this.notifyChange();
       },
-      currentTitle: () => this.getState().currentTrack?.title ?? 'track',
     });
     this.playerSurface = player.surface;
     this.playerHostEl = player.hostEl;

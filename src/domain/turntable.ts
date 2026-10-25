@@ -3,6 +3,21 @@ export const AUDIO_START_MS = 650;
 export const SPIN_UP_MS = 900;
 export const SPIN_DOWN_MS = 700;
 export const CRACKLE_SECONDS = 1.8;
+export const FADE_IN_MS = 350;
+export const FADE_OUT_MS = 250;
+export const GROOVE_SECONDS = 2;
+
+export const REDUCED_SWING_MS = 200;
+const REDUCED_AUDIO_START_MS = 250;
+
+export function swingMs(reduced: boolean): number {
+  return reduced ? REDUCED_SWING_MS : SWING_MS;
+}
+
+/** Time left before music may start: the needle must have landed first. */
+export function needleDelayMs(sinceArmMovedMs: number, reduced = false): number {
+  return Math.max(0, (reduced ? REDUCED_AUDIO_START_MS : AUDIO_START_MS) - sinceArmMovedMs);
+}
 
 export type SoundKind = 'drop' | 'lift';
 export type Rng = () => number;
@@ -51,6 +66,19 @@ export function renderCrackle(sampleRate: number, seconds: number, rng: Rng): Fl
     const hiss = (rng() * 2 - 1) * 0.02;
     const pop = rng() < popsPerSecond / sampleRate ? (rng() * 2 - 1) * 0.8 : 0;
     out[i] = (hiss + pop) * fade;
+  }
+  return out;
+}
+
+/** Steady run-in groove: faint hiss and rare soft pops, safe to loop. */
+export function renderGroove(sampleRate: number, seconds: number, rng: Rng): Float32Array<ArrayBuffer> {
+  const length = Math.round(sampleRate * seconds);
+  const out = new Float32Array(length);
+  const popsPerSecond = 12;
+  for (let i = 0; i < length; i++) {
+    const hiss = (rng() * 2 - 1) * 0.03;
+    const pop = rng() < popsPerSecond / sampleRate ? (rng() * 2 - 1) * 0.5 : 0;
+    out[i] = hiss + pop;
   }
   return out;
 }
