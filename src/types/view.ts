@@ -29,6 +29,7 @@ export interface PlaylistViewState {
 	autoplayEnabled: boolean;
 	playbackState: PlaybackState;
 	repeatMode: RepeatMode;
+	turntableSounds: boolean;
 }
 
 /**
@@ -51,6 +52,7 @@ export interface PlaylistViewHost {
 	playNext(): Promise<void>;
 	addTrackToPlaylist(path: string): Promise<void>;
 	addActiveNoteToPlaylist?(): Promise<void>;
+	addTrackFromUrl?(input: string): Promise<void>;
 	removeTrackFromPlaylist(path: string): Promise<void>;
 	moveTrackInPlaylist(fromIndex: number, toIndex: number): Promise<void>;
 	openNote(path: string): Promise<void>;
@@ -74,6 +76,7 @@ export interface AudioCachePort {
 	download(videoId: string, onProgress: (percent: number) => void): Promise<string>;
 	cancel(videoId: string): void;
 	isAvailable(): boolean;
+	listPlaylist?(listId: string): Promise<string>;
 }
 
 export interface VaultWriter {

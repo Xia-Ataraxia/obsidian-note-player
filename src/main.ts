@@ -1,5 +1,5 @@
 import { debounce, Plugin, WorkspaceLeaf } from 'obsidian';
-import { buildCompanionBaseFiles, MUSIC_BASE_NAME, PLAYLISTS_BASE_NAME } from './domain/base-files';
+import { MUSIC_BASE_NAME, PLAYLISTS_BASE_NAME } from './domain/base-files';
 import { DEFAULT_SETTINGS, normalizeSettings } from './domain/config';
 import { buildMusicLibrary } from './domain/library-index';
 import { PlaybackStateManager } from './domain/playback-state';
@@ -10,7 +10,9 @@ import type { NotePlayerSettings } from './types/settings';
 import type { AudioCachePort, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from './types/view';
 import { dedupe, sanitizeFileName } from './utils/dedupe';
 import { AudioCacheService } from './services/audio-cache';
-import { ensureFolder, getAvailablePath, openNoteInTab, collectNoteSnapshots, rewriteNote, writeBaseFiles } from './services/vault-io';
+import { openCompanionBase, writeCompanionBaseFiles } from './services/companion-bases';
+import { TrackImporter } from './services/track-importer';
+import { ensureFolder, getAvailablePath, openNoteInTab, collectNoteSnapshots, rewriteNote } from './services/vault-io';
 import { registerCommands } from './ui/commands';
 import { showNotice } from './ui/notices';
 import { canonicalizeNotePath } from './utils/wikilink';
@@ -41,6 +43,15 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private playerHostEl: HTMLDivElement | null = null;
   private viewPlaybackState: PlaybackState = 'idle';
   private downloadStatusBar: DownloadStatusBar | null = null;
+  private readonly importer = new TrackImporter({
+    app: this.app,
+    getSettings: () => this.settings,
+    getLibrary: () => this.library,
+    getSelectedPlaylistPath: () => this.selectedPlaylist()?.path ?? null,
+    getAudioCache: () => this.audioCacheService,
+    createPlaylist: (name) => this.createPlaylistNote(name),
+    addTracks: (playlistPath, paths) => this.addPathsToPlaylist(playlistPath, paths),
+  });
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -78,6 +89,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       refreshBases: () => this.refreshCompanionBases(),
       addActiveNote: () => this.addActiveNoteToSelectedPlaylist(),
       loadActivePlaylist: () => this.activateActivePlaylist(),
+      addTrackFromUrl: (input) => this.addTrackFromUrl(input),
     });
 
     this.addSettingTab(new NotePlayerSettingsTab(this.app, this));
@@ -140,6 +152,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       autoplayEnabled: this.settings.autoplayEnabled,
       playbackState: this.viewPlaybackState,
       repeatMode: this.settings.repeatMode,
+      turntableSounds: this.settings.turntableSounds,
     };
   }
 
@@ -162,7 +175,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   }
 
   async refreshCompanionBases(): Promise<void> {
-    await this.writeCompanionBaseFiles(true);
+    await writeCompanionBaseFiles(this.app, this.settings, true);
   }
 
   async selectPlaylist(path: string | null): Promise<void> {
@@ -227,6 +240,15 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     }
   }
 
+  addTrackFromUrl(input: string): Promise<void> {
+    return this.importer.importFromInput(input);
+  }
+
+  private addPathsToPlaylist(playlistPath: string, paths: string[]): Promise<void> {
+    const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
+    return this.savePlaylistTracks(playlistPath, dedupe([...playlist.trackPaths, ...paths]), { refresh: true });
+  }
+
   async addActiveNoteToPlaylist(): Promise<void> {
     await this.addActiveNoteToSelectedPlaylist();
   }
@@ -269,7 +291,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   }
 
   async openBase(kind: 'music' | 'playlists'): Promise<void> {
-    await this.openCompanionBase(kind === 'music' ? MUSIC_BASE_NAME : PLAYLISTS_BASE_NAME);
+    await openCompanionBase(this.app, this.settings, kind === 'music' ? MUSIC_BASE_NAME : PLAYLISTS_BASE_NAME);
   }
 
   async toggleAutoplay(): Promise<void> {
@@ -317,7 +339,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     });
   }
 
-  private async createPlaylistNote(name: string, seedTrackPaths: string[] = []): Promise<void> {
+  private async createPlaylistNote(name: string, seedTrackPaths: string[] = []): Promise<string> {
     const filePath = getAvailablePath(this.app, this.settings.playlistFolder, sanitizeFileName(name));
     await ensureFolder(this.app, this.settings.playlistFolder);
     await this.app.vault.create(
@@ -330,6 +352,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     await this.refreshIndex();
 
     showNotice('playlist_created', { name });
+    return filePath;
   }
 
   revealTrack(path: string): Promise<void> {
@@ -416,21 +439,6 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     await this.activateView();
   }
 
-  private async writeCompanionBaseFiles(shouldNotify: boolean): Promise<void> {
-    const baseFiles = buildCompanionBaseFiles(this.settings.playlistFolder, this.settings);
-
-    await writeBaseFiles(this.app, baseFiles);
-
-    if (shouldNotify) {
-      const firstFile = baseFiles[0]?.path ?? '';
-      const folder = firstFile.includes('/') ? firstFile.slice(0, firstFile.lastIndexOf('/')) : '/';
-      showNotice('bases_refreshed', {
-        count: baseFiles.length,
-        folder: folder || '/',
-      });
-    }
-  }
-
   private async addActiveNoteToSelectedPlaylist(): Promise<void> {
     const playlistPath = resolveSelectedPlaylistPath(this.settings.lastPlaylistPath, this.library.playlists);
     if (!playlistPath) {
@@ -453,18 +461,6 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     await this.addTrackToSpecificPlaylist(playlistPath, track.path);
   }
 
-  private async openCompanionBase(fileName: string): Promise<void> {
-    const filePath = this.getCompanionBasePath(fileName);
-    if (!this.app.vault.getAbstractFileByPath(filePath)) {
-      await this.writeCompanionBaseFiles(false);
-    }
-    if (!this.app.vault.getAbstractFileByPath(filePath)) {
-      throw new Error(`Base file not found: ${filePath}`);
-    }
-
-    await openNoteInTab(this.app, filePath);
-  }
-
   private selectedPlaylist(): PlaylistNote | null {
     const selectedPlaylistPath = resolveSelectedPlaylistPath(this.settings.lastPlaylistPath, this.library.playlists);
     return this.library.playlists.find((playlist) => playlist.path === selectedPlaylistPath) ?? null;
@@ -472,14 +468,6 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
   private currentQueue(): PlaylistTrack[] {
     return this.selectedPlaylist()?.tracks.map(toPlaylistTrack) ?? [];
-  }
-
-  private getCompanionBasePath(fileName: string): string {
-    const match = buildCompanionBaseFiles(this.settings.playlistFolder, this.settings).find((file) =>
-      file.path === fileName || file.path.endsWith(`/${fileName}`),
-    );
-
-    return match?.path ?? fileName;
   }
 
   private notifyChange(): void {

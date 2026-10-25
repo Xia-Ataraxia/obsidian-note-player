@@ -1,6 +1,7 @@
 import type { AudioCachePort } from '../../types/view';
 import type { PlaylistTrack } from '../../types/view';
 import type { PlaybackState, RepeatMode } from '../../types/playback';
+import { AUDIO_START_MS } from '../../domain/turntable';
 
 export type { PlaybackState };
 
@@ -22,6 +23,7 @@ export class PlayerSurface {
 	private downloadToken = 0;
 	private downloadCancelled = false;
 	private repeatMode: RepeatMode = 'none';
+	private startTimer: number | null = null;
 
 	onDownloadProgress: ((percent: number, error?: string) => void) | null = null;
 
@@ -109,13 +111,34 @@ export class PlayerSurface {
 
 	play(): boolean {
 		if (!this.audioElement) return false;
-		void this.audioElement.play().catch(() => { /* interrupted by pause — benign */ });
+		this.startAudio(this.audioElement);
 		return true;
 	}
 
 	pause(): boolean {
 		if (!this.audioElement) return false;
+		if (this.cancelPendingStart()) this.onPlaybackChange('paused');
 		this.audioElement.pause();
+		return true;
+	}
+
+	getVolume(): number {
+		return this.audioElement?.volume ?? 1;
+	}
+
+	/** Lets the tonearm land before the music starts. */
+	private startAudio(audio: HTMLAudioElement): void {
+		if (this.startTimer !== null) return;
+		this.startTimer = window.setTimeout(() => {
+			this.startTimer = null;
+			void audio.play().catch(() => { /* interrupted by pause — benign */ });
+		}, AUDIO_START_MS);
+	}
+
+	private cancelPendingStart(): boolean {
+		if (this.startTimer === null) return false;
+		window.clearTimeout(this.startTimer);
+		this.startTimer = null;
 		return true;
 	}
 
@@ -158,6 +181,7 @@ export class PlayerSurface {
 	 *  The `pause` event fires synchronously from HTMLAudioElement.pause(),
 	 *  which would cause re-entrant render cycles through onPlaybackChange. */
 	private silentPauseAudio(): void {
+		this.cancelPendingStart();
 		if (!this.audioElement) return;
 		this.suppressCallbacks = true;
 		try {
@@ -192,9 +216,7 @@ export class PlayerSurface {
 		});
 		this.audioElement = audio;
 
-		if (autoplay) {
-			void audio.play().catch(() => { /* interrupted by pause — benign */ });
-		}
+		if (autoplay) this.startAudio(audio);
 	}
 
 	private renderUnavailable(): void {

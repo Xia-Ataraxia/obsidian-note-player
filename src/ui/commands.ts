@@ -1,4 +1,5 @@
-import type { Plugin } from 'obsidian';
+import { Notice, type Plugin } from 'obsidian';
+import { YoutubeUrlModal } from './views/YoutubeUrlModal';
 
 export interface CommandActions {
 	openView: () => Promise<void>;
@@ -6,6 +7,7 @@ export interface CommandActions {
 	refreshBases: () => Promise<void>;
 	addActiveNote: () => Promise<void>;
 	loadActivePlaylist: () => Promise<void>;
+	addTrackFromUrl: (input: string) => Promise<void>;
 }
 
 export function registerCommands(plugin: Plugin, actions: CommandActions): void {
@@ -20,4 +22,16 @@ export function registerCommands(plugin: Plugin, actions: CommandActions): void 
 	for (const [id, name, run] of commands) {
 		plugin.addCommand({ id, name, callback: () => { void run(); } });
 	}
+
+	plugin.addCommand({
+		id: 'add-youtube-url',
+		name: 'Add YouTube URL to playlist',
+		callback: () => {
+			new YoutubeUrlModal(plugin.app, (input) => {
+				actions.addTrackFromUrl(input).catch((error: unknown) => {
+					new Notice(error instanceof Error ? error.message : String(error));
+				});
+			}).open();
+		},
+	});
 }

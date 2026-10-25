@@ -103,6 +103,14 @@ tracks:
 
 The player panel opens in a sidebar tab. Your library appears automatically.
 
+### Add a Track from a YouTube URL
+
+Copy a YouTube link and either run **Add YouTube URL to playlist**, click the link button in the player toolbar, or paste straight into the player view. The note is created in the **Music folder** (or Obsidian's default location for new notes) with the title and channel from YouTube, then appended to the selected playlist. A playlist is created (`Inbox`) when none exists. Duplicate videos reuse the existing note. Playlist links add every video (requires yt-dlp).
+
+### Turntable
+
+The now-playing card shows a spinning record with a tonearm. Starting playback lowers the needle with a synthesized drop and vinyl crackle; pausing lifts it with a soft tick. Sounds are generated locally with Web Audio (no audio files) and follow the player volume. Disable them with **Turntable sounds** in settings. With reduced motion enabled the record stays still; sounds are unaffected.
+
 ### Player Controls
 
 - **Play/Pause** — Click the play button or press spacebar
@@ -119,6 +127,7 @@ Use Obsidian's command palette (`Cmd/Ctrl + P`) for quick actions:
 - **Open Note Player** — Show the player panel
 - **Refresh music library** — Rescan all notes for YouTube links
 - **Load active playlist note** — Load the currently viewed note as a playlist
+- **Add YouTube URL to playlist** — Create a music note from a link and add it
 - **Add active note to selected playlist** — Add the current note's URLs to a playlist
 - **Create or refresh companion Bases** — Generate database views
 
@@ -139,6 +148,8 @@ Open **Settings > Obsidian Note Player** to customize:
 #### Folder Structure
 
 **Playlist folder** — Where new playlists are created (default: empty = vault root).
+
+**Music folder** — Where notes created from YouTube URLs are saved (default: empty = Obsidian's default location for new notes).
 
 #### Music Note Mapping
 
@@ -164,6 +175,7 @@ Customize the frontmatter structure used in playlist notes:
 - **Audio format** — Choose between MP3 and WAV for cached files
 - **Repeat mode** — Default repeat behavior (Off or Repeat One)
 - **Autoplay** — Automatically play next track when current track ends
+- **Turntable sounds** — Needle drop, lift, and crackle sounds (default: on)
 
 ### Troubleshooting
 
@@ -204,6 +216,13 @@ chmod -R u+w .obsidian/plugins/note-player/
 ### Privacy
 
 Obsidian Note Player stores downloaded audio locally on your device. No audio is sent to external servers beyond YouTube for the initial download via yt-dlp.
+
+#### Network use
+
+- When you add a track by URL, the video URL is sent to `youtube.com/oembed` to read its title, channel, and thumbnail. No API key is used.
+- Thumbnails are loaded from `img.youtube.com`.
+- Playlist links and audio downloads run through yt-dlp, which contacts YouTube.
+- Nothing else is contacted.
 
 ## Development
 

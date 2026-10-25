@@ -1,6 +1,7 @@
 import { spawn, spawnSync, type ChildProcess } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from 'fs';
 import { dirname, join } from 'path';
+import { FLAT_PLAYLIST_PRINT } from '../domain/track-import';
 import { parseYtdlpError, parseYtdlpProgress } from '../domain/ytdlp';
 import type { AudioCachePort, VaultAdapter } from '../types/view';
 import type { AudioFormat } from '../types/audio';
@@ -108,6 +109,25 @@ export class AudioCacheService implements AudioCachePort {
 		});
 		this.downloadPromises.set(videoId, p);
 		return p;
+	}
+
+	/** Raw flat-playlist rows (`id<TAB>title<TAB>uploader<TAB>playlist_title`). */
+	listPlaylist(listId: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			let stdout = '';
+			let stderr = '';
+			const proc = spawn(this.ytdlpPath, [
+				'--flat-playlist', '--print', FLAT_PLAYLIST_PRINT,
+				`https://www.youtube.com/playlist?list=${listId}`,
+			], { env: this.spawnEnv() });
+			proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
+			proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+			proc.on('error', reject);
+			proc.on('close', (code) => {
+				if (code === 0) resolve(stdout);
+				else reject(new Error(parseYtdlpError(stderr)));
+			});
+		});
 	}
 
 	cancel(videoId: string): void {

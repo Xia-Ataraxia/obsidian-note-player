@@ -13,6 +13,10 @@ export const NOTICE_CATALOG = {
 	download_complete: { template: 'Downloaded {{title}}.' },
 	download_failed: { template: 'Download failed: {{reason}}' },
 	download_cancelled: { template: 'Download cancelled.' },
+	track_already_in_playlist: { template: '{{title}} is already in {{playlist}}.' },
+	invalid_youtube_url: { template: 'Not a YouTube video or playlist URL.' },
+	metadata_unavailable: { template: 'YouTube metadata unavailable; saved with a placeholder title.' },
+	tracks_imported: { template: 'Added {{count}} tracks to {{playlist}}.' },
 	ytdlp_unavailable: { template: 'yt-dlp is not installed. Install via: brew install yt-dlp' },
 } as const;
 
