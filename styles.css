@@ -762,7 +762,7 @@
 	inset: 32%;
 	border-radius: 50%;
 	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-secondary);
+	background-color: color-mix(in srgb, var(--interactive-accent) 70%, var(--onp-vinyl-color));
 	background-image: var(--onp-label-image);
 	background-size: cover;
 	background-position: center;
@@ -790,7 +790,7 @@
 }
 
 .onp-turntable.is-playing .onp-tonearm {
-	transform: rotate(24deg);
+	transform: rotate(calc(8deg + var(--onp-arm-creep, 0) * 7deg));
 	filter: drop-shadow(0 3px 2px var(--background-modifier-border-hover));
 }
 
@@ -829,7 +829,7 @@
 	border-radius: var(--radius-s);
 	background: var(--interactive-accent);
 	transform-origin: 50% 0;
-	transform: rotate(-22deg);
+	transform: rotate(20deg);
 }
 
 @keyframes onp-head-settle {

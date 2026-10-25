@@ -375,6 +375,7 @@ export class NotePlayerView extends ItemView {
 		const nextTime = `${formatTime(currentTime)} / ${formatTime(duration)}`;
 
 		elements.progressFill.setCssProps({ '--onp-progress-width': nextWidth });
+		this.turntable.setProgress(ratio);
 		if (elements.progressTime.textContent !== nextTime) {
 			elements.progressTime.textContent = nextTime;
 		}

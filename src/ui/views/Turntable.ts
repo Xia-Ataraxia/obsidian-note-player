@@ -58,6 +58,10 @@ export class Turntable {
     }
   }
 
+  setProgress(ratio: number): void {
+    this.el.setCssProps({ '--onp-arm-creep': ratio.toFixed(3) });
+  }
+
   destroy(): void {
     this.cancelTimers();
     this.spin?.cancel();
