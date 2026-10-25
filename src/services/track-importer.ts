@@ -21,10 +21,12 @@ export interface TrackImporterDeps {
   getAudioCache(): AudioCachePort | null;
   createPlaylist(name: string): Promise<string>;
   addTracks(playlistPath: string, trackPaths: string[]): Promise<void>;
+  /** Starts the track unless something is already playing. */
+  playIfIdle(trackPath: string): void;
 }
 
 export class TrackImporter {
-  private inFlight = false;
+  private queue: Promise<void> = Promise.resolve();
 
   constructor(private readonly deps: TrackImporterDeps) {}
 
@@ -34,14 +36,12 @@ export class TrackImporter {
       showNotice('invalid_youtube_url');
       return;
     }
-    if (this.inFlight) return;
-    this.inFlight = true;
-    try {
-      if (target.kind === 'video') await this.importVideo(target.videoId);
-      else await this.importPlaylist(target.listId);
-    } finally {
-      this.inFlight = false;
-    }
+    // Imports run one at a time so a second paste waits instead of being dropped.
+    const run = this.queue.then(() => target.kind === 'video'
+      ? this.importVideo(target.videoId)
+      : this.importPlaylist(target.listId));
+    this.queue = run.catch(() => undefined);
+    await run;
   }
 
   private async importVideo(videoId: string): Promise<void> {
@@ -51,6 +51,7 @@ export class TrackImporter {
 
     if (plan.action === 'already-in-playlist') {
       showNotice('track_already_in_playlist', { title: this.titleOf(plan.path), playlist: playlist.title });
+      this.deps.playIfIdle(plan.path);
       return;
     }
 
@@ -68,6 +69,7 @@ export class TrackImporter {
     }
     await this.deps.addTracks(playlistPath, [trackPath]);
     showNotice('track_added', { title, playlist: playlist.title });
+    this.deps.playIfIdle(trackPath);
   }
 
   private async importPlaylist(listId: string): Promise<void> {
@@ -108,6 +110,7 @@ export class TrackImporter {
     }
     await this.deps.addTracks(playlistPath, paths);
     showNotice('tracks_imported', { tracks: plural(paths.length, 'track'), playlist: playlist.title });
+    this.deps.playIfIdle(paths[0]!);
   }
 
   private async fetchMeta(videoId: string): Promise<TrackMeta> {

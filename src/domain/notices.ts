@@ -1,7 +1,6 @@
 export const NOTICE_CATALOG = {
 	library_refreshed: { template: 'Refreshed {{tracks}} across {{playlists}}.' },
 	bases_refreshed: { template: 'Refreshed {{files}} in {{folder}}.' },
-	playlist_saved: { template: 'Saved playlist {{name}}.' },
 	playlist_created: { template: 'Created playlist {{name}}.' },
 	playlist_loaded: { template: 'Loaded playlist {{name}}.' },
 	track_added: { template: 'Added {{title}} to {{playlist}}.' },
