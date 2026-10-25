@@ -1659,6 +1659,11 @@
 	transition: border-color 400ms ease;
 }
 
+.theme-dark .onp-min-vinyl {
+	border-color: color-mix(in oklab, var(--np-paper) 34%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--np-ink) 70%, transparent);
+}
+
 .onp-turntable.is-armed .onp-min-vinyl {
 	border-color: var(--interactive-accent);
 }
