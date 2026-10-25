@@ -1,80 +1,84 @@
-/** Static DOM for the record player. Geometry is in a 100x100 box shared by every layer. */
-export const PIVOT_X = 84;
-export const PIVOT_Y = 13;
+/** Static DOM for the record player. Every layer shares the plinth's 100 x 80 box (see DECK). */
+import { DECK } from '../../domain/vinyl-physics';
+import { buildArm, restPost, type ArmParts } from './turntable-arm';
+import { layer, shape } from './turntable-svg';
+import { buildWood } from './turntable-wood';
 
-export interface TurntableParts {
+export interface TurntableParts extends ArmParts {
+  scene: HTMLElement;
   warp: HTMLElement;
   platter: HTMLElement;
-  arm: SVGSVGElement;
-  armGrab: SVGElement;
-  /** Rotation centre of the arm, used to project pointer positions onto the tilted deck. */
-  hub: SVGElement;
+  lamp: SVGElement;
 }
 
-type Attrs = Record<string, string>;
+const DUST_MOTES = 7;
 
-function shape(parent: SVGElement, tag: string, cls: string | string[], attr: Attrs): SVGElement {
-  return parent.createSvg(tag as 'path', { cls, attr });
+function hardware(deck: HTMLElement): SVGElement {
+  const svg = layer(deck, 'onp-deck-top');
+  const { pivot, centre } = DECK;
+  const at = (n: number) => String(n);
+  shape(svg, 'circle', 'onp-deck-well', { cx: at(centre.x), cy: at(centre.y), r: '33.4' });
+  shape(svg, 'rect', 'onp-base', { x: at(pivot.x - 6.4), y: at(pivot.y - 6.4), width: '12.8', height: '12.8', rx: '3.4' });
+  shape(svg, 'circle', 'onp-base-ring', { cx: at(pivot.x), cy: at(pivot.y), r: '5.2' });
+  const rest = restPost();
+  shape(svg, 'circle', 'onp-rest-ring', { cx: at(rest.x), cy: at(rest.y), r: '2.3' });
+  shape(svg, 'circle', 'onp-rest-pin', { cx: at(rest.x), cy: at(rest.y), r: '0.9' });
+  for (const x of [14, 62]) {
+    shape(svg, 'rect', 'onp-hinge', { x: at(x), y: '0.7', width: '8', height: '3.2', rx: '0.7' });
+    shape(svg, 'circle', 'onp-screw', { cx: at(x + 1.6), cy: '2.3', r: '0.45' });
+    shape(svg, 'circle', 'onp-screw', { cx: at(x + 6.4), cy: '2.3', r: '0.45' });
+  }
+  for (const [x, label, on] of [[9, '33', true], [17, '45', false]] as const) {
+    shape(svg, 'circle', ['onp-speed', on ? 'is-on' : 'is-off'], { cx: at(x), cy: '72.6', r: '2.3' });
+    shape(svg, 'text', 'onp-speed-label', { x: at(x), y: '77.6', 'text-anchor': 'middle' }).setText(label);
+  }
+  return shape(svg, 'circle', 'onp-lamp', { cx: '8', cy: '65.5', r: '1.15' });
 }
 
-/** The arm is drawn twice: once as a soft shadow cast on the platter, once as metal. */
-function drawArm(group: SVGElement, prefix: string): void {
-  shape(group, 'rect', [prefix, 'onp-arm-weight'], { x: '80.4', y: '1.2', width: '7.2', height: '6.4', rx: '1.4' });
-  shape(group, 'rect', [prefix, 'onp-arm-rod'], { x: '83.4', y: '7', width: '1.2', height: '7' });
-  shape(group, 'path', [prefix, 'onp-arm-tube'], { d: 'M83.2 13 L84.8 13 L84.45 70 L83.55 70 Z' });
-  shape(group, 'path', [prefix, 'onp-arm-shell'], { d: 'M82 68 L86 68 L86.8 77 L81.2 77 Z' });
-  shape(group, 'path', [prefix, 'onp-arm-lever'], { d: 'M86.4 71 L89.6 69.4 L89.8 70.4 L86.6 72.4 Z' });
-  shape(group, 'rect', [prefix, 'onp-arm-cartridge'], { x: '81.4', y: '76.4', width: '5.2', height: '5.2', rx: '0.8' });
-  shape(group, 'rect', [prefix, 'onp-arm-stylus'], { x: '83.75', y: '81.4', width: '0.5', height: '0.9' });
-}
-
-const PLINTH_SLABS = 8;
-const RIM_SLABS = 3;
-
-/** Stacked copies stand in for an extruded edge; CSS offsets each one along Z by its index. */
-function slabs(parent: HTMLElement, cls: string, count: number): void {
-  for (let i = 1; i <= count; i++) parent.createDiv({ cls }).setCssProps({ '--i': String(i) });
-}
-
-function layer(parent: Element, cls: string): SVGSVGElement {
-  return parent.createSvg('svg', { cls, attr: { viewBox: '0 0 100 100' } });
-}
-
-export function buildTurntableParts(root: HTMLElement): TurntableParts {
-  const scene = root.createDiv({ cls: 'onp-scene' });
-  scene.createDiv({ cls: 'onp-contact' });
-  slabs(scene, 'onp-slab', PLINTH_SLABS);
-  const deck = scene.createDiv({ cls: 'onp-deck' });
-  const top = layer(deck, 'onp-deck-top');
-  shape(top, 'circle', 'onp-deck-base', { cx: String(PIVOT_X), cy: String(PIVOT_Y), r: '8.6' });
-  shape(top, 'circle', 'onp-deck-base-inner', { cx: String(PIVOT_X), cy: String(PIVOT_Y), r: '6.2' });
-  shape(top, 'circle', 'onp-deck-rest', { cx: '93.4', cy: '66.2', r: '2.3' });
-  shape(top, 'circle', 'onp-deck-knob', { cx: '9.5', cy: '90.5', r: '4' });
-  shape(top, 'circle', 'onp-deck-led', { cx: '9.5', cy: '90.5', r: '1.2' });
-
-  slabs(scene, 'onp-rim', RIM_SLABS);
+function platterStack(scene: HTMLElement): { warp: HTMLElement; platter: HTMLElement } {
   const warp = scene.createDiv({ cls: 'onp-warp' });
   warp.createDiv({ cls: 'onp-platter-ring' });
   const platter = warp.createDiv({ cls: 'onp-platter' });
+  platter.createDiv({ cls: 'onp-strobe' });
   const vinyl = platter.createDiv({ cls: 'onp-vinyl' });
   vinyl.createDiv({ cls: 'onp-vinyl-grooves' });
   vinyl.createDiv({ cls: 'onp-vinyl-bands' });
+  vinyl.createDiv({ cls: 'onp-vinyl-wear' });
   const label = vinyl.createDiv({ cls: 'onp-vinyl-label' });
   label.createDiv({ cls: 'onp-vinyl-label-art' });
   label.createDiv({ cls: 'onp-vinyl-label-paper' });
   label.createDiv({ cls: 'onp-vinyl-hole' });
+  return { warp, platter };
+}
 
+function lid(scene: HTMLElement): void {
+  const el = scene.createDiv({ cls: 'onp-lid' });
+  el.createDiv({ cls: 'onp-lid-scratch' });
+  el.createDiv({ cls: 'onp-lid-streak' });
+  el.createDiv({ cls: 'onp-lid-edge' });
+  for (const side of ['is-left', 'is-right']) el.createDiv({ cls: ['onp-lid-hinge', side] });
+}
+
+export function buildTurntableParts(root: HTMLElement): TurntableParts {
+  root.createDiv({ cls: 'onp-glow' });
+  const dust = root.createDiv({ cls: 'onp-dust' });
+  for (let i = 1; i <= DUST_MOTES; i++) dust.createSpan({ cls: 'onp-mote' }).setCssProps({ '--i': String(i) });
+
+  const scene = root.createDiv({ cls: 'onp-scene' });
+  scene.createDiv({ cls: 'onp-contact' });
+  scene.createDiv({ cls: 'onp-front' });
+  const deck = scene.createDiv({ cls: 'onp-deck' });
+  buildWood(deck);
+  deck.createDiv({ cls: 'onp-deck-gloss' });
+  const lamp = hardware(deck);
+
+  const { warp, platter } = platterStack(scene);
   scene.createDiv({ cls: 'onp-sheen' });
   const spindle = layer(scene, 'onp-spindle-layer');
-  shape(spindle, 'circle', 'onp-spindle', { cx: '50', cy: '50', r: '1.7' });
-  shape(spindle, 'circle', 'onp-spindle-glint', { cx: '49.6', cy: '49.5', r: '0.6' });
+  shape(spindle, 'circle', 'onp-spindle', { cx: String(DECK.centre.x), cy: String(DECK.centre.y), r: '1.5' });
+  shape(spindle, 'circle', 'onp-spindle-glint', { cx: String(DECK.centre.x - 0.4), cy: String(DECK.centre.y - 0.5), r: '0.5' });
 
-  const rig = scene.createDiv({ cls: 'onp-arm-rig' });
-  drawArm(shape(layer(rig, 'onp-arm-cast-layer'), 'g', 'onp-arm-shadow', {}), 'onp-arm-cast');
-  const arm = layer(rig, 'onp-tonearm');
-  drawArm(shape(arm, 'g', 'onp-arm-body', {}), 'onp-arm-part');
-  const hub = shape(arm, 'circle', 'onp-arm-hub', { cx: String(PIVOT_X), cy: String(PIVOT_Y), r: '4.4' });
-  shape(arm, 'circle', 'onp-arm-hub-cap', { cx: String(PIVOT_X), cy: String(PIVOT_Y), r: '2.2' });
-  const armGrab = shape(arm, 'path', 'onp-arm-grab', { d: `M${PIVOT_X} ${PIVOT_Y + 8} L${PIVOT_X} 82` });
-  return { warp, platter, arm, armGrab, hub };
+  const arm = buildArm(scene);
+  lid(scene);
+  return { scene, warp, platter, lamp, ...arm };
 }

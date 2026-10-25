@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  angleDelta, armAngle, armPointerAngle, coastDegrees, PLAY_OMEGA, pointerAngle, ratioFromArmAngle, stepSpin,
+  angleDelta, ARM_END, ARM_REST, ARM_START, armAngle, grooveAngle, armPointerAngle, coastDegrees, PLAY_OMEGA, pointerAngle, ratioFromArmAngle, stepSpin,
 } from '../src/domain/vinyl-physics';
 
 const run = (omega: number, target: number, ms: number, settle: number) => {
@@ -49,5 +49,16 @@ describe('geometry', () => {
   it('wraps angle deltas', () => {
     expect(angleDelta(350, 10)).toBe(20);
     expect(angleDelta(10, 350)).toBe(-20);
+  });
+});
+
+describe('arm geometry', () => {
+  it('sweeps inward from the outer groove to the inner one, past the rest post', () => {
+    expect(ARM_REST).toBeLessThan(ARM_START);
+    expect(ARM_START).toBeLessThan(ARM_END);
+    expect(ARM_START).toBeCloseTo(33.4, 0);
+    expect(ARM_END).toBeCloseTo(47.4, 0);
+    expect(grooveAngle(21)).toBeGreaterThan(ARM_START);
+    expect(grooveAngle(21)).toBeLessThan(ARM_END);
   });
 });

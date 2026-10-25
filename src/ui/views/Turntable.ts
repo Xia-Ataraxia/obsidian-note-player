@@ -1,10 +1,11 @@
 import type { PlaybackState } from '../../types/playback';
-import { SPIN_DOWN_MS, SPIN_UP_MS, swingMs } from '../../domain/turntable';
+import { lidOpen, SPIN_DOWN_MS, SPIN_UP_MS, strobeSharpness, swingMs } from '../../domain/turntable';
 import {
   angleDelta, ARM_END, ARM_REST, ARM_START, armPointerAngle, coastDegrees, PLAY_OMEGA, pointerAngle,
   ratioFromArmAngle, scrubSeconds, stepSpin, type Spin,
 } from '../../domain/vinyl-physics';
 import type { PlaylistTrack } from '../../types/view';
+import { VolumeKnob, type KnobPort } from './turntable-knob';
 import { buildTurntableParts, type TurntableParts } from './turntable-parts';
 import type { TurntableSound } from './turntable-sound';
 
@@ -64,6 +65,7 @@ export class Turntable {
   private frameWin: Window | null = null;
   private tilt = TILT_WIDE;
   private readonly resizer: ResizeObserver;
+  private knob: VolumeKnob | null = null;
 
   constructor(private readonly sound: TurntableSound, private readonly host: TurntableHost) {
     this.el = createDiv({ cls: 'onp-turntable is-idle' });
@@ -74,10 +76,10 @@ export class Turntable {
     this.el.addEventListener('pointermove', (e) => this.parallax(e));
     this.el.addEventListener('pointerleave', () => this.el.setCssProps({ '--onp-px': '0', '--onp-py': '0' }));
     this.parts.platter.addEventListener('pointerdown', (e) => this.grabPlatter(e));
-    this.parts.armGrab.addEventListener('pointerdown', (e) => this.grabArm(e));
+    this.parts.grab.addEventListener('pointerdown', (e) => this.grabArm(e));
     this.parts.platter.addEventListener('pointermove', (e) => this.moveDrag(e));
-    this.parts.armGrab.addEventListener('pointermove', (e) => this.moveDrag(e));
-    for (const target of [this.parts.platter, this.parts.armGrab]) {
+    this.parts.grab.addEventListener('pointermove', (e) => this.moveDrag(e));
+    for (const target of [this.parts.platter, this.parts.grab]) {
       for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
         target.addEventListener(type, () => this.release());
       }
@@ -98,6 +100,7 @@ export class Turntable {
     this.state = state;
     this.el.removeClasses(['is-idle', 'is-paused', 'is-playing']);
     this.el.addClass(`is-${state}`);
+    this.el.toggleClass('is-open', lidOpen(state));
 
     if (state === 'playing') {
       if (soundsOn) this.sound.drop();
@@ -114,7 +117,14 @@ export class Turntable {
     this.setCreep(ratio);
   }
 
+  /** Wires the volume knob to the plugin's volume model; replaces any earlier knob. */
+  attachVolume(port: KnobPort): void {
+    this.knob?.destroy();
+    this.knob = new VolumeKnob(this.parts.scene, port);
+  }
+
   destroy(): void {
+    this.knob?.destroy();
     this.resizer.disconnect();
     this.cancelTimers();
     this.frameWin?.cancelAnimationFrame(this.frame);
@@ -220,6 +230,8 @@ export class Turntable {
     const tilt = WARP_DEGREES * Math.min(Math.abs(speed), 1.5);
     this.parts.platter.setCssProps({ '--onp-angle': `${this.angle.toFixed(2)}deg` });
     this.parts.warp.setCssProps({
+      '--onp-speed': speed.toFixed(3),
+      '--onp-strobe': strobeSharpness(speed).toFixed(2),
       '--onp-tilt-x': `${(tilt * Math.sin(radians)).toFixed(3)}deg`,
       '--onp-tilt-y': `${(tilt * Math.cos(radians)).toFixed(3)}deg`,
     });
@@ -242,7 +254,7 @@ export class Turntable {
   private grabArm(e: PointerEvent): void {
     if (!this.live || this.drag || e.button !== 0) return;
     const armDeg = this.armDegrees(e);
-    this.begin(e, this.parts.armGrab, {
+    this.begin(e, this.parts.grab, {
       kind: 'arm', pointerId: e.pointerId, last: 0, travelled: 0, armDeg, at: e.timeStamp,
     });
     this.applyArm(armDeg);

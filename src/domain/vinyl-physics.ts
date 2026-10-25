@@ -3,10 +3,32 @@ export const REV_MS = 1800;
 /** Degrees per millisecond at playing speed. */
 export const PLAY_OMEGA = 360 / REV_MS;
 export const SCRUB_SECONDS_PER_REV = 10;
-/** Tonearm angle (CSS clockwise degrees) when parked, on the outer groove and on the inner groove. */
-export const ARM_REST = -10;
-export const ARM_START = 6;
-export const ARM_END = 32;
+/** Deck geometry in plinth units (100 wide, 80 deep); the SVG layers and CSS share it. */
+export const DECK = {
+  pivot: { x: 88, y: 16 },
+  centre: { x: 40, y: 42 },
+  /** Pivot to stylus tip. */
+  armLength: 56.5,
+  grooveOuter: 27,
+  grooveInner: 13.8,
+  armRest: 10,
+};
+
+/** Tonearm angle (CSS clockwise degrees, 0 pointing down) at which the stylus sits on a groove radius. */
+export function grooveAngle(radius: number): number {
+  const { pivot, centre, armLength } = DECK;
+  const dx = centre.x - pivot.x;
+  const dy = centre.y - pivot.y;
+  const dist = Math.hypot(dx, dy);
+  const bearing = (Math.atan2(-dx, dy) * 180) / Math.PI;
+  const cos = (armLength ** 2 + dist ** 2 - radius ** 2) / (2 * armLength * dist);
+  return bearing - (Math.acos(cos) * 180) / Math.PI;
+}
+
+/** Tonearm angle when parked, on the outer groove and on the inner groove. */
+export const ARM_REST = DECK.armRest;
+export const ARM_START = grooveAngle(DECK.grooveOuter);
+export const ARM_END = grooveAngle(DECK.grooveInner);
 
 export interface Spin {
   /** Degrees per millisecond. */
