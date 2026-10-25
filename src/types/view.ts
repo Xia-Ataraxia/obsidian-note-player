@@ -1,5 +1,8 @@
 import type { PeaksStore } from '../services/peaks-store';
 import type { PlaybackState, RepeatMode } from './playback';
+import type { TurntableStyle } from './settings';
+
+export type { TurntableStyle };
 
 export interface PlaylistSummary {
 	path: string;
@@ -33,6 +36,7 @@ export interface PlaylistViewState {
 	playbackState: PlaybackState;
 	repeatMode: RepeatMode;
 	turntableSounds: boolean;
+	turntableStyle: TurntableStyle;
 }
 
 /**

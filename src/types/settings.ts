@@ -12,11 +12,14 @@ export interface YoutubePlaylistPropertyMapping {
 import type { AudioFormat } from './audio';
 import type { RepeatMode } from './playback';
 
+export type TurntableStyle = 'realistic' | 'minimal';
+
 export interface NotePlayerSettings extends YoutubePlaylistPropertyMapping {
   autoOpenOnStartup: boolean;
   playlistFolder: string;
   musicFolder: string;
   turntableSounds: boolean;
+  turntableStyle: TurntableStyle;
   lastPlaylistPath: string | null;
   autoplayEnabled: boolean;
   audioFormat: AudioFormat;

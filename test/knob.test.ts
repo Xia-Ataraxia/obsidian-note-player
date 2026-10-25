@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dragLevel, KNOB_DRAG_PX, knobAngle, lampDim } from '../src/domain/knob';
-import { lidOpen, strobeSharpness } from '../src/domain/turntable';
+import { strobeSharpness } from '../src/domain/turntable';
 
 describe('knob', () => {
   it('sweeps 270 degrees', () => {
@@ -25,12 +25,6 @@ describe('knob', () => {
 });
 
 describe('deck state', () => {
-  it('opens the lid unless idle', () => {
-    expect(lidOpen('idle')).toBe(false);
-    expect(lidOpen('playing')).toBe(true);
-    expect(lidOpen('paused')).toBe(true);
-  });
-
   it('blurs the strobe as the platter reaches speed', () => {
     expect(strobeSharpness(0)).toBe(1);
     expect(strobeSharpness(1)).toBeCloseTo(0.2);

@@ -1,5 +1,3 @@
-import type { PlaybackState } from '../types/playback';
-
 export const SWING_MS = 600;
 export const AUDIO_START_MS = 650;
 export const SPIN_UP_MS = 900;
@@ -89,11 +87,6 @@ export function renderGroove(sampleRate: number, seconds: number, rng: Rng): Flo
     out[i] = hiss + pop;
   }
   return out;
-}
-
-/** The acrylic lid is shut only while the deck is idle. */
-export function lidOpen(state: PlaybackState): boolean {
-  return state !== 'idle';
 }
 
 /** Strobe dots blur out as the platter nears speed: 1 crisp when still, 0.2 at full speed. */

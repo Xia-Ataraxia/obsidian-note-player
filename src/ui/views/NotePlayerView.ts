@@ -281,7 +281,7 @@ export class NotePlayerView extends ItemView {
 			this.lastRenderedTrackPath = null;
 			this.disposeWave();
 			this.stopProgressInterval();
-			this.turntable.update(null, state.playbackState, state.turntableSounds);
+			this.turntable.update(null, state.playbackState, state.turntableSounds, state.turntableStyle);
 			// Only clear the surface when it actually has a track loaded.
 			// Calling clear() unconditionally triggers onPlaybackChange('idle') -> notifyChange -> render -> infinite loop.
 			if (state.playbackState !== 'idle') {
@@ -295,7 +295,7 @@ export class NotePlayerView extends ItemView {
 		elements.playerPanel.removeClass('onp-hidden');
 		const playerRail = elements.playerPanel.createDiv({ cls: 'onp-now-playing-shell' });
 		playerRail.prepend(this.turntable.el);
-		this.turntable.update(current, playbackState, state.turntableSounds);
+		this.turntable.update(current, playbackState, state.turntableSounds, state.turntableStyle);
 		const summary = playerRail.createDiv({ cls: 'onp-now-playing-summary' });
 		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb onp-player-track-card' });
 		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });

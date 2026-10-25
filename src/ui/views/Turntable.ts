@@ -1,12 +1,14 @@
 import type { PlaybackState } from '../../types/playback';
-import { lidOpen, SPIN_DOWN_MS, SPIN_UP_MS, strobeSharpness, swingMs } from '../../domain/turntable';
+import { deckSteps, type DeckPose } from '../../domain/deck-sequence';
+import { SPIN_DOWN_MS, SPIN_UP_MS, strobeSharpness } from '../../domain/turntable';
 import {
   angleDelta, ARM_END, ARM_REST, ARM_START, armPointerAngle, coastDegrees, PLAY_OMEGA, pointerAngle, unprojectDeck,
   ratioFromArmAngle, scrubSeconds, stepSpin, type Spin,
 } from '../../domain/vinyl-physics';
-import type { PlaylistTrack } from '../../types/view';
+import type { PlaylistTrack, TurntableStyle } from '../../types/view';
 import { VolumeKnob, type KnobPort } from './turntable-knob';
-import { buildTurntableParts, type TurntableParts } from './turntable-parts';
+import { buildMinimalParts, type MinimalParts } from './turntable-minimal';
+import { buildTurntableParts } from './turntable-parts';
 import type { TurntableSound } from './turntable-sound';
 
 const SETTLE_MS = 260;
@@ -50,7 +52,10 @@ interface Drag {
  */
 export class Turntable {
   readonly el: HTMLElement;
-  private readonly parts: TurntableParts;
+  private parts!: MinimalParts;
+  private style: TurntableStyle = 'realistic';
+  private pose: DeckPose = { open: false, armed: false };
+  private port: KnobPort | null = null;
   private spin: Spin = { omega: 0, alpha: 0 };
   private angle = 0;
   private target = 0;
@@ -61,7 +66,7 @@ export class Turntable {
   private frame = 0;
   private lastNow = 0;
   private lastVisibleCheck = 0;
-  private timer = 0;
+  private timers: number[] = [];
   private timerWin: Window | null = null;
   private drag: Drag | null = null;
   private frameWin: Window | null = null;
@@ -73,11 +78,22 @@ export class Turntable {
   constructor(private readonly sound: TurntableSound, private readonly host: TurntableHost) {
     this.el = createDiv({ cls: 'onp-turntable is-idle' });
     this.el.setAttribute('aria-hidden', 'true');
-    this.parts = buildTurntableParts(this.el);
     this.resizer = new ResizeObserver(([entry]) => this.setTilt(entry?.contentRect.width ?? 0));
     this.resizer.observe(this.el);
     this.el.addEventListener('pointermove', (e) => this.parallax(e));
     this.el.addEventListener('pointerleave', () => this.el.setCssProps({ '--onp-px': '0', '--onp-py': '0' }));
+    this.mount();
+  }
+
+  /** Builds the parts for the current style; the root, spin and pose outlive a style switch. */
+  private mount(): void {
+    this.knob?.destroy();
+    this.knob = null;
+    this.el.empty();
+    const minimal = this.style === 'minimal';
+    this.el.toggleClass('is-minimal', minimal);
+    this.el.toggleClass('is-realistic', !minimal);
+    this.parts = minimal ? buildMinimalParts(this.el) : buildTurntableParts(this.el);
     this.parts.platter.addEventListener('pointerdown', (e) => this.grabPlatter(e));
     this.parts.grab.addEventListener('pointerdown', (e) => this.grabArm(e));
     this.parts.platter.addEventListener('pointermove', (e) => this.moveDrag(e));
@@ -87,12 +103,24 @@ export class Turntable {
         target.addEventListener(type, () => this.release());
       }
     }
+    if (!minimal) {
+      this.setTilt(this.el.clientWidth);
+      if (this.port) this.knob = new VolumeKnob(this.parts.scene, this.port);
+    }
+    this.paint();
+  }
+
+  private setStyle(style: TurntableStyle): void {
+    if (style === this.style) return;
+    this.style = style;
+    this.mount();
   }
 
   /** Fires the instant the needle touches down, in step with the thock. */
   onLanded: (() => void) | null = null;
 
-  update(track: PlaylistTrack | null, state: PlaybackState, soundsOn: boolean): void {
+  update(track: PlaylistTrack | null, state: PlaybackState, soundsOn: boolean, style: TurntableStyle = 'realistic'): void {
+    this.setStyle(style);
     // Flush styles so the arm transition starts from the pre-render state after re-attach.
     void this.el.offsetWidth;
     this.setLabel(track?.videoId ?? '', track?.thumbnailUrl ?? '');
@@ -103,15 +131,35 @@ export class Turntable {
     this.state = state;
     this.el.removeClasses(['is-idle', 'is-paused', 'is-playing']);
     this.el.addClass(`is-${state}`);
-    this.el.toggleClass('is-open', lidOpen(state));
+    this.runSequence(state === 'playing', soundsOn, wasPlaying);
+  }
 
-    if (state === 'playing') {
-      if (soundsOn) this.sound.drop();
-      this.settleLater();
-    } else if (wasPlaying && soundsOn) {
-      this.sound.lift();
+  /** Steps come from the pure plan; each one moves the pose, and the CSS transitions do the rest. */
+  private runSequence(playing: boolean, soundsOn: boolean, wasPlaying: boolean): void {
+    this.cancelTimers();
+    const win = this.el.win;
+    this.timerWin = win;
+    if (!playing && wasPlaying && soundsOn) this.sound.lift();
+    for (const step of deckSteps(playing, this.pose, this.style === 'realistic', this.slowdown > 1)) {
+      const run = () => this.applyStep(step.pose, step.land === true, soundsOn);
+      if (step.atMs <= 0) run();
+      else this.timers.push(win.setTimeout(run, step.atMs));
     }
-    this.retarget();
+  }
+
+  private applyStep(pose: Partial<DeckPose>, land: boolean, soundsOn: boolean): void {
+    const armed = pose.armed;
+    this.pose = { ...this.pose, ...pose };
+    this.el.toggleClass('is-open', this.pose.open);
+    this.el.toggleClass('is-armed', this.pose.armed);
+    if (armed !== undefined) {
+      if (armed && soundsOn) this.sound.drop();
+      this.retarget();
+    }
+    if (!land) return;
+    this.el.addClass('is-landing');
+    this.onLanded?.();
+    this.timers.push(this.el.win.setTimeout(() => this.el.removeClass('is-landing'), SETTLE_MS));
   }
 
   setProgress(ratio: number): void {
@@ -123,7 +171,8 @@ export class Turntable {
   /** Wires the volume knob to the plugin's volume model; replaces any earlier knob. */
   attachVolume(port: KnobPort): void {
     this.knob?.destroy();
-    this.knob = new VolumeKnob(this.parts.scene, port);
+    this.port = port;
+    this.knob = this.style === 'realistic' ? new VolumeKnob(this.parts.scene, port) : null;
   }
 
   destroy(): void {
@@ -138,7 +187,7 @@ export class Turntable {
 
   /** Camera eases from a low 3/4 angle toward a flatter one as the card narrows, with no breakpoint. */
   private setTilt(width: number): void {
-    if (width <= 0) return;
+    if (width <= 0 || this.style === 'minimal') return;
     const t = Math.min(Math.max((width - NARROW_PX) / (WIDE_PX - NARROW_PX), 0), 1);
     this.tilt = TILT_NARROW + (TILT_WIDE - TILT_NARROW) * t;
     this.yaw = YAW_NARROW + (YAW_WIDE - YAW_NARROW) * t;
@@ -146,7 +195,7 @@ export class Turntable {
   }
 
   private parallax(e: PointerEvent): void {
-    if (this.drag || this.slowdown > 1) return;
+    if (this.drag || this.slowdown > 1 || this.style === 'minimal') return;
     const rect = this.el.getBoundingClientRect();
     if (rect.width === 0) return;
     const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
@@ -156,8 +205,16 @@ export class Turntable {
 
   /** Pointer angle around a screen-space centre, undoing the deck's tilt so the circle reads round. */
   private deckAngle(cx: number, cy: number, e: PointerEvent): number {
-    const { x, y } = unprojectDeck(e.clientX - cx, e.clientY - cy, this.tilt, this.yaw);
+    const { x, y } = unprojectDeck(e.clientX - cx, e.clientY - cy, this.camTilt, this.camYaw);
     return pointerAngle(0, 0, x, y);
+  }
+
+  private get camTilt(): number {
+    return this.style === 'minimal' ? 0 : this.tilt;
+  }
+
+  private get camYaw(): number {
+    return this.style === 'minimal' ? 0 : this.yaw;
   }
 
   private setCreep(ratio: number): void {
@@ -170,19 +227,9 @@ export class Turntable {
     this.el.setCssProps({ '--onp-label-image': thumbnailUrl ? `url("${thumbnailUrl}")` : 'none' });
   }
 
-  private settleLater(): void {
-    this.cancelTimers();
-    const win = this.el.win;
-    this.timerWin = win;
-    this.timer = win.setTimeout(() => {
-      this.el.addClass('is-landing');
-      this.onLanded?.();
-      this.timer = win.setTimeout(() => this.el.removeClass('is-landing'), SETTLE_MS);
-    }, swingMs(this.slowdown > 1));
-  }
-
   private cancelTimers(): void {
-    this.timerWin?.clearTimeout(this.timer);
+    for (const id of this.timers) this.timerWin?.clearTimeout(id);
+    this.timers = [];
     this.el.removeClass('is-landing');
   }
 
@@ -191,7 +238,7 @@ export class Turntable {
   }
 
   private retarget(): void {
-    const playing = this.state === 'playing';
+    const playing = this.pose.armed;
     this.target = playing ? PLAY_OMEGA / this.slowdown : 0;
     this.settleMs = (playing ? SPIN_UP_MS : Math.max(SPIN_DOWN_MS, COAST_MS)) * (this.slowdown > 1 ? 1.5 : 1);
     this.kick();
@@ -275,7 +322,7 @@ export class Turntable {
   private armDegrees(e: PointerEvent): number {
     const rect = this.parts.hub.getBoundingClientRect();
     const cy = rect.top + rect.height / 2;
-    const { x, y } = unprojectDeck(e.clientX - (rect.left + rect.width / 2), e.clientY - cy, this.tilt, this.yaw);
+    const { x, y } = unprojectDeck(e.clientX - (rect.left + rect.width / 2), e.clientY - cy, this.camTilt, this.camYaw);
     return Math.min(Math.max(armPointerAngle(0, 0, x, y), ARM_REST), ARM_END + 2);
   }
 

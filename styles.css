@@ -750,6 +750,9 @@
 	--onp-paper: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.38'/></filter><rect width='96' height='96' filter='url(%23n)'/></svg>");
 	position: relative;
 	width: 100%;
+}
+
+.onp-turntable.is-realistic {
 	aspect-ratio: 1 / 1.3;
 	container-type: inline-size;
 	perspective: 190cqw;
@@ -1024,12 +1027,12 @@
 	transition: fill 400ms ease, filter 400ms ease, opacity 400ms ease;
 }
 
-.onp-turntable.is-playing .onp-lamp {
+.onp-turntable.is-armed .onp-lamp {
 	fill: var(--np-lamp);
 	filter: drop-shadow(0 0 1.1px var(--np-lamp));
 }
 
-.onp-turntable.is-playing.is-quiet .onp-lamp {
+.onp-turntable.is-armed.is-quiet .onp-lamp {
 	opacity: 0.55;
 	filter: none;
 }
@@ -1253,11 +1256,11 @@
 	transition: translate 260ms ease;
 }
 
-.onp-turntable:not(.is-playing).is-live:hover .onp-arm-rig {
+.onp-turntable:not(.is-armed).is-live:hover .onp-arm-rig {
 	transform: rotate(calc(var(--onp-arm-rest, 10deg) + 3deg));
 }
 
-.onp-turntable.is-playing .onp-arm-rig {
+.onp-turntable.is-armed .onp-arm-rig {
 	transition-timing-function: cubic-bezier(0.3, 0.9, 0.35, 1.18);
 	transform: rotate(calc(var(--onp-arm-start, 33deg) + var(--onp-arm-creep, 0) * var(--onp-arm-span, 14deg)));
 }
@@ -1277,12 +1280,12 @@
 	filter: blur(1px);
 }
 
-.onp-turntable.is-playing .onp-tonearm {
+.onp-turntable.is-armed .onp-tonearm {
 	translate: 0 0 var(--onp-arm-lo);
 	transition-delay: calc(var(--onp-arm-swing) * 0.75);
 }
 
-.onp-turntable.is-playing .onp-arm-shadow {
+.onp-turntable.is-armed .onp-arm-shadow {
 	translate: -0.7px 0.9px;
 	opacity: 0.38;
 	filter: blur(0.45px);
@@ -1640,13 +1643,186 @@
 		animation-duration: 24s;
 	}
 
-	.onp-turntable.is-playing .onp-arm-rig,
+	.onp-turntable.is-armed .onp-arm-rig,
 	.onp-arm-rig {
 		transition-duration: 200ms, 200ms;
 	}
 
-	.onp-turntable.is-playing .onp-arm-rig {
+	.onp-turntable.is-armed .onp-arm-rig {
 		transition-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1);
+	}
+}
+
+/* Minimal turntable: a flat record and arm. With no lid, the arm and needle are the state cue. */
+.onp-turntable.is-minimal {
+	aspect-ratio: 1;
+	container-type: inline-size;
+}
+
+.onp-min {
+	position: absolute;
+	inset: 0;
+}
+
+.onp-min-platter {
+	position: absolute;
+	inset: 6%;
+	transition: transform 160ms ease;
+}
+
+.onp-turntable.is-minimal:hover .onp-min-platter {
+	transform: translateY(-1px);
+}
+
+.onp-turntable.is-paused .onp-min-platter {
+	animation: onp-platter-wobble 520ms ease-out;
+}
+
+.onp-min-vinyl {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 1;
+	border-radius: 50%;
+	rotate: var(--onp-angle, 0deg);
+	background: radial-gradient(circle at 36% 34%, color-mix(in oklab, var(--np-paper) 14%, var(--np-ink)), var(--np-ink) 64%);
+	border: 1px solid var(--background-modifier-border);
+	box-shadow: var(--shadow-l), 0 0 0 0 transparent;
+	transition: box-shadow 400ms ease;
+}
+
+.onp-turntable.is-armed .onp-min-vinyl {
+	box-shadow: var(--shadow-l), 0 0 0 1px color-mix(in oklab, var(--interactive-accent) 45%, transparent);
+}
+
+.onp-min-grooves,
+.onp-min-sheen {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	pointer-events: none;
+}
+
+.onp-min-grooves {
+	background: repeating-radial-gradient(circle, transparent 0 2.4px, color-mix(in oklab, var(--np-paper) 5%, transparent) 2.4px 3px);
+}
+
+.onp-min-sheen {
+	background: conic-gradient(
+		from 210deg,
+		transparent 0 18%,
+		color-mix(in oklab, var(--np-paper) 12%, transparent) 29%,
+		transparent 40% 58%,
+		color-mix(in oklab, var(--np-paper) 7%, transparent) 70%,
+		transparent 82%
+	);
+}
+
+.onp-min-label {
+	position: absolute;
+	inset: 32%;
+	border-radius: 50%;
+	border: 1px solid var(--background-modifier-border);
+	background-color: color-mix(in oklab, var(--interactive-accent) 70%, var(--np-ink));
+	background-image: var(--onp-label-image);
+	background-size: cover;
+	background-position: center;
+}
+
+.onp-min-spindle {
+	position: absolute;
+	inset: 48.5%;
+	border-radius: 50%;
+	background: var(--background-primary);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+}
+
+.onp-min-arm {
+	position: absolute;
+	top: 12%;
+	right: 6%;
+	width: 7%;
+	height: 56%;
+	transform-origin: 50% 0;
+	transform: rotate(-12deg);
+	transition: transform var(--onp-arm-swing) cubic-bezier(0.3, 0.7, 0.2, 1), filter 260ms ease;
+	filter: drop-shadow(0 1px 1px var(--background-modifier-border-hover));
+	pointer-events: none;
+}
+
+.onp-turntable.is-armed .onp-min-arm {
+	transition-timing-function: cubic-bezier(0.3, 0.9, 0.35, 1.2), ease;
+	transform: rotate(calc(8deg + var(--onp-arm-creep, 0) * 7deg));
+	filter: drop-shadow(0 3px 2px var(--background-modifier-border-hover));
+}
+
+.onp-turntable.is-minimal.is-live:not(.is-armed):hover .onp-min-arm {
+	transform: rotate(-7deg);
+}
+
+.onp-min-base,
+.onp-min-pivot {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	border-radius: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.onp-min-base {
+	width: 9cqw;
+	aspect-ratio: 1;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	box-shadow: var(--shadow-s);
+}
+
+.onp-min-pivot {
+	width: 4.5cqw;
+	aspect-ratio: 1;
+	background: var(--text-faint);
+}
+
+.onp-min-weight {
+	position: absolute;
+	left: 50%;
+	bottom: 100%;
+	width: 4cqw;
+	height: 6cqw;
+	margin-bottom: 1.5cqw;
+	transform: translateX(-50%);
+	border-radius: var(--radius-s);
+	background: var(--text-faint);
+}
+
+.onp-min-tube {
+	position: absolute;
+	top: 0;
+	left: 40%;
+	width: 20%;
+	height: 78%;
+	border-radius: var(--radius-s);
+	background: var(--text-muted);
+}
+
+.onp-min-head {
+	position: absolute;
+	top: 76%;
+	left: 10%;
+	width: 80%;
+	height: 17%;
+	border-radius: var(--radius-s);
+	background: var(--interactive-accent);
+	transform-origin: 50% 0;
+	transform: rotate(20deg);
+}
+
+.onp-turntable.is-landing .onp-min-head {
+	animation: onp-head-settle 260ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.onp-min-arm {
+		--onp-arm-swing: 200ms;
 	}
 }
 
@@ -1817,4 +1993,19 @@ input[type="range"].onp-volume-slider:focus-visible {
 	input[type="range"].onp-volume-slider:active::-webkit-slider-thumb {
 		transform: none;
 	}
+}
+
+@keyframes onp-head-settle {
+	0% { transform: translateY(0) rotate(20deg); }
+	30% { transform: translateY(-9%) rotate(20deg); }
+	55% { transform: translateY(0) rotate(20deg); }
+	75% { transform: translateY(-3%) rotate(20deg); }
+	100% { transform: translateY(0) rotate(20deg); }
+}
+
+@keyframes onp-platter-wobble {
+	0% { scale: 1; }
+	30% { scale: 1.012; }
+	65% { scale: 0.994; }
+	100% { scale: 1; }
 }
