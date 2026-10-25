@@ -23,7 +23,6 @@ export interface PlaylistTrack {
 }
 
 export interface PlaylistViewState {
-	isLoading: boolean;
 	errorMessage: string | null;
 	playlists: PlaylistSummary[];
 	selectedPlaylistPath: string | null;

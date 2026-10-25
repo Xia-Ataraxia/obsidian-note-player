@@ -13,11 +13,6 @@ export function renderHero(
 ): void {
 	panel.empty();
 
-	if (state.isLoading) {
-		renderEmptyState(panel, 'Loading playlist', 'Scanning playlists and music notes from the vault.');
-		return;
-	}
-
 	if (state.errorMessage) {
 		renderEmptyState(panel, 'Playlist error', state.errorMessage);
 		return;
