@@ -301,7 +301,7 @@ export class NotePlayerView extends ItemView {
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
 		meta.createDiv({ cls: 'onp-track-title', text: current.title });
 		this.subtitleEl = meta.createDiv({ cls: 'onp-track-subtitle' });
-		this.subtitleText = `${current.artist || 'Unknown artist'} • ${state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'}`;
+		this.subtitleText = [current.artist, state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'].filter(Boolean).join(' • ');
 		this.showPhase(this.playerSurface.phase);
 
 		const controls = summary.createDiv({ cls: 'onp-control-row onp-player-controls' });
