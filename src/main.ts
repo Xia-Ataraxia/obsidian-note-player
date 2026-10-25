@@ -58,7 +58,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       this.audioCacheService = new AudioCacheService(this.vaultBasePath, this.app.vault.adapter, this.settings.audioFormat, this.app.vault.configDir);
     }
 
-    this.playerHostEl = document.createElement('div');
+    this.playerHostEl = createDiv();
     this.playerHostEl.className = 'onp-player-video';
 
     this.playerSurface = new PlayerSurface(
@@ -162,7 +162,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   }
 
   async loadSettings(): Promise<void> {
-    const loaded = { ...DEFAULT_SETTINGS, ...(await this.loadData() as Partial<NotePlayerSettings>) } as NotePlayerSettings;
+    const loaded = { ...DEFAULT_SETTINGS, ...(await this.loadData() as Partial<NotePlayerSettings>) };
     this.settings = normalizeSettings(loaded);
   }
 

@@ -7,7 +7,7 @@ export class DownloadStatusBar {
 	private readonly iconEl: HTMLElement;
 	private readonly msgEl: HTMLSpanElement;
 	private isDownloading = false;
-	private completionTimer: ReturnType<typeof setTimeout> | null = null;
+	private completionTimer: number | null = null;
 
 	constructor(plugin: Plugin, onCancel: () => void) {
 		const item = plugin.addStatusBarItem();
@@ -23,7 +23,7 @@ export class DownloadStatusBar {
 
 	update(percent: number): void {
 		if (this.completionTimer !== null) {
-			clearTimeout(this.completionTimer);
+			window.clearTimeout(this.completionTimer);
 			this.completionTimer = null;
 		}
 
@@ -35,7 +35,7 @@ export class DownloadStatusBar {
 			this.isDownloading = false;
 			setIcon(this.iconEl, 'check');
 			this.msgEl.setText(' Downloaded ✓');
-			this.completionTimer = setTimeout(() => this.reset(), COMPLETION_VISIBLE_MS);
+			this.completionTimer = window.setTimeout(() => this.reset(), COMPLETION_VISIBLE_MS);
 		} else {
 			// percent === -1 (error) or cancel — Notice toast in main.ts handles messaging
 			this.reset();
@@ -44,7 +44,7 @@ export class DownloadStatusBar {
 
 	destroy(): void {
 		if (this.completionTimer !== null) {
-			clearTimeout(this.completionTimer);
+			window.clearTimeout(this.completionTimer);
 			this.completionTimer = null;
 		}
 	}
