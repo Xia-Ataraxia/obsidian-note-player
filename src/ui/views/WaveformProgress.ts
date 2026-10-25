@@ -63,9 +63,16 @@ export class WaveformProgress {
 		this.remainEl = clock.createSpan({ cls: 'onp-wave-time onp-wave-time--remain' });
 		this.remainEl.setAttr('role', 'button');
 		this.remainEl.setAttr('title', 'Toggle remaining / total');
-		this.remainEl.addEventListener('click', () => {
+		this.remainEl.tabIndex = 0;
+		const toggleRemain = () => {
 			WaveformProgress.showRemaining = !WaveformProgress.showRemaining;
 			this.update(true);
+		};
+		this.remainEl.addEventListener('click', toggleRemain);
+		this.remainEl.addEventListener('keydown', (event) => {
+			if (event.key !== 'Enter' && event.key !== ' ') return;
+			event.preventDefault();
+			toggleRemain();
 		});
 
 		this.colors = readColors(this.el);
@@ -94,6 +101,10 @@ export class WaveformProgress {
 
 	/** Starts the frame loop if playback needs it. */
 	sync(): void {
+		if (!this.width) {
+			const rect = this.canvas.getBoundingClientRect();
+			this.resize(rect.width, rect.height);
+		}
 		this.schedule();
 	}
 
@@ -137,10 +148,11 @@ export class WaveformProgress {
 		stage.addEventListener('pointerup', endScrub);
 		stage.addEventListener('pointercancel', endScrub);
 		stage.addEventListener('keydown', (event) => {
+			const jump = event.key === 'Home' ? 0 : event.key === 'End' ? 1 : null;
 			const delta = event.key === 'ArrowRight' ? SEEK_STEP_SECONDS : event.key === 'ArrowLeft' ? -SEEK_STEP_SECONDS : 0;
-			if (!delta) return;
+			if (jump === null && !delta) return;
 			event.preventDefault();
-			this.hooks.seekTo(nudgeRatio(this.hooks.getTime(), this.hooks.getDuration(), delta));
+			this.hooks.seekTo(jump ?? nudgeRatio(this.hooks.getTime(), this.hooks.getDuration(), delta));
 			this.schedule();
 		});
 	}

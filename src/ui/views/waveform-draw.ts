@@ -1,6 +1,8 @@
 const BAR_WIDTH = 2;
 const BAR_STEP = 3.5;
 const SEGMENTS = 10;
+/** Red is reserved for true clipping so a calm card never flashes an alarm. */
+const CLIP_LEVEL = 0.98;
 
 export interface WaveColors {
 	played: string;
@@ -28,7 +30,7 @@ export function readColors(el: HTMLElement): WaveColors {
 	const read = (name: string) => style.getPropertyValue(name).trim();
 	return {
 		played: read('--interactive-accent'),
-		rest: read('--text-faint'),
+		rest: read('--text-muted'),
 		playhead: read('--text-normal'),
 		ghost: read('--text-muted'),
 		warn: read('--color-yellow'),
@@ -46,7 +48,7 @@ export function drawWave(ctx: CanvasRenderingContext2D, width: number, height: n
 		const x = offset + i * BAR_STEP;
 		const half = Math.max(1, Math.min(1, frame.heights[i] ?? 0) * (mid - 1));
 		const played = (x + BAR_WIDTH / 2) / width <= frame.progress;
-		ctx.globalAlpha = frame.alpha * (played ? 1 : 0.55);
+		ctx.globalAlpha = frame.alpha * (played ? 1 : 0.4);
 		ctx.fillStyle = played ? colors.played : colors.rest;
 		ctx.beginPath();
 		ctx.roundRect(x, mid - half, BAR_WIDTH, half * 2, 1);
@@ -69,10 +71,11 @@ export function drawMeter(ctx: CanvasRenderingContext2D, width: number, height: 
 	ctx.clearRect(0, 0, width, height);
 	const pitch = width / SEGMENTS;
 	for (let i = 0; i < SEGMENTS; i++) {
-		const lit = (i + 0.5) / SEGMENTS <= level;
-		const isHold = Math.floor(hold * SEGMENTS) === i && hold > 0.05;
+		const clip = i === SEGMENTS - 1;
+		const lit = clip ? level > CLIP_LEVEL : (i + 0.5) / SEGMENTS <= level;
+		const isHold = Math.min(Math.floor(hold * SEGMENTS), clip ? SEGMENTS - 1 : SEGMENTS - 2) === i && hold > 0.05 && (!clip || hold > CLIP_LEVEL);
 		ctx.globalAlpha = lit || isHold ? 1 : 0.22;
-		ctx.fillStyle = i >= SEGMENTS - 1 ? colors.clip : i >= SEGMENTS - 3 ? colors.warn : colors.played;
+		ctx.fillStyle = clip ? colors.clip : i >= SEGMENTS - 3 ? colors.warn : colors.played;
 		ctx.beginPath();
 		ctx.roundRect(i * pitch, 0, pitch - 1.5, height, 1);
 		ctx.fill();
