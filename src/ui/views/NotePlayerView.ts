@@ -288,10 +288,11 @@ export class NotePlayerView extends ItemView {
 		this.showPhase(this.playerSurface.phase);
 
 		const controls = summary.createDiv({ cls: 'onp-control-row onp-player-controls' });
-		controls.appendChild(createActionButton('Previous', 'skip-back', () => {
+		const transport = controls.createDiv({ cls: 'onp-controls-group' });
+		transport.appendChild(createActionButton('Previous', 'skip-back', () => {
 			void this.runAction('Moved to previous track', () => this.host.playPrevious());
 		}, { iconOnly: true }));
-		controls.appendChild(createActionButton(
+		transport.appendChild(createActionButton(
 			playbackState === 'playing' ? 'Pause current track' : 'Play current track',
 			playbackState === 'playing' ? 'pause' : 'play',
 			() => {
@@ -299,15 +300,15 @@ export class NotePlayerView extends ItemView {
 			},
 			{ cta: true, iconOnly: true },
 		));
-		controls.appendChild(createActionButton('Next', 'skip-forward', () => {
+		transport.appendChild(createActionButton('Next', 'skip-forward', () => {
 			void this.runAction('Moved to next track', () => this.host.playNext());
 		}, { iconOnly: true }));
-		controls.createDiv({ cls: 'onp-controls-spacer' });
-		this.disposeVolumeControl = renderVolumeControl(controls, this.volume);
-		controls.appendChild(createActionButton('Open note', 'file-text', () => {
+		const extras = controls.createDiv({ cls: 'onp-controls-group onp-controls-group--end' });
+		this.disposeVolumeControl = renderVolumeControl(extras, this.volume);
+		extras.appendChild(createActionButton('Open note', 'file-text', () => {
 			void this.runAction('', () => this.host.openNote(current.path), false);
 		}, { iconOnly: true }));
-		controls.appendChild(createActionButton(
+		extras.appendChild(createActionButton(
 			state.autoplayEnabled ? 'Disable autoplay' : 'Enable autoplay',
 			state.autoplayEnabled ? 'radio' : 'circle',
 			() => {
@@ -316,7 +317,7 @@ export class NotePlayerView extends ItemView {
 			{ iconOnly: true, active: state.autoplayEnabled },
 		));
 		if (this.host.toggleRepeatMode) {
-			controls.appendChild(createActionButton(
+			extras.appendChild(createActionButton(
 				state.repeatMode === 'one' ? 'Disable repeat' : 'Repeat one',
 				'repeat-1',
 				() => {

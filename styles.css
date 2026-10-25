@@ -318,9 +318,16 @@
 	flex: 0 0 auto;
 }
 
-/* Controls spacer */
-.onp-controls-spacer {
-	flex: 1 1 auto;
+/* Control groups wrap as units, never button by button */
+.onp-controls-group {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: inherit;
+}
+
+.onp-controls-group--end {
+	margin-left: auto;
 }
 
 /* Download overlay — row layout */
@@ -667,6 +674,10 @@
 .onp-view-root.is-compact .onp-toolbar-description,
 .onp-view-root.is-compact .onp-track-path {
 	display: none;
+}
+
+.onp-view-root.is-compact .onp-player-controls {
+	gap: 4px;
 }
 
 .onp-view-root.is-compact .onp-toolbar-controls {
