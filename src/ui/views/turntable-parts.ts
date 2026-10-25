@@ -67,6 +67,7 @@ export function buildTurntableParts(root: HTMLElement): TurntableParts {
   const scene = root.createDiv({ cls: 'onp-scene' });
   scene.createDiv({ cls: 'onp-contact' });
   scene.createDiv({ cls: 'onp-front' });
+  scene.createDiv({ cls: 'onp-side' });
   const deck = scene.createDiv({ cls: 'onp-deck' });
   buildWood(deck);
   deck.createDiv({ cls: 'onp-deck-gloss' });
