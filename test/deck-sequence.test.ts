@@ -28,9 +28,9 @@ describe('deckSteps', () => {
     expect(at(deckSteps(false, { open: true, armed: false }, true, false), 'open')?.atMs).toBe(0);
   });
 
-  it('shortens, never skips, under reduced motion', () => {
+  it('slows, never skips, under reduced motion', () => {
     const steps = deckSteps(true, shut, true, true);
     expect(at(steps, 'armed')?.atMs).toBeGreaterThan(0);
-    expect(at(steps, 'armed')?.atMs).toBeLessThan(LID_OPEN_MS);
+    expect(at(steps, 'armed')?.atMs).toBeGreaterThan(LID_OPEN_MS);
   });
 });

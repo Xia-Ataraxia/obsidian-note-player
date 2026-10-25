@@ -727,9 +727,9 @@
 .onp-turntable {
 	--np-ink: var(--color-base-100);
 	--np-paper: var(--color-base-00);
-	--np-wood-base: color-mix(in oklab, var(--color-orange) 36%, color-mix(in oklab, var(--color-yellow) 8%, var(--np-ink)));
+	--np-wood-base: color-mix(in oklab, var(--color-orange) 30%, color-mix(in oklab, var(--color-yellow) 8%, var(--np-ink)));
 	--np-wood-dark: color-mix(in oklab, var(--color-red) 20%, color-mix(in oklab, var(--color-orange) 8%, var(--np-ink)));
-	--np-wood-light: color-mix(in oklab, var(--color-orange) 64%, color-mix(in oklab, var(--color-yellow) 12%, var(--np-ink)));
+	--np-wood-light: color-mix(in oklab, var(--color-orange) 54%, color-mix(in oklab, var(--color-yellow) 12%, var(--np-ink)));
 	--np-wood-edge: color-mix(in oklab, var(--np-wood-dark) 62%, var(--np-ink));
 	--np-key: color-mix(in oklab, var(--color-yellow) 30%, var(--np-paper));
 	--np-chrome: color-mix(in oklab, var(--np-paper) 20%, color-mix(in oklab, var(--color-yellow) 18%, var(--color-base-50)));
@@ -1604,17 +1604,12 @@
 	}
 
 	.onp-lid {
-		transition: transform 300ms ease;
+		transition: transform 1400ms ease;
 	}
 
 	.onp-knob-grip,
 	.onp-knob-mark {
 		transition-duration: 120ms;
-	}
-
-	.onp-turntable.is-armed .onp-arm-rig,
-	.onp-arm-rig {
-		transition-duration: 200ms, 200ms;
 	}
 
 	.onp-turntable.is-armed .onp-arm-rig {
@@ -1793,7 +1788,7 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.onp-min-arm {
-		--onp-arm-swing: 200ms;
+		--onp-arm-swing: 900ms;
 	}
 }
 
@@ -1853,6 +1848,12 @@
 	animation: onp-status-pulse 1.6s ease-in-out infinite;
 }
 
+@keyframes onp-status-pulse-soft {
+	50% {
+		opacity: 0.75;
+	}
+}
+
 @keyframes onp-status-spin {
 	to {
 		transform: rotate(360deg);
@@ -1872,7 +1873,7 @@
 
 	.onp-status[data-tone='live'] .onp-status-icon svg,
 	.onp-track-subtitle.is-connecting {
-		animation: none;
+		animation: onp-status-pulse-soft 4s ease-in-out infinite;
 	}
 }
 

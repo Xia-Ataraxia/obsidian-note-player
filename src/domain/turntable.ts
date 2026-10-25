@@ -13,8 +13,8 @@ export function leadRemainingMs(sinceLandedMs: number): number {
 export const FADE_OUT_MS = 250;
 export const GROOVE_SECONDS = 2;
 
-export const REDUCED_SWING_MS = 200;
-const REDUCED_AUDIO_START_MS = 250;
+export const REDUCED_SWING_MS = 900;
+const REDUCED_AUDIO_START_MS = 950;
 
 export function swingMs(reduced: boolean): number {
   return reduced ? REDUCED_SWING_MS : SWING_MS;
