@@ -7,9 +7,16 @@ type AudioWindow = Window & { AudioContext: typeof AudioContext };
 /** Synthesized needle drop, lift and crackle. The context is created lazily on a user gesture. */
 export class TurntableSound {
   private ctx: AudioContext | null = null;
+  private enabled = true;
   private groove: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 
   constructor(private readonly getVolume: () => number, private readonly isReduced: () => boolean = () => false) {}
+
+  /** The "Turntable sounds" setting; gating here covers every caller, including the crackle. */
+  setEnabled(on: boolean): void {
+    this.enabled = on;
+    if (!on) this.stopGroove();
+  }
 
   unlock(win: Window): void {
     this.ctx ??= new (win as AudioWindow).AudioContext();
@@ -28,7 +35,7 @@ export class TurntableSound {
   startGroove(): void {
     const ctx = this.ctx;
     const level = soundGain('lift', this.getVolume());
-    if (this.groove || !ctx || ctx.state !== 'running' || level <= 0) return;
+    if (!this.enabled || this.groove || !ctx || ctx.state !== 'running' || level <= 0) return;
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, ctx.currentTime);
     gain.gain.linearRampToValueAtTime(level * 0.5, ctx.currentTime + swingMs(this.isReduced()) / 1000 + 0.3);
@@ -69,7 +76,7 @@ export class TurntableSound {
 
   private play(kind: SoundKind, delaySec: number): void {
     const ctx = this.ctx;
-    if (!ctx || ctx.state !== 'running') return;
+    if (!this.enabled || !ctx || ctx.state !== 'running') return;
     const gain = soundGain(kind, this.getVolume());
     if (gain <= 0) return;
 

@@ -121,6 +121,7 @@ export class Turntable {
 
   update(track: PlaylistTrack | null, state: PlaybackState, soundsOn: boolean, style: TurntableStyle = 'realistic'): void {
     this.setStyle(style);
+    this.sound.setEnabled(soundsOn);
     // Flush styles so the arm transition starts from the pre-render state after re-attach.
     void this.el.offsetWidth;
     this.setLabel(track?.videoId ?? '', track?.thumbnailUrl ?? '');
