@@ -2,33 +2,41 @@ export const PEAK_COUNT = 1000;
 
 const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
 
-/** Max absolute sample per bucket across channels, normalised to 0..255 so the JSON stays small. */
+/** Bar height = loudness, not peak: mastered music peaks near 0 dBFS everywhere, so peaks flatten into a block. */
+const NORMALISE_PERCENTILE = 0.95;
+/** >1 expands the range so quiet sections stay visibly lower than loud ones. */
+const DYNAMICS_CURVE = 2;
+const FORMAT_VERSION = 2;
+
+/** Per-bucket RMS across channels, normalised by the 95th percentile and curved, stored as 0..255. */
 export function computePeaks(channels: ArrayLike<number>[], count = PEAK_COUNT): number[] {
   const length = channels[0]?.length ?? 0;
   if (length === 0) return [];
-  const raw = new Array<number>(count).fill(0);
-  let max = 0;
+  const rms = new Array<number>(count).fill(0);
   for (let i = 0; i < count; i++) {
     const from = Math.floor((i * length) / count);
     const to = Math.min(length, Math.max(from + 1, Math.floor(((i + 1) * length) / count)));
-    let bucket = 0;
+    let sum = 0;
     for (const channel of channels) {
-      for (let j = from; j < to; j++) bucket = Math.max(bucket, Math.abs(channel[j] ?? 0));
+      for (let j = from; j < to; j++) sum += (channel[j] ?? 0) ** 2;
     }
-    raw[i] = bucket;
-    max = Math.max(max, bucket);
+    rms[i] = Math.sqrt(sum / ((to - from) * channels.length));
   }
-  return max === 0 ? raw : raw.map((v) => Math.round((v / max) * 255));
+  const sorted = [...rms].sort((a, b) => a - b);
+  const reference = sorted[Math.min(count - 1, Math.floor(count * NORMALISE_PERCENTILE))] ?? 0;
+  if (reference === 0) return rms.map(() => 0);
+  return rms.map((v) => Math.round(clamp01(v / reference) ** DYNAMICS_CURVE * 255));
 }
 
 export function serializePeaks(peaks: number[]): string {
-  return JSON.stringify({ v: 1, peaks });
+  return JSON.stringify({ v: FORMAT_VERSION, peaks });
 }
 
 export function parsePeaks(json: string): number[] | null {
   try {
     const data: unknown = JSON.parse(json);
-    const peaks = (data as { peaks?: unknown } | null)?.peaks;
+    const { v, peaks } = (data ?? {}) as { v?: unknown; peaks?: unknown };
+    if (v !== FORMAT_VERSION) return null; // older peak-based caches re-decode from the local audio
     if (!Array.isArray(peaks) || peaks.length === 0) return null;
     return peaks.every((v) => typeof v === 'number' && v >= 0 && v <= 255) ? (peaks as number[]) : null;
   } catch {
@@ -36,15 +44,15 @@ export function parsePeaks(json: string): number[] | null {
   }
 }
 
-/** Max-pools stored peaks into `bars` heights in 0..1. */
+/** Averages stored levels into `bars` heights in 0..1 (averaging keeps dips visible; max-pooling hides them). */
 export function resamplePeaks(peaks: number[], bars: number): number[] {
   if (peaks.length === 0 || bars <= 0) return [];
   return Array.from({ length: bars }, (_, i) => {
     const from = Math.floor((i * peaks.length) / bars);
     const to = Math.max(from + 1, Math.floor(((i + 1) * peaks.length) / bars));
-    let bucket = 0;
-    for (let j = from; j < to; j++) bucket = Math.max(bucket, peaks[j] ?? 0);
-    return bucket / 255;
+    let sum = 0;
+    for (let j = from; j < to; j++) sum += peaks[j] ?? 0;
+    return sum / (to - from) / 255;
   });
 }
 

@@ -6,7 +6,6 @@ const SEEK_STEP_SECONDS = 5;
 const FADE_SECONDS = 0.25;
 const METER_HOLD_FALL = 0.6;
 /** Loud masters peak almost everywhere; an expansion curve keeps the dynamics visible. */
-const CONTRAST = 2;
 
 export interface WaveformHooks {
 	getTime(): number;
@@ -210,7 +209,7 @@ export class WaveformProgress {
 		const progress = duration > 0 ? Math.min(time / duration, 1) : 0;
 
 		const slot = Math.min(Math.floor(progress * this.pooled.length), this.pooled.length - 1);
-		const target = playing && this.peaks ? (this.pooled[slot] ?? 0) ** CONTRAST : 0;
+		const target = playing && this.peaks ? (this.pooled[slot] ?? 0) : 0;
 		this.level = meterStep(this.level, target, dt);
 		this.hold = Math.max(this.level, this.hold - dt * METER_HOLD_FALL);
 
@@ -227,7 +226,7 @@ export class WaveformProgress {
 			const soft = placeholderHeight(i, reduced ? 0 : t);
 			const pooled = this.pooled[i];
 			if (!this.peaks || pooled === undefined) return soft;
-			const real = pooled ** CONTRAST;
+			const real = pooled;
 			const local = reduced ? this.reveal : Math.min(Math.max(this.reveal * 1.6 - (i / count) * 0.6, 0), 1.08);
 			return soft + (real - soft) * local;
 		});

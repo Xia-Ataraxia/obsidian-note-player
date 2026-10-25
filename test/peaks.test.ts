@@ -4,10 +4,26 @@ import {
 } from '../src/domain/peaks';
 
 describe('computePeaks', () => {
-  it('takes the loudest sample per bucket across channels, normalised to 255', () => {
-    const left = Float32Array.from([0.1, -0.2, 0.0, 0.0]);
-    const right = Float32Array.from([0.0, 0.0, 0.0, -0.4]);
-    expect(computePeaks([left, right], 2)).toEqual([128, 255]);
+  it('shows loudness: quiet and loud sections get clearly different heights', () => {
+    const rate = 1000;
+    const signal = Float32Array.from({ length: rate * 10 }, (_, i) => (i < rate * 5 ? 0.1 : 0.8) * Math.sin(i * 0.3));
+    const bars = computePeaks([signal], 10);
+    expect(Math.max(...bars.slice(0, 5))).toBeLessThan(Math.min(...bars.slice(5)) * 0.3);
+  });
+
+  it('does not saturate compressed loud music', () => {
+    let seed = 1;
+    const noise = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
+    // Every bucket peaks at ~1.0 (clipped), but loudness swells and dips like a real master.
+    const signal = Float32Array.from({ length: 200000 }, (_, i) => {
+      const env = 0.4 + 0.6 * Math.abs(Math.sin(i / 20000));
+      return Math.max(-1, Math.min(1, 1.5 * env * (0.6 * Math.sin(i * 0.3) + 0.4 * noise())));
+    });
+    const bars = computePeaks([signal], 200).map((v) => v / 255);
+    const median = [...bars].sort((a, b) => a - b)[100] ?? 1;
+    expect(median).toBeLessThan(0.75);
+    expect(Math.max(...bars)).toBeGreaterThan(0.9);
+    expect(Math.min(...bars)).toBeLessThan(0.4);
   });
 
   it('returns nothing for empty input and zeros for silence', () => {
@@ -24,14 +40,15 @@ describe('peaks json', () => {
   it('round-trips and rejects garbage', () => {
     expect(parsePeaks(serializePeaks([0, 128, 255]))).toEqual([0, 128, 255]);
     expect(parsePeaks('nope')).toBeNull();
-    expect(parsePeaks('{"peaks":[300]}')).toBeNull();
-    expect(parsePeaks('{"peaks":[]}')).toBeNull();
+    expect(parsePeaks('{"v":1,"peaks":[1]}')).toBeNull();
+    expect(parsePeaks('{"v":2,"peaks":[300]}')).toBeNull();
+    expect(parsePeaks('{"v":2,"peaks":[]}')).toBeNull();
   });
 });
 
 describe('resamplePeaks', () => {
-  it('max-pools down and stays within 0..1', () => {
-    expect(resamplePeaks([0, 255, 51, 0], 2)).toEqual([1, 0.2]);
+  it('averages down and stays within 0..1', () => {
+    expect(resamplePeaks([0, 255, 51, 51], 2)).toEqual([0.5, 0.2]);
     expect(resamplePeaks([], 4)).toEqual([]);
   });
 });
