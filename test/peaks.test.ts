@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  computePeaks, meterStep, nudgeRatio, parsePeaks, placeholderHeight, ratioAt, resamplePeaks, serializePeaks, springStep,
+  computePeaks, meterStep, nudgeRatio, parsePeaks, placeholderHeight, ratioAt, resamplePeaks, serializePeaks, smoothBars, springStep,
 } from '../src/domain/peaks';
 
 describe('computePeaks', () => {
@@ -27,6 +27,9 @@ describe('computePeaks', () => {
     const loud = bars.filter((v) => v > 0.5);
     const mean = loud.reduce((a, b) => a + b, 0) / loud.length;
     expect(Math.sqrt(loud.reduce((a, b) => a + (b - mean) ** 2, 0) / loud.length)).toBeGreaterThan(0.08);
+    const med = (xs: number[]): number => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] ?? 0;
+    const isChorus = (i: number): boolean => Math.floor(i / 25) % 5 >= 3;
+    expect(med(bars.filter((_, i) => !isChorus(i)))).toBeLessThanOrEqual(med(bars.filter((_, i) => isChorus(i))) - 0.25);
     expect(Math.max(...bars)).toBeGreaterThan(0.9);
     expect(Math.min(...bars)).toBeLessThan(0.6);
   });
@@ -55,6 +58,13 @@ describe('resamplePeaks', () => {
   it('averages down and stays within 0..1', () => {
     expect(resamplePeaks([0, 255, 51, 51], 2)).toEqual([0.5, 0.2]);
     expect(resamplePeaks([], 4)).toEqual([]);
+  });
+});
+
+describe('smoothBars', () => {
+  it('blurs ripple, keeps length and edges sane', () => {
+    expect(smoothBars([0, 1, 0, 1])).toEqual([0.25, 0.5, 0.5, 0.75]);
+    expect(smoothBars([0.4])).toEqual([0.4]);
   });
 });
 

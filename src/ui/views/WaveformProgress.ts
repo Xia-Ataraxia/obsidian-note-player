@@ -1,4 +1,4 @@
-import { meterStep, nudgeRatio, placeholderHeight, ratioAt, resamplePeaks, springStep } from '../../domain/peaks';
+import { meterStep, nudgeRatio, placeholderHeight, ratioAt, resamplePeaks, smoothBars, springStep } from '../../domain/peaks';
 import { formatTime } from './PlayerSurface';
 import { barCountFor, drawMeter, drawWave, readColors, type WaveColors } from './waveform-draw';
 
@@ -86,7 +86,7 @@ export class WaveformProgress {
 	/** `animate` draws the real waveform in over the placeholder; otherwise it is simply there. */
 	setPeaks(peaks: number[], animate: boolean): void {
 		this.peaks = peaks;
-		this.pooled = resamplePeaks(peaks, barCountFor(this.width));
+		this.pooled = smoothBars(resamplePeaks(peaks, barCountFor(this.width)));
 		this.reveal = animate ? 0 : 1;
 		this.revealVel = 0;
 		this.schedule();
@@ -173,7 +173,7 @@ export class WaveformProgress {
 		this.meterCanvas.width = Math.round(meter.width * dpr);
 		this.meterCanvas.height = Math.round(meter.height * dpr);
 		this.meterCtx?.setTransform(dpr, 0, 0, dpr, 0, 0);
-		if (this.peaks) this.pooled = resamplePeaks(this.peaks, barCountFor(width));
+		if (this.peaks) this.pooled = smoothBars(resamplePeaks(this.peaks, barCountFor(width)));
 		this.schedule();
 	}
 
