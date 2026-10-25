@@ -69,8 +69,10 @@ export class PlayerSurface {
 		}
 
 		const videoId = track.videoId;
+		const token = ++this.downloadToken;
 
 		if (await this.audioCacheService.hasCached(videoId)) {
+			if (token !== this.downloadToken) return;
 			this.mountAudio(this.audioCacheService.getFileUrl(videoId), autoplayEnabled);
 			this.activateTrack(videoId, autoplayEnabled);
 			return;
@@ -79,7 +81,6 @@ export class PlayerSurface {
 		this.currentVideoId = videoId;
 		this.currentAutoplay = autoplayEnabled;
 		this.isDownloading = true;
-		const token = ++this.downloadToken;
 		this.onPlaybackChange('paused');
 
 		const streamUrl = await this.resolveStream(videoId);

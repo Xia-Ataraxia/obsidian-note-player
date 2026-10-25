@@ -7,6 +7,9 @@ import type { AudioCachePort, VaultAdapter } from '../types/view';
 import type { AudioFormat } from '../types/audio';
 import { shareInFlight } from '../utils/in-flight';
 
+/** yt-dlp retries unreachable hosts for minutes; first play must not wait on that. */
+const STREAM_RESOLVE_TIMEOUT_MS = 10_000;
+
 export class AudioCacheService implements AudioCachePort {
 	private cacheDir: string;        // vault-relative
 	private format: AudioFormat;
@@ -128,7 +131,7 @@ export class AudioCacheService implements AudioCachePort {
 			const proc = spawn(this.ytdlpPath, [
 				'-f', 'bestaudio[ext=m4a]/bestaudio', '-g', '--no-playlist',
 				`https://www.youtube.com/watch?v=${videoId}`,
-			], { env: this.spawnEnv() });
+			], { env: this.spawnEnv(), timeout: STREAM_RESOLVE_TIMEOUT_MS });
 			this.resolvers.add(proc);
 			proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
 			proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
