@@ -38,6 +38,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private changeListeners = new Set<() => void>();
   private readonly scheduleRefresh = debounce(() => { void this.refreshIndex(); }, 250, true);
   private readonly playback = new PlaybackStateManager();
+  private playlistEdits: Promise<void> = Promise.resolve();
   private isLoading = false;
   private errorMessage: string | null = null;
   private audioCacheService: AudioCacheService | null = null;
@@ -266,8 +267,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   }
 
   private addPathsToPlaylist(playlistPath: string, paths: string[]): Promise<void> {
-    const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
-    return this.savePlaylistTracks(playlistPath, dedupe([...playlist.trackPaths, ...paths]), { refresh: true });
+    return this.savePlaylistTracks(playlistPath, (current) => dedupe([...current, ...paths]), { refresh: true });
   }
 
   async addActiveNoteToPlaylist(): Promise<void> {
@@ -300,7 +300,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     playlist.tracks = moveItem(playlist.tracks, fromIndex, toIndex);
     this.notifyChange();
 
-    await this.savePlaylistTracks(playlist.path, nextTrackPaths);
+    await this.savePlaylistTracks(playlist.path, () => nextTrackPaths);
   }
 
   async openNote(path: string): Promise<void> {
@@ -346,8 +346,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
   private async addTrackToSpecificPlaylist(playlistPath: string, trackPath: string): Promise<void> {
     const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
-    const nextTrackPaths = dedupe([...playlist.trackPaths, trackPath]);
-    await this.savePlaylistTracks(playlistPath, nextTrackPaths, { refresh: true });
+    await this.savePlaylistTracks(playlistPath, (current) => dedupe([...current, trackPath]), { refresh: true });
 
     const track = this.library.tracks.find((entry) => entry.path === trackPath);
     showNotice('track_added', {
@@ -358,8 +357,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
   private async removeTrackFromSpecificPlaylist(playlistPath: string, trackPath: string): Promise<void> {
     const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
-    const nextTrackPaths = playlist.trackPaths.filter((entry) => entry !== trackPath);
-    await this.savePlaylistTracks(playlistPath, nextTrackPaths, { refresh: true });
+    await this.savePlaylistTracks(playlistPath, (current) => current.filter((entry) => entry !== trackPath), { refresh: true });
 
     const track = this.library.tracks.find((entry) => entry.path === trackPath);
     showNotice('track_removed', {
@@ -446,22 +444,28 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     }
   }
 
-  private async savePlaylistTracks(
+  /** Edits run one at a time and each builds on the list the previous one wrote, so concurrent adds never drop a track. */
+  private savePlaylistTracks(
     playlistPath: string,
-    trackPaths: string[],
+    edit: (trackPaths: string[]) => string[],
     opts: { refresh?: boolean } = {},
   ): Promise<void> {
-    const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
-    await rewriteNote(this.app, playlistPath, (existing) => updatePlaylistNoteContent(existing, {
-      trackPaths: trackPaths.map((trackPath) => canonicalizeNotePath(trackPath)),
-      coverUrl: playlist.coverUrl || undefined,
-      description: playlist.description || undefined,
-    }, this.settings));
+    const run = this.playlistEdits.then(async () => {
+      const playlist = getPlaylistOrThrow(playlistPath, this.library.playlists);
+      const trackPaths = edit(playlist.trackPaths);
+      await rewriteNote(this.app, playlistPath, (existing) => updatePlaylistNoteContent(existing, {
+        trackPaths: trackPaths.map((trackPath) => canonicalizeNotePath(trackPath)),
+        coverUrl: playlist.coverUrl || undefined,
+        description: playlist.description || undefined,
+      }, this.settings));
 
-    if (opts.refresh) {
-      await this.refreshIndex();
-      showNotice('playlist_saved', { name: playlist.title });
-    }
+      if (opts.refresh) {
+        await this.refreshIndex();
+        showNotice('playlist_saved', { name: playlist.title });
+      }
+    });
+    this.playlistEdits = run.catch(() => undefined);
+    return run;
   }
 
   private async activateActivePlaylist(): Promise<void> {
