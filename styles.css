@@ -675,10 +675,12 @@
 
 .onp-turntable {
 	--onp-vinyl-color: var(--color-base-100);
+	--onp-vinyl-light: var(--color-base-00);
 }
 
 .theme-dark .onp-turntable {
 	--onp-vinyl-color: var(--color-base-00);
+	--onp-vinyl-light: var(--color-base-100);
 }
 
 .onp-vinyl {
@@ -687,12 +689,35 @@
 	aspect-ratio: 1;
 	border-radius: 50%;
 	background: radial-gradient(
-		circle,
-		transparent 34%,
-		var(--onp-vinyl-color) 35%
+		circle at 36% 34%,
+		color-mix(in srgb, var(--onp-vinyl-light) 18%, var(--onp-vinyl-color)),
+		var(--onp-vinyl-color) 64%
 	);
 	border: 1px solid var(--background-modifier-border);
-	box-shadow: var(--shadow-s);
+	box-shadow: var(--shadow-l);
+	transition: box-shadow 400ms ease;
+}
+
+.onp-turntable.is-playing .onp-vinyl {
+	box-shadow:
+		var(--shadow-l),
+		0 0 0 1px color-mix(in srgb, var(--interactive-accent) 40%, transparent);
+}
+
+.onp-turntable-platter::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	pointer-events: none;
+	background: conic-gradient(
+		from 210deg,
+		transparent 0 18%,
+		color-mix(in srgb, var(--onp-vinyl-light) 10%, transparent) 29%,
+		transparent 40% 58%,
+		color-mix(in srgb, var(--onp-vinyl-light) 6%, transparent) 70%,
+		transparent 82%
+	);
 }
 
 .onp-vinyl-grooves {
@@ -701,10 +726,9 @@
 	border-radius: 50%;
 	background: repeating-radial-gradient(
 		circle,
-		transparent 0 2px,
-		var(--background-modifier-border) 2px 3px
+		transparent 0 2.4px,
+		color-mix(in srgb, var(--onp-vinyl-light) 5%, transparent) 2.4px 3px
 	);
-	opacity: 0.35;
 }
 
 .onp-vinyl-label {
@@ -733,11 +757,15 @@
 	height: 62%;
 	transform-origin: 50% 8%;
 	transform: rotate(-12deg);
-	transition: transform 600ms cubic-bezier(0.3, 0.7, 0.2, 1);
+	transition:
+		transform 600ms cubic-bezier(0.3, 0.7, 0.2, 1),
+		filter 260ms ease;
+	filter: drop-shadow(0 1px 1px var(--background-modifier-border-hover));
 }
 
 .onp-turntable.is-playing .onp-tonearm {
 	transform: rotate(24deg);
+	filter: drop-shadow(0 3px 2px var(--background-modifier-border-hover));
 }
 
 .onp-tonearm-pivot {
