@@ -50,7 +50,7 @@ export function renderHero(
 		actions.appendChild(createActionButton('Play all', 'play', () => {
 			const firstTrack = state.queue[0];
 			if (!firstTrack) return;
-			void run(`Playing ${firstTrack.title}`, () => host.playTrack(firstTrack.path));
+			void run('', () => host.playTrack(firstTrack.path), false);
 		}, { cta: true, iconOnly: true }));
 	}
 

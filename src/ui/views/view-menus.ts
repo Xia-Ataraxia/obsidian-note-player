@@ -18,13 +18,13 @@ export function openPlaylistMenu(
 
 	if (host.selectActivePlaylist) {
 		add('Load active playlist note', 'crosshair', () => {
-			void run('Loaded active playlist', () => host.selectActivePlaylist?.() ?? Promise.resolve());
+			void run('', () => host.selectActivePlaylist?.() ?? Promise.resolve(), false);
 		});
 	}
 
 	if (host.addActiveNoteToPlaylist) {
 		add('Add active note', 'plus', () => {
-			void run('Added active note to playlist', () => host.addActiveNoteToPlaylist?.() ?? Promise.resolve());
+			void run('', () => host.addActiveNoteToPlaylist?.() ?? Promise.resolve(), false);
 		});
 	}
 
@@ -44,7 +44,7 @@ export function openPlaylistMenu(
 	}
 
 	add('Refresh library', 'refresh-cw', () => {
-		void run('Refreshed library', () => host.refresh());
+		void run('', () => host.refresh(true), false);
 	});
 
 	menu.showAtMouseEvent(event);
@@ -61,13 +61,13 @@ export function openTrackMenu(
 		menu.addItem((item) => item.setTitle(title).setIcon(icon).onClick(onClick));
 
 	add('Play track', 'play', () => {
-		void run(`Playing ${track.title}`, () => host.playTrack(track.path));
+		void run('', () => host.playTrack(track.path), false);
 	});
 	add('Open note', 'file-text', () => {
 		void run('', () => host.openNote(track.path), false);
 	});
 	add('Remove from playlist', 'minus-circle', () => {
-		void run(`Removed ${track.title}`, () => host.removeTrackFromPlaylist(track.path));
+		void run('', () => host.removeTrackFromPlaylist(track.path), false);
 	});
 
 	menu.showAtMouseEvent(event);
