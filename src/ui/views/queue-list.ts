@@ -16,7 +16,7 @@ const renderedSignatures = new WeakMap<HTMLElement, string>();
 
 function queueSignature(state: PlaylistViewState, ctx: QueueContext): string {
 	const rows = state.queue.map((t) => [t.path, t.title, t.artist, t.thumbnailUrl].join('\u0001'));
-	return [ctx.selectedPlaylist?.path ?? '', state.isLoading, ...rows].join('\u0002');
+	return [ctx.selectedPlaylist?.path ?? '', ...rows].join('\u0002');
 }
 
 // Same rows, new current track: toggle in place so the highlight transition can run.
@@ -55,10 +55,6 @@ export function renderQueue(panel: HTMLElement, state: PlaylistViewState, ctx: Q
 		text: ctx.selectedPlaylist ? plural(state.queue.length, 'track') : 'Select a playlist first',
 	});
 
-	if (state.isLoading) {
-		renderEmptyState(panel, 'Loading playlist', 'Reading playlist note references.');
-		return;
-	}
 	if (!ctx.selectedPlaylist) {
 		renderEmptyState(panel, 'Choose a playlist', 'The playlist rows appear here once you select a playlist.');
 		return;

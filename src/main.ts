@@ -39,7 +39,6 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private readonly scheduleRefresh = debounce(() => { void this.refreshIndex(); }, 250, true);
   private readonly playback = new PlaybackStateManager();
   private playlistEdits: Promise<void> = Promise.resolve();
-  private isLoading = false;
   private errorMessage: string | null = null;
   private audioCacheService: AudioCacheService | null = null;
   private peaksStore: PeaksStore | null = null;
@@ -167,7 +166,6 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     const currentTrack = this.playback.resolveCurrentTrack(queue, this.library.tracks, toPlaylistTrack);
 
     return {
-      isLoading: this.isLoading,
       errorMessage: this.errorMessage,
       playlists: this.library.playlists.map(toPlaylistSummary),
       selectedPlaylistPath,
@@ -431,11 +429,9 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     this.registerEvent(vault.on('create', schedule));
   }
 
+  // Indexing is synchronous; flashing a loading state here would collapse the view and reset its scroll on every vault edit.
   private async refreshIndex(): Promise<void> {
-    this.isLoading = true;
     this.errorMessage = null;
-    this.notifyChange();
-
     try {
       this.library = buildMusicLibrary(collectNoteSnapshots(this.app), this.settings);
 
@@ -454,7 +450,6 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       this.errorMessage = error instanceof Error ? error.message : String(error);
       console.error('[Note Player] Failed to refresh library', error);
     } finally {
-      this.isLoading = false;
       this.notifyChange();
     }
   }
