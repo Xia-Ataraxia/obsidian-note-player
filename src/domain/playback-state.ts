@@ -1,6 +1,5 @@
 import type { PlaylistTrack } from '../types/view';
 import type { MusicTrack } from '../types/music';
-import type { RepeatMode } from '../types/playback';
 
 export class PlaybackStateManager {
 	currentTrackPath: string | null = null;
@@ -13,15 +12,14 @@ export class PlaybackStateManager {
 		this.currentTrackPath = path;
 	}
 
-	next(queue: PlaylistTrack[], repeatMode: RepeatMode = 'none'): boolean {
+	/** Manual skip. Repeat-one loops in the audio element, so it never reaches here and must not block Next. */
+	next(queue: PlaylistTrack[]): boolean {
 		if (queue.length === 0) return false;
 
 		if (!this.currentTrackPath) {
 			this.currentTrackPath = queue[0]!.path;
 			return true;
 		}
-
-		if (repeatMode === 'one') return true;
 
 		const currentIndex = queue.findIndex((track) => track.path === this.currentTrackPath);
 		if (currentIndex < 0 || currentIndex >= queue.length - 1) return false;

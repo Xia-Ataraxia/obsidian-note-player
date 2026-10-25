@@ -241,7 +241,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   }
 
   playNext(): Promise<void> {
-    if (this.playback.next(this.currentQueue(), this.settings.repeatMode)) {
+    if (this.playback.next(this.currentQueue())) {
       this.notifyChange();
       void this.prefetchNext();
     }
