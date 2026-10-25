@@ -5,13 +5,15 @@ import {
 } from '../domain/track-import';
 import type { MusicLibrarySnapshot } from '../types/music';
 import type { NotePlayerSettings } from '../types/settings';
-import type { AudioCachePort } from '../types/view';
+import type { AudioCachePort, PendingImport } from '../types/view';
 import { sanitizeFileName } from '../utils/dedupe';
+import { withTimeout } from '../utils/timeout';
 import { buildYoutubeThumbnailUrl, buildYoutubeWatchUrl, parseYoutubeUrl } from '../utils/youtube';
 import { showNotice } from '../ui/notices';
 import { ensureFolder, getAvailablePath, waitForMetadata } from './vault-io';
 
 const INBOX_NAME = 'Inbox';
+const OEMBED_TIMEOUT_MS = 5000;
 
 export interface TrackImporterDeps {
   app: App;
@@ -23,12 +25,20 @@ export interface TrackImporterDeps {
   addTracks(playlistPath: string, trackPaths: string[]): Promise<void>;
   /** Starts the track unless something is already playing. */
   playIfIdle(trackPath: string): void;
+  onPendingChange(): void;
 }
 
 export class TrackImporter {
   private queue: Promise<void> = Promise.resolve();
+  private pending: PendingImport[] = [];
+  private nextPendingId = 0;
 
   constructor(private readonly deps: TrackImporterDeps) {}
+
+  /** Imports waiting or running, in paste order; the view shows each as a placeholder row. */
+  getPending(): readonly PendingImport[] {
+    return this.pending;
+  }
 
   async importFromInput(input: string): Promise<void> {
     const target = parseYoutubeUrl(input);
@@ -36,15 +46,24 @@ export class TrackImporter {
       showNotice('invalid_youtube_url');
       return;
     }
+    const id = this.nextPendingId++;
+    this.setPending([...this.pending, { id, videoId: target.kind === 'video' ? target.videoId : null, title: null }]);
     // Imports run one at a time so a second paste waits instead of being dropped.
-    const run = this.queue.then(() => target.kind === 'video'
-      ? this.importVideo(target.videoId)
-      : this.importPlaylist(target.listId));
+    const run = this.queue
+      .then(() => target.kind === 'video'
+        ? this.importVideo(target.videoId, id)
+        : this.importPlaylist(target.listId))
+      .finally(() => this.setPending(this.pending.filter((entry) => entry.id !== id)));
     this.queue = run.catch(() => undefined);
     await run;
   }
 
-  private async importVideo(videoId: string): Promise<void> {
+  private setPending(next: PendingImport[]): void {
+    this.pending = next;
+    this.deps.onPendingChange();
+  }
+
+  private async importVideo(videoId: string, pendingId: number): Promise<void> {
     const playlistPath = this.deps.getSelectedPlaylistPath() ?? await this.deps.createPlaylist(INBOX_NAME);
     const playlist = this.playlistOf(playlistPath);
     const plan = classifyImport(videoId, this.deps.getLibrary().tracks, playlist.trackPaths);
@@ -63,6 +82,7 @@ export class TrackImporter {
     } else {
       const meta = await this.fetchMeta(videoId);
       title = meta.title;
+      this.setPending(this.pending.map((entry) => entry.id === pendingId ? { ...entry, title } : entry));
       const file = await this.createTrackNote(meta);
       await waitForMetadata(this.deps.app, file);
       trackPath = file.path;
@@ -120,19 +140,17 @@ export class TrackImporter {
       author: '',
       thumbnailUrl: buildYoutubeThumbnailUrl(videoId),
     };
-    try {
-      const watchUrl = buildYoutubeWatchUrl(videoId);
-      const response = await requestUrl({
+    const watchUrl = buildYoutubeWatchUrl(videoId);
+    // A slow or unreachable oEmbed must not hold up the import; the placeholder title is good enough.
+    const oembed = await withTimeout(
+      requestUrl({
         url: `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`,
         throw: false,
-      });
-      const oembed = response.status === 200 ? parseOembed(response.json) : null;
-      if (oembed) return { videoId, ...oembed, thumbnailUrl: oembed.thumbnailUrl || fallback.thumbnailUrl };
-    } catch {
-      // network or JSON failure falls through to the placeholder
-    }
-    showNotice('metadata_unavailable');
-    return fallback;
+      }).then((response) => response.status === 200 ? parseOembed(response.json) : null),
+      OEMBED_TIMEOUT_MS,
+      null,
+    );
+    return oembed ? { videoId, ...oembed, thumbnailUrl: oembed.thumbnailUrl || fallback.thumbnailUrl } : fallback;
   }
 
   private async createTrackNote(meta: TrackMeta): Promise<TFile> {

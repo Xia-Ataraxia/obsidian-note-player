@@ -1,6 +1,7 @@
 import { setIcon } from 'obsidian';
 import { plural } from '../../utils/plural';
-import type { PlaylistSummary, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from '../../types/view';
+import { buildYoutubeThumbnailUrl } from '../../utils/youtube';
+import type { PendingImport, PlaylistSummary, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from '../../types/view';
 import { openTrackMenu } from './view-menus';
 import { buildClass, createIconButton, renderEmptyState, type RunAction } from './view-parts';
 
@@ -14,14 +15,20 @@ export interface QueueContext {
 
 const renderedSignatures = new WeakMap<HTMLElement, string>();
 
+// The real row lands a few awaits before the import settles; hide the placeholder as soon as it does.
+function visiblePending(state: PlaylistViewState): PendingImport[] {
+	return state.pendingImports.filter((p) => !p.videoId || !state.queue.some((t) => t.videoId === p.videoId));
+}
+
 function queueSignature(state: PlaylistViewState, ctx: QueueContext): string {
 	const rows = state.queue.map((t) => [t.path, t.title, t.artist, t.thumbnailUrl].join('\u0001'));
-	return [ctx.selectedPlaylist?.path ?? '', ...rows].join('\u0002');
+	const pending = visiblePending(state).map((p) => [p.id, p.title ?? ''].join('\u0001'));
+	return [ctx.selectedPlaylist?.path ?? '', ...rows, ...pending].join('\u0002');
 }
 
 // Same rows, new current track: toggle in place so the highlight transition can run.
 function syncCurrentRow(panel: HTMLElement, state: PlaylistViewState): boolean {
-	const rows = Array.from(panel.querySelectorAll<HTMLElement>('.onp-queue-list > .onp-track-row'));
+	const rows = Array.from(panel.querySelectorAll<HTMLElement>('.onp-queue-list > .onp-track-row:not(.is-importing)'));
 	if (rows.length !== state.queue.length) return false;
 	rows.forEach((row, index) => {
 		const isCurrent = state.currentTrack?.path === state.queue[index]?.path;
@@ -55,17 +62,32 @@ export function renderQueue(panel: HTMLElement, state: PlaylistViewState, ctx: Q
 		text: ctx.selectedPlaylist ? plural(state.queue.length, 'track') : 'Select a playlist first',
 	});
 
-	if (!ctx.selectedPlaylist) {
+	const pending = visiblePending(state);
+	const hasPending = pending.length > 0;
+	if (!ctx.selectedPlaylist && !hasPending) {
 		renderEmptyState(panel, 'Choose a playlist', 'The playlist rows appear here once you select a playlist.');
 		return;
 	}
-	if (state.queue.length === 0) {
+	if (state.queue.length === 0 && !hasPending) {
 		renderEmptyState(panel, 'Playlist is empty', 'Paste a YouTube URL here or use the link button to add a track.');
 		return;
 	}
 
 	const list = panel.createDiv({ cls: 'onp-list onp-queue-list' });
 	state.queue.forEach((track, index) => renderRow(list, state, ctx, track, index));
+	pending.forEach((entry, offset) => renderPendingRow(list, entry, state.queue.length + offset));
+}
+
+function renderPendingRow(list: HTMLElement, entry: PendingImport, index: number): void {
+	const row = list.createDiv({ cls: 'onp-track-row is-importing' });
+	row.setAttribute('aria-busy', 'true');
+	row.createDiv({ cls: 'onp-row-grip' }).createSpan({ cls: 'onp-row-order', text: String(index + 1).padStart(2, '0') });
+	const thumb = row.createDiv({ cls: 'onp-row-thumb' });
+	if (entry.videoId) thumb.setCssProps({ '--onp-thumb-image': `url("${buildYoutubeThumbnailUrl(entry.videoId)}")` });
+	const body = row.createDiv({ cls: 'onp-row-copy' });
+	body.createDiv({ cls: 'onp-row-title', text: entry.title ?? (entry.videoId ? 'Importing…' : 'Importing playlist…') });
+	body.createDiv({ cls: 'onp-row-subtitle', text: entry.title ? 'Adding to playlist…' : 'Fetching details…' });
+	row.createDiv({ cls: 'onp-row-actions' });
 }
 
 function renderRow(
