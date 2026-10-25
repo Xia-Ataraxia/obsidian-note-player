@@ -657,6 +657,10 @@
 	color: var(--text-muted);
 }
 
+.onp-row-action-placeholder {
+	visibility: hidden;
+}
+
 .onp-row-state {
 	font-size: var(--font-ui-smaller);
 	font-weight: 600;

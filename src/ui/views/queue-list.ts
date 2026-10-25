@@ -95,7 +95,10 @@ function renderPendingRow(list: HTMLElement, entry: PendingImport, index: number
 	const body = row.createDiv({ cls: 'onp-row-copy' });
 	body.createDiv({ cls: 'onp-row-title', text: entry.title ?? (entry.videoId ? 'Importing…' : 'Importing playlist…') });
 	body.createDiv({ cls: 'onp-row-subtitle', text: entry.title ? 'Adding to playlist…' : 'Fetching details…' });
-	row.createDiv({ cls: 'onp-row-actions' });
+	// Reserve the track-menu button's footprint so the row keeps its width when it becomes real.
+	const placeholder = row.createDiv({ cls: 'onp-row-actions' }).createSpan({ cls: 'clickable-icon onp-icon-button onp-row-action-placeholder' });
+	placeholder.setAttribute('aria-hidden', 'true');
+	setIcon(placeholder, 'more-vertical');
 }
 
 function renderRow(
@@ -167,7 +170,7 @@ function renderRow(
 
 	const body = row.createDiv({ cls: 'onp-row-copy' });
 	body.createDiv({ cls: 'onp-row-title', text: track.title }).setAttribute('title', track.path);
-	body.createDiv({ cls: 'onp-row-subtitle', text: track.artist || 'Unknown artist' });
+	if (track.artist) body.createDiv({ cls: 'onp-row-subtitle', text: track.artist });
 	body.addEventListener('click', play);
 
 	const rowActions = row.createDiv({ cls: 'onp-row-actions' });
