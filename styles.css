@@ -1029,24 +1029,56 @@
 	transform: scale(0.9);
 }
 
-.onp-volume-button.is-muted {
+.onp-volume.is-muted .onp-volume-button {
 	color: var(--text-faint);
 }
 
-.onp-volume-slider {
-	width: 84px;
-	margin: 0;
+.onp-volume.is-muted input[type="range"].onp-volume-slider {
+	opacity: 0.45;
 }
 
-.onp-volume-slider::-webkit-slider-runnable-track {
+input[type="range"].onp-volume-slider {
+	transition: opacity 0.12s ease;
+	--onp-volume-thumb: 12px;
+	--onp-volume-edge: calc(var(--onp-volume-thumb) / 2 + (100% - var(--onp-volume-thumb)) * var(--onp-volume-ratio, 0));
+	-webkit-appearance: none;
+	appearance: none;
+	width: 84px;
+	height: var(--onp-volume-thumb);
+	margin: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
+input[type="range"].onp-volume-slider::-webkit-slider-runnable-track {
+	height: 4px;
+	border-radius: 2px;
 	background: linear-gradient(
 		to right,
-		var(--interactive-accent) var(--onp-volume-fill, 0%),
-		var(--background-modifier-border) var(--onp-volume-fill, 0%)
+		var(--interactive-accent) var(--onp-volume-edge),
+		var(--background-modifier-border) var(--onp-volume-edge)
 	);
 }
 
-.onp-volume-slider:focus-visible {
+input[type="range"].onp-volume-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: var(--onp-volume-thumb);
+	height: var(--onp-volume-thumb);
+	margin-top: 2px;
+	border-radius: 50%;
+	background: var(--interactive-accent);
+	border: 1px solid var(--background-modifier-border-hover);
+	box-shadow: none;
+	transition: transform 0.12s ease;
+}
+
+input[type="range"].onp-volume-slider:hover::-webkit-slider-thumb,
+input[type="range"].onp-volume-slider:active::-webkit-slider-thumb {
+	transform: scale(1.15);
+}
+
+input[type="range"].onp-volume-slider:focus-visible {
 	outline: 2px solid var(--background-modifier-border-focus);
 	outline-offset: 2px;
 }
@@ -1056,7 +1088,9 @@
 		transition: color 0.15s ease;
 	}
 
-	.onp-volume-button:active {
+	.onp-volume-button:active,
+	input[type="range"].onp-volume-slider:hover::-webkit-slider-thumb,
+	input[type="range"].onp-volume-slider:active::-webkit-slider-thumb {
 		transform: none;
 	}
 }

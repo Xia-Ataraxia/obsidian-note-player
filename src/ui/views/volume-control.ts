@@ -15,11 +15,12 @@ export function renderVolumeControl(container: HTMLElement, volume: VolumePort):
 		const label = volumeLabel(state);
 		const shown = state.muted ? 0 : state.level;
 		slider.value = String(Math.round(shown * 100));
-		slider.setCssProps({ '--onp-volume-fill': `${Math.round(shown * 100)}%` });
+		slider.setCssProps({ '--onp-volume-ratio': String(Math.round(shown * 100) / 100) });
 		slider.setAttribute('aria-valuetext', label);
 		button.setAttribute('aria-label', state.muted ? 'Unmute' : 'Mute');
 		button.setAttribute('title', label);
-		button.toggleClass('is-muted', state.muted || state.level === 0);
+		slider.setAttribute('title', label);
+		group.toggleClass('is-muted', state.muted || state.level === 0);
 		setIcon(button, volumeIcon(state));
 	};
 
