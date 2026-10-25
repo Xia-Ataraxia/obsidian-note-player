@@ -45,7 +45,6 @@ export class NotePlayerView extends ItemView {
 	private unsubscribe: (() => void) | null = null;
 	private resizeObserver: ResizeObserver | null = null;
 	private dragFromIndex: number | null = null;
-	private actionInFlight = false;
 	private lastRenderedTrackPath: string | null = null;
 	private progressIntervalId: number | null = null;
 	private subtitleEl: HTMLElement | null = null;
@@ -464,9 +463,6 @@ export class NotePlayerView extends ItemView {
 	}
 
 	private readonly runAction: RunAction = async (successMessage, action, showSuccess = true) => {
-		if (this.actionInFlight) return;
-		this.actionInFlight = true;
-
 		try {
 			await action();
 			if (showSuccess && successMessage) {
@@ -476,7 +472,6 @@ export class NotePlayerView extends ItemView {
 			const message = error instanceof Error ? error.message : String(error);
 			new Notice(message);
 		} finally {
-			this.actionInFlight = false;
 			this.render();
 		}
 	};
