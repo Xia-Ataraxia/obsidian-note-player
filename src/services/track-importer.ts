@@ -8,10 +8,9 @@ import type { AudioCachePort } from '../types/view';
 import { sanitizeFileName } from '../utils/dedupe';
 import { buildYoutubeThumbnailUrl, buildYoutubeWatchUrl, parseYoutubeUrl } from '../utils/youtube';
 import { showNotice } from '../ui/notices';
-import { ensureFolder, getAvailablePath } from './vault-io';
+import { ensureFolder, getAvailablePath, waitForMetadata } from './vault-io';
 
 const INBOX_NAME = 'Inbox';
-const METADATA_WAIT_MS = 2000;
 
 export interface TrackImporterDeps {
   app: App;
@@ -63,7 +62,7 @@ export class TrackImporter {
       const meta = await this.fetchMeta(videoId);
       title = meta.title;
       const file = await this.createTrackNote(meta);
-      await this.waitForMetadata(file);
+      await waitForMetadata(this.deps.app, file);
       trackPath = file.path;
     }
     await this.deps.addTracks(playlistPath, [trackPath]);
@@ -101,7 +100,7 @@ export class TrackImporter {
       paths.push(lastCreated.path);
     }
 
-    if (lastCreated) await this.waitForMetadata(lastCreated);
+    if (lastCreated) await waitForMetadata(this.deps.app, lastCreated);
     if (paths.length === 0) {
       showNotice('track_already_in_playlist', { title: flat.title || listId, playlist: playlist.title });
       return;
@@ -143,21 +142,6 @@ export class TrackImporter {
       Object.assign(frontmatter, buildMusicFrontmatter(meta, settings));
     });
     return file;
-  }
-
-  /** Lets the metadata cache parse a fresh note so the next index refresh already sees it. */
-  private waitForMetadata(file: TFile): Promise<void> {
-    const { metadataCache } = this.deps.app;
-    if (metadataCache.getFileCache(file)?.frontmatter) return Promise.resolve();
-    return new Promise((resolve) => {
-      const done = () => {
-        window.clearTimeout(timer);
-        metadataCache.offref(ref);
-        resolve();
-      };
-      const ref = metadataCache.on('changed', (changed) => { if (changed.path === file.path) done(); });
-      const timer = window.setTimeout(done, METADATA_WAIT_MS);
-    });
   }
 
   private playlistOf(path: string) {

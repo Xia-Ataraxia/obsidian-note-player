@@ -24,6 +24,21 @@ export function getAvailablePath(app: App, folder: string, baseName: string): st
 	return attempt;
 }
 
+/** Resolves once the metadata cache has parsed a freshly written note, or after `timeoutMs`. */
+export function waitForMetadata(app: App, file: TFile, timeoutMs = 2000): Promise<void> {
+	const { metadataCache } = app;
+	if (metadataCache.getFileCache(file)?.frontmatter) return Promise.resolve();
+	return new Promise((resolve) => {
+		const done = () => {
+			window.clearTimeout(timer);
+			metadataCache.offref(ref);
+			resolve();
+		};
+		const ref = metadataCache.on('changed', (changed) => { if (changed.path === file.path) done(); });
+		const timer = window.setTimeout(done, timeoutMs);
+	});
+}
+
 export async function rewriteNote(app: App, path: string, transform: (existing: string) => string): Promise<void> {
 	const file = app.vault.getAbstractFileByPath(path);
 	if (!(file instanceof TFile)) {

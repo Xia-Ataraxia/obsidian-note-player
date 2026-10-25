@@ -12,7 +12,7 @@ import { dedupe, sanitizeFileName } from './utils/dedupe';
 import { AudioCacheService } from './services/audio-cache';
 import { openCompanionBase, writeCompanionBaseFiles } from './services/companion-bases';
 import { TrackImporter } from './services/track-importer';
-import { ensureFolder, getAvailablePath, openNoteInTab, collectNoteSnapshots, rewriteNote } from './services/vault-io';
+import { ensureFolder, getAvailablePath, openNoteInTab, collectNoteSnapshots, rewriteNote, waitForMetadata } from './services/vault-io';
 import { registerCommands } from './ui/commands';
 import { showNotice } from './ui/notices';
 import { canonicalizeNotePath } from './utils/wikilink';
@@ -342,10 +342,11 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private async createPlaylistNote(name: string, seedTrackPaths: string[] = []): Promise<string> {
     const filePath = getAvailablePath(this.app, this.settings.playlistFolder, sanitizeFileName(name));
     await ensureFolder(this.app, this.settings.playlistFolder);
-    await this.app.vault.create(
+    const file = await this.app.vault.create(
       filePath,
       createPlaylistNoteContent({ trackPaths: seedTrackPaths }, this.settings),
     );
+    await waitForMetadata(this.app, file);
 
     this.settings.lastPlaylistPath = filePath;
     await this.saveSettings();
