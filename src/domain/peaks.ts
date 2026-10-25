@@ -5,16 +5,16 @@ const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
 /** Bar height = loudness, not peak: mastered music peaks near 0 dBFS everywhere, so peaks flatten into a block. */
 const REFERENCE_PERCENTILE = 0.995;
 /** Reference sits above the loudest buckets so loud sections stay below the ceiling. */
-const HEADROOM_DB = 1.5;
+const HEADROOM_DB = 0;
 /** The quietest 30% of buckets anchor the bottom of the scale, so a uniformly loud track still spreads out. */
 const FLOOR_PERCENTILE = 0.3;
-const MIN_RANGE_DB = 10;
+const MIN_RANGE_DB = 4;
 const MAX_RANGE_DB = 36;
 /** >1 gently pushes mid levels down so loud sections keep texture. */
-const EASE = 1.6;
+const EASE = 1;
 /** Height fraction at the anchor level; the loud range uses the rest. */
 const KNEE = 0.3;
-const FORMAT_VERSION = 8;
+const FORMAT_VERSION = 9;
 
 /** Short RMS windows inside a bucket; beats and kicks survive as the bucket's upper percentile. */
 const SUB_WINDOW = 441;
@@ -89,6 +89,11 @@ export function resamplePeaks(peaks: number[], bars: number): number[] {
     for (let j = from; j < to; j++) sum += peaks[j] ?? 0;
     return sum / (to - from) / 255;
   });
+}
+
+/** Light 3-tap blur for display only: calms high-frequency ripple (barcode look) while beats still read. */
+export function smoothBars(bars: number[]): number[] {
+  return bars.map((v, i) => 0.25 * (bars[i - 1] ?? v) + 0.5 * v + 0.25 * (bars[i + 1] ?? v));
 }
 
 /** Soft pseudo-waveform shown before real peaks exist; `t` seconds drives the shimmer. */
