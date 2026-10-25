@@ -1,5 +1,5 @@
 import {
-  CRACKLE_SECONDS, renderCrackle, renderNoiseBurst, renderThump, soundGain, SWING_MS, type SoundKind,
+  CRACKLE_SECONDS, GROOVE_SECONDS, renderCrackle, renderGroove, renderNoiseBurst, renderThump, soundGain, swingMs, type SoundKind,
 } from '../../domain/turntable';
 
 type AudioWindow = Window & { AudioContext: typeof AudioContext };
@@ -7,8 +7,9 @@ type AudioWindow = Window & { AudioContext: typeof AudioContext };
 /** Synthesized needle drop, lift and crackle. The context is created lazily on a user gesture. */
 export class TurntableSound {
   private ctx: AudioContext | null = null;
+  private groove: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 
-  constructor(private readonly getVolume: () => number) {}
+  constructor(private readonly getVolume: () => number, private readonly isReduced: () => boolean = () => false) {}
 
   unlock(win: Window): void {
     this.ctx ??= new (win as AudioWindow).AudioContext();
@@ -16,14 +17,44 @@ export class TurntableSound {
   }
 
   drop(): void {
-    this.play('drop', SWING_MS / 1000);
+    this.play('drop', swingMs(this.isReduced()) / 1000);
   }
 
   lift(): void {
     this.play('lift', 0);
   }
 
+  /** Soft run-in crackle while the needle waits for the music; starts after the drop thock. */
+  startGroove(): void {
+    const ctx = this.ctx;
+    const level = soundGain('lift', this.getVolume());
+    if (this.groove || !ctx || ctx.state !== 'running' || level <= 0) return;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(level * 0.5, ctx.currentTime + swingMs(this.isReduced()) / 1000 + 0.3);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 1500;
+    filter.connect(gain).connect(ctx.destination);
+    const source = this.startBuffer(renderGroove(ctx.sampleRate, GROOVE_SECONDS, Math.random), filter, ctx.currentTime + swingMs(this.isReduced()) / 1000);
+    if (!source) return;
+    source.loop = true;
+    this.groove = { source, gain };
+  }
+
+  stopGroove(): void {
+    const ctx = this.ctx;
+    const groove = this.groove;
+    this.groove = null;
+    if (!ctx || !groove) return;
+    groove.gain.gain.cancelScheduledValues(ctx.currentTime);
+    groove.gain.gain.setValueAtTime(groove.gain.gain.value, ctx.currentTime);
+    groove.gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+    groove.source.stop(ctx.currentTime + 0.25);
+  }
+
   close(): void {
+    this.stopGroove();
     const ctx = this.ctx;
     this.ctx = null;
     if (ctx && ctx.state !== 'closed') void ctx.close();
@@ -58,14 +89,15 @@ export class TurntableSound {
     }
   }
 
-  private startBuffer(samples: Float32Array<ArrayBuffer>, target: AudioNode, at: number): void {
+  private startBuffer(samples: Float32Array<ArrayBuffer>, target: AudioNode, at: number): AudioBufferSourceNode | null {
     const ctx = this.ctx;
-    if (!ctx) return;
+    if (!ctx) return null;
     const buffer = ctx.createBuffer(1, samples.length, ctx.sampleRate);
     buffer.copyToChannel(samples, 0);
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(target);
     source.start(at);
+    return source;
   }
 }

@@ -871,7 +871,81 @@
 		--onp-wobble-dip: 0.998;
 	}
 
+	.onp-turntable.is-playing .onp-tonearm,
+	.onp-tonearm {
+		transition-duration: 200ms, 200ms;
+	}
+
 	.onp-turntable.is-playing .onp-tonearm {
 		transition-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1);
+	}
+}
+
+/* Status bar item */
+.onp-status {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	color: var(--text-muted);
+	text-decoration: none;
+	transition: color 200ms ease;
+}
+
+.onp-status[data-tone='live'],
+.onp-status[data-tone='done'] {
+	color: var(--text-accent);
+}
+
+.onp-status[data-tone='failed'] {
+	color: var(--text-faint);
+	cursor: pointer;
+}
+
+.onp-status-icon,
+.onp-status-icon svg {
+	width: var(--icon-xs);
+	height: var(--icon-xs);
+}
+
+.onp-status-icon,
+.onp-status-msg {
+	transition:
+		opacity 140ms ease,
+		transform 140ms ease;
+}
+
+.onp-status.is-swapping .onp-status-icon,
+.onp-status.is-swapping .onp-status-msg {
+	opacity: 0;
+	transform: translateY(2px);
+}
+
+.onp-status[data-tone='busy'] .onp-status-icon svg {
+	animation: onp-status-spin 1s linear infinite;
+}
+
+.onp-status[data-tone='live'] .onp-status-icon svg {
+	animation: onp-status-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes onp-status-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes onp-status-pulse {
+	50% {
+		opacity: 0.45;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.onp-status[data-tone='busy'] .onp-status-icon svg {
+		animation-duration: 3s;
+	}
+
+	.onp-status[data-tone='live'] .onp-status-icon svg {
+		animation: none;
 	}
 }

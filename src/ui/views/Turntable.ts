@@ -1,5 +1,5 @@
 import type { PlaybackState } from '../../types/playback';
-import { rampRate, SPIN_DOWN_MS, SPIN_UP_MS, SWING_MS } from '../../domain/turntable';
+import { rampRate, SPIN_DOWN_MS, SPIN_UP_MS, swingMs } from '../../domain/turntable';
 import type { PlaylistTrack } from '../../types/view';
 import type { TurntableSound } from './turntable-sound';
 
@@ -37,6 +37,9 @@ export class Turntable {
     arm.createDiv({ cls: 'onp-tonearm-arm' });
     arm.createDiv({ cls: 'onp-tonearm-head' });
   }
+
+  /** Fires the instant the needle touches down, in step with the thock. */
+  onLanded: (() => void) | null = null;
 
   update(track: PlaylistTrack | null, state: PlaybackState, soundsOn: boolean): void {
     // Flush styles so the arm transition starts from the pre-render state after re-attach.
@@ -81,8 +84,9 @@ export class Turntable {
     this.timerWin = win;
     this.settleTimer = win.setTimeout(() => {
       this.el.addClass('is-landing');
+      this.onLanded?.();
       this.settleTimer = win.setTimeout(() => this.el.removeClass('is-landing'), SETTLE_MS);
-    }, SWING_MS);
+    }, swingMs(this.reducedMotion()));
   }
 
   private ramp(target: number, durationMs: number): void {
@@ -107,9 +111,13 @@ export class Turntable {
     this.frame = win.requestAnimationFrame(step);
   }
 
+  private reducedMotion(): boolean {
+    return this.vinyl.ownerDocument.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
+  }
+
   private ensureSpin(): Animation | null {
     const doc = this.vinyl.ownerDocument;
-    const reduced = doc.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reduced = this.reducedMotion();
     const duration = reduced ? SPIN_MS * REDUCED_SPIN_FACTOR : SPIN_MS;
     if (this.spin && this.spinDoc === doc && this.spinDuration === duration) return this.spin;
     this.spin?.cancel();

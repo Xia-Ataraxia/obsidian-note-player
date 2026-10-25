@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  easeOut, rampRate, renderCrackle, renderNoiseBurst, renderThump, soundGain,
+  AUDIO_START_MS, easeOut, needleDelayMs, rampRate, renderCrackle, renderGroove, renderNoiseBurst, renderThump, soundGain,
+  SWING_MS, swingMs,
 } from '../src/domain/turntable';
 
 const seeded = (): (() => number) => {
@@ -58,5 +59,29 @@ describe('synth', () => {
     const loud = crackle.filter((value) => Math.abs(value) > 0.1).length;
     expect(loud).toBeGreaterThan(0);
     expect(loud).toBeLessThan(crackle.length / 200);
+  });
+});
+
+describe('needleDelayMs', () => {
+  it('waits out the rest of the arm swing, never negative', () => {
+    expect(needleDelayMs(0)).toBe(AUDIO_START_MS);
+    expect(needleDelayMs(AUDIO_START_MS - 100)).toBe(100);
+    expect(needleDelayMs(AUDIO_START_MS + 500)).toBe(0);
+  });
+
+  it('shortens the wait under reduced motion but still lands the needle first', () => {
+    expect(swingMs(true)).toBeLessThan(SWING_MS);
+    expect(needleDelayMs(0, true)).toBeGreaterThan(swingMs(true));
+    expect(needleDelayMs(0, true)).toBeLessThan(needleDelayMs(0));
+  });
+});
+
+describe('renderGroove', () => {
+  it('is steady (no fade) and quiet', () => {
+    const out = renderGroove(8000, 1, seeded());
+    expect(out).toHaveLength(8000);
+    expect(peak(out, 0, 1000)).toBeGreaterThan(0);
+    expect(peak(out, 7000)).toBeGreaterThan(0);
+    expect(peak(out)).toBeLessThanOrEqual(0.55);
   });
 });
