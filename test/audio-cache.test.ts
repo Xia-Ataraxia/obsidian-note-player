@@ -38,7 +38,7 @@ function mockSpawnSync(status: number, stdout = '') {
 		pid: 1,
 		output: [],
 		signal: null,
-	} as ReturnType<typeof cp.spawnSync>);
+	});
 }
 
 describe('AudioCacheService', () => {
@@ -111,7 +111,7 @@ describe('AudioCacheService', () => {
 				pid: 1,
 				output: [],
 				signal: null,
-			} as ReturnType<typeof cp.spawnSync>);
+			});
 			const adapter = makeAdapter();
 			expect(() => new AudioCacheService(BASE_PATH, adapter, 'mp3', '.obsidian')).not.toThrow();
 		});

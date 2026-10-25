@@ -615,7 +615,7 @@ export class NotePlayerView extends ItemView {
 			iconOnly?: boolean;
 		} = {},
 	): HTMLButtonElement {
-		const button = document.createElement('button');
+		const button = createEl('button');
 		button.type = 'button';
 		button.className = this.buildRowClass('onp-button', {
 			'is-active': Boolean(options.active),
@@ -642,7 +642,7 @@ export class NotePlayerView extends ItemView {
 		icon: string,
 		onClick: (event: MouseEvent) => void,
 	): HTMLButtonElement {
-		const button = document.createElement('button');
+		const button = createEl('button');
 		button.type = 'button';
 		button.className = 'clickable-icon onp-icon-button';
 		button.setAttribute('aria-label', label);
