@@ -30,7 +30,7 @@ export function renderQueue(panel: HTMLElement, state: PlaylistViewState, ctx: Q
 		return;
 	}
 	if (state.queue.length === 0) {
-		renderEmptyState(panel, 'Playlist is empty', 'Use Music.base or the active-note action to add music notes to this playlist.');
+		renderEmptyState(panel, 'Playlist is empty', 'Paste a YouTube URL here or use the link button to add a track.');
 		return;
 	}
 

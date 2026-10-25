@@ -15,6 +15,8 @@ import type { RepeatMode } from './playback';
 export interface NotePlayerSettings extends YoutubePlaylistPropertyMapping {
   autoOpenOnStartup: boolean;
   playlistFolder: string;
+  musicFolder: string;
+  turntableSounds: boolean;
   lastPlaylistPath: string | null;
   autoplayEnabled: boolean;
   audioFormat: AudioFormat;

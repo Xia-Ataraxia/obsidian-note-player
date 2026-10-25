@@ -16,6 +16,8 @@ export const DEFAULT_SETTINGS: NotePlayerSettings = {
   ...DEFAULT_PROPERTY_MAPPING,
   autoOpenOnStartup: false,
   playlistFolder: '90. System/Playlists',
+  musicFolder: '',
+  turntableSounds: true,
   lastPlaylistPath: null,
   autoplayEnabled: true,
   audioFormat: 'mp3',

@@ -2,7 +2,6 @@ import {
 	ItemView,
 	Notice,
 	WorkspaceLeaf,
-	setIcon,
 } from 'obsidian';
 import type {
 	PlaylistSummary,
@@ -11,10 +10,14 @@ import type {
 	PlaylistViewState,
 } from '../../types/view';
 import { PlaylistNameModal } from './PlaylistNameModal';
+import { YoutubeUrlModal } from './YoutubeUrlModal';
+import { Turntable } from './Turntable';
+import { TurntableSound } from './turntable-sound';
+import { parseYoutubeUrl } from '../../utils/youtube';
 import { PlayerSurface, formatTime } from './PlayerSurface';
+import { renderHero } from './hero-panel';
 import { renderQueue } from './queue-list';
-import { openPlaylistMenu } from './view-menus';
-import { createActionButton, createIconButton, renderEmptyState, type RunAction } from './view-parts';
+import { createActionButton, createIconButton, type RunAction } from './view-parts';
 
 export const VIEW_TYPE_NOTE_PLAYER = 'obsidian-note-player-view';
 export const VIEW_TYPE_LEGACY = 'youtube-note-playlist-view';
@@ -43,6 +46,8 @@ export class NotePlayerView extends ItemView {
 	private lastRenderedTrackPath: string | null = null;
 	private progressIntervalId: number | null = null;
 	private isRendering = false;
+	private readonly sound = new TurntableSound(() => this.playerSurface.getVolume());
+	private readonly turntable = new Turntable(this.sound);
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -73,6 +78,11 @@ export class NotePlayerView extends ItemView {
 		const root = this.containerEl.children[1] as HTMLElement;
 		root.empty();
 		root.addClass('onp-view-root');
+		root.tabIndex = -1;
+		for (const gesture of ['pointerdown', 'keydown'] as const) {
+			this.registerDomEvent(root, gesture, () => this.sound.unlock(root.win));
+		}
+		this.registerDomEvent(root, 'paste', (event) => this.handlePaste(event));
 
 		const toolbarPanel = root.createDiv({ cls: 'onp-pane-section onp-toolbar-panel' });
 		const heroPanel = root.createDiv({ cls: 'onp-pane-section onp-hero-panel' });
@@ -112,6 +122,8 @@ export class NotePlayerView extends ItemView {
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = null;
 		this.stopProgressInterval();
+		this.turntable.destroy();
+		this.sound.close();
 		if (this.playerHostEl.parentElement) {
 			this.playerHostEl.parentElement.removeChild(this.playerHostEl);
 		}
@@ -180,6 +192,12 @@ export class NotePlayerView extends ItemView {
 			this.openCreatePlaylistModal();
 		}));
 
+		if (this.host.addTrackFromUrl) {
+			controls.appendChild(createIconButton('Add YouTube URL', 'link', () => {
+				this.openYoutubeUrlModal();
+			}));
+		}
+
 		if (this.host.selectActivePlaylist) {
 			controls.appendChild(createIconButton('Load active playlist note', 'crosshair', () => {
 				void this.runAction('Loaded active playlist', () => this.host.selectActivePlaylist?.() ?? Promise.resolve());
@@ -194,59 +212,7 @@ export class NotePlayerView extends ItemView {
 	private renderHero(state: PlaylistViewState): void {
 		const elements = this.elements;
 		if (!elements) return;
-
-		elements.heroPanel.empty();
-
-		const selectedPlaylist = this.getSelectedPlaylist(state);
-		if (state.isLoading) {
-			renderEmptyState(elements.heroPanel, 'Loading playlist', 'Scanning playlists and music notes from the vault.');
-			return;
-		}
-
-		if (state.errorMessage) {
-			renderEmptyState(elements.heroPanel, 'Playlist error', state.errorMessage);
-			return;
-		}
-
-		if (!selectedPlaylist) {
-			renderEmptyState(elements.heroPanel, 'Choose a playlist', 'Select a playlist note to see its cover, metadata, and ordered tracks.');
-			return;
-		}
-
-		const coverImage = selectedPlaylist.coverImage ?? state.queue[0]?.thumbnailUrl ?? state.currentTrack?.thumbnailUrl ?? '';
-		const hero = elements.heroPanel.createDiv({ cls: 'onp-playlist-hero' });
-		const cover = hero.createDiv({ cls: 'onp-hero-cover' });
-		if (coverImage) {
-			cover.setCssProps({ '--onp-cover-image': `url("${coverImage}")` });
-		} else {
-			const icon = cover.createDiv({ cls: 'onp-empty-icon' });
-			setIcon(icon, 'music-4');
-		}
-
-		const copy = hero.createDiv({ cls: 'onp-hero-copy' });
-		copy.createDiv({ cls: 'onp-hero-kicker', text: 'Playlist' });
-		copy.createEl('h2', { cls: 'onp-hero-title', text: selectedPlaylist.title });
-		copy.createDiv({
-			cls: 'onp-hero-meta',
-			text: `${selectedPlaylist.trackCount} tracks • ${state.library.length} music notes`,
-		});
-
-		if (selectedPlaylist.description) {
-			copy.createDiv({ cls: 'onp-hero-description', text: selectedPlaylist.description });
-		}
-
-		const actions = copy.createDiv({ cls: 'onp-hero-actions' });
-		if (!state.currentTrack && state.queue.length > 0) {
-			actions.appendChild(createActionButton('Play all', 'play', () => {
-				const firstTrack = state.queue[0];
-				if (!firstTrack) return;
-				void this.runAction(`Playing ${firstTrack.title}`, () => this.host.playTrack(firstTrack.path));
-			}, { cta: true, iconOnly: true }));
-		}
-
-		actions.appendChild(createIconButton('Playlist actions', 'more-vertical', (event) => {
-			openPlaylistMenu(event, this.host, selectedPlaylist, this.runAction);
-		}));
+		renderHero(elements.heroPanel, state, this.getSelectedPlaylist(state), this.host, this.runAction);
 	}
 
 	private renderPlayer(state: PlaylistViewState): void {
@@ -268,6 +234,7 @@ export class NotePlayerView extends ItemView {
 			elements.progressFill = null;
 			elements.progressTime = null;
 			this.stopProgressInterval();
+			this.turntable.update(null, state.playbackState, state.turntableSounds);
 			// Only clear the surface when it actually has a track loaded.
 			// Calling clear() unconditionally triggers onPlaybackChange('idle') -> notifyChange -> render -> infinite loop.
 			if (state.playbackState !== 'idle') {
@@ -290,11 +257,10 @@ export class NotePlayerView extends ItemView {
 
 		elements.playerPanel.removeClass('onp-hidden');
 		const playerRail = elements.playerPanel.createDiv({ cls: 'onp-now-playing-shell' });
+		playerRail.prepend(this.turntable.el);
+		this.turntable.update(current, playbackState, state.turntableSounds);
 		const summary = playerRail.createDiv({ cls: 'onp-now-playing-summary' });
-		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-player-track-card' });
-		const thumb = trackCard.createDiv({ cls: 'onp-track-thumb' });
-		thumb.setCssProps({ '--onp-thumb-image': `url("${current.thumbnailUrl}")` });
-
+		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb onp-player-track-card' });
 		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
 		meta.createDiv({ cls: 'onp-track-title', text: current.title });
@@ -441,6 +407,23 @@ export class NotePlayerView extends ItemView {
 				() => this.host.toggleAutoplay?.() ?? Promise.resolve(),
 			);
 		}
+	}
+
+	private handlePaste(event: ClipboardEvent): void {
+		const target = event.target;
+		if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable="true"]')) return;
+		const text = event.clipboardData?.getData('text') ?? '';
+		if (!/youtu/i.test(text) || !parseYoutubeUrl(text)) return;
+		event.preventDefault();
+		this.addFromUrl(text);
+	}
+
+	private addFromUrl(input: string): void {
+		void this.runAction('', () => this.host.addTrackFromUrl?.(input) ?? Promise.resolve(), false);
+	}
+
+	private openYoutubeUrlModal(): void {
+		new YoutubeUrlModal(this.app, (input) => this.addFromUrl(input)).open();
 	}
 
 	private openCreatePlaylistModal(): void {

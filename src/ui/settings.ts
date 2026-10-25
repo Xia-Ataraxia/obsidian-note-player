@@ -28,7 +28,7 @@ type TextKey =
 	| 'playlistNoteType';
 
 const LIST_KEYS: readonly string[] = ['musicUrlProperties', 'musicThumbnailProperties', 'musicArtistProperties'];
-const NO_REFRESH_KEYS: readonly string[] = ['audioFormat', 'autoOpenOnStartup'];
+const NO_REFRESH_KEYS: readonly string[] = ['audioFormat', 'autoOpenOnStartup', 'musicFolder', 'turntableSounds'];
 const AUDIO_FORMAT_OPTIONS: Record<AudioFormat, string> = { mp3: 'MP3', wav: 'WAV', opus: 'OPUS', aac: 'AAC' };
 
 function collectVaultProperties(app: App): string[] {
@@ -100,6 +100,11 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 				control: { type: 'folder', key: 'playlistFolder', placeholder: '90. System/playlists' },
 			},
 			{
+				name: 'Music folder',
+				desc: 'Vault folder for notes created from pasted YouTube URLs. Leave empty to use the default location for new notes.',
+				control: { type: 'folder', key: 'musicFolder', placeholder: 'Default location' },
+			},
+			{
 				type: 'group',
 				heading: 'Music note mapping',
 				items: [
@@ -157,6 +162,11 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 						name: 'Autoplay next track',
 						desc: 'Advance to the next queued track when the player reports the current track ended.',
 						control: { type: 'toggle', key: 'autoplayEnabled' },
+					},
+					{
+						name: 'Turntable sounds',
+						desc: 'Play a synthesized needle drop, lift, and vinyl crackle with the turntable animation.',
+						control: { type: 'toggle', key: 'turntableSounds' },
 					},
 					{
 						name: 'Open on startup',
