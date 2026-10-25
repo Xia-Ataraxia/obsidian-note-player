@@ -49,6 +49,8 @@ export class PlayerSurface {
 	onPhaseView: ((phase: StreamPhase) => void) | null = null;
 	onNeedSetup: (() => void) | null = null;
 	phase: StreamPhase = 'idle';
+	/** The audio file for this track now exists in the cache. */
+	onCached: ((videoId: string) => void) | null = null;
 	/** True while the needle is down but the music is not ready yet. */
 	onNeedleWait: ((waiting: boolean) => void) | null = null;
 
@@ -179,6 +181,7 @@ export class PlayerSurface {
 			if (this.savingVideoId === videoId) this.onSaveProgress?.(percent);
 		}).then(() => {
 			if (this.savingVideoId === videoId) this.onSaveProgress?.(100);
+			this.onCached?.(videoId);
 		}).catch((e: unknown) => {
 			console.debug('[note-player] background save failed', e);
 			if (this.savingVideoId === videoId) this.onSaveProgress?.(-1);
@@ -224,6 +227,7 @@ export class PlayerSurface {
 			});
 			if (token !== this.downloadToken) return;
 			this.onDownloadProgress?.(100);
+			this.onCached?.(videoId);
 			this.mountAudio(this.audioCacheService.getFileUrl(videoId), autoplayEnabled);
 			this.activateTrack(videoId, autoplayEnabled);
 		} catch (e) {

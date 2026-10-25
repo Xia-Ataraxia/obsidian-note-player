@@ -1,3 +1,4 @@
+import type { PeaksStore } from '../services/peaks-store';
 import type { PlaybackState, RepeatMode } from './playback';
 
 export interface PlaylistSummary {
@@ -63,6 +64,7 @@ export interface PlaylistViewHost {
 	setAutoplayEnabled?(enabled: boolean): Promise<void>;
 	toggleRepeatMode?(): Promise<void>;
 	getAudioCacheService?(): AudioCachePort | null;
+	getPeaksStore?(): PeaksStore | null;
 }
 
 export interface VaultAdapter {

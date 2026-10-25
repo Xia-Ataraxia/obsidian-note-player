@@ -16,7 +16,8 @@ import { YoutubeUrlModal } from './YoutubeUrlModal';
 import { Turntable } from './Turntable';
 import { TurntableSound } from './turntable-sound';
 import { parseYoutubeUrl } from '../../utils/youtube';
-import { PlayerSurface, formatTime, type StreamPhase } from './PlayerSurface';
+import { PlayerSurface, type StreamPhase } from './PlayerSurface';
+import { WaveformProgress } from './WaveformProgress';
 import { renderHero } from './hero-panel';
 import { renderQueue } from './queue-list';
 import { createActionButton, createIconButton, type RunAction } from './view-parts';
@@ -30,9 +31,6 @@ interface ViewElements {
 	heroPanel: HTMLElement;
 	playerPanel: HTMLElement;
 	playerVideo: HTMLElement;
-	progressBar: HTMLElement | null;
-	progressFill: HTMLElement | null;
-	progressTime: HTMLElement | null;
 	queuePanel: HTMLElement;
 }
 
@@ -52,6 +50,7 @@ export class NotePlayerView extends ItemView {
 	private progressIntervalId: number | null = null;
 	private subtitleEl: HTMLElement | null = null;
 	private subtitleText = '';
+	private wave: { videoId: string; ui: WaveformProgress } | null = null;
 	private isRendering = false;
 	private readonly sound = new TurntableSound(
 		() => this.playerSurface.getVolume(),
@@ -97,6 +96,8 @@ export class NotePlayerView extends ItemView {
 		}
 		this.registerDomEvent(root, 'paste', (event) => this.handlePaste(event));
 		this.playerSurface.trackLanding(true);
+		this.playerSurface.onCached = (videoId) => void this.loadPeaks(videoId);
+		this.registerEvent(this.app.workspace.on('css-change', () => this.wave?.ui.refreshColors()));
 		this.turntable.onLanded = () => this.playerSurface.needleLanded();
 		this.playerSurface.onNeedleWait = (waiting) => (waiting ? this.sound.startGroove() : this.sound.stopGroove());
 		this.playerSurface.onPhaseView = (phase) => this.showPhase(phase);
@@ -113,9 +114,6 @@ export class NotePlayerView extends ItemView {
 			heroPanel,
 			playerPanel,
 			playerVideo: this.playerHostEl,
-			progressBar: null,
-			progressFill: null,
-			progressTime: null,
 			queuePanel,
 		};
 		this.registerDomEvent(playerPanel, 'wheel', (event) => {
@@ -148,6 +146,8 @@ export class NotePlayerView extends ItemView {
 		this.disposeVolumeControl = null;
 		this.unsubscribeSound?.();
 		this.unsubscribeSound = null;
+		this.disposeWave();
+		this.playerSurface.onCached = null;
 		this.playerSurface.onNeedleWait = null;
 		this.playerSurface.onPhaseView = null;
 		this.playerSurface.trackLanding(false);
@@ -261,9 +261,7 @@ export class NotePlayerView extends ItemView {
 		if (!current) {
 			elements.playerPanel.addClass('onp-hidden');
 			this.lastRenderedTrackPath = null;
-			elements.progressBar = null;
-			elements.progressFill = null;
-			elements.progressTime = null;
+			this.disposeWave();
 			this.stopProgressInterval();
 			this.turntable.update(null, state.playbackState, state.turntableSounds);
 			// Only clear the surface when it actually has a track loaded.
@@ -330,21 +328,9 @@ export class NotePlayerView extends ItemView {
 			));
 		}
 
-		const progressShell = summary.createDiv({ cls: 'onp-progress-shell' });
-		const progressBar = progressShell.createDiv({ cls: 'onp-progress-bar' });
-		const progressFill = progressBar.createDiv({ cls: 'onp-progress-fill' });
-		const progressFoot = progressShell.createDiv({ cls: 'onp-progress-foot' });
-		const progressTime = progressFoot.createDiv({ cls: 'onp-progress-time' });
-		this.disposeVolumeControl = renderVolumeControl(progressFoot, this.volume);
-		elements.progressBar = progressBar;
-		elements.progressFill = progressFill;
-		elements.progressTime = progressTime;
-
-		progressBar.addEventListener('click', (event) => {
-			const rect = progressBar.getBoundingClientRect();
-			const ratio = (event.clientX - rect.left) / rect.width;
-			this.playerSurface.seekTo(ratio);
-		});
+		this.mountWave(summary, current.videoId);
+		const volumeRow = summary.createDiv({ cls: 'onp-volume-row' });
+		this.disposeVolumeControl = renderVolumeControl(volumeRow, this.volume);
 
 		this.syncProgressBar();
 		if (playbackState === 'playing') {
@@ -394,21 +380,34 @@ export class NotePlayerView extends ItemView {
 	}
 
 	private syncProgressBar(): void {
-		const elements = this.elements;
-		if (!elements?.progressFill || !elements.progressTime) return;
-
-		const currentTime = this.playerSurface.getCurrentTime();
 		const duration = this.playerSurface.getDuration();
+		this.turntable.setProgress(duration > 0 ? Math.min(this.playerSurface.getCurrentTime() / duration, 1) : 0);
+		this.wave?.ui.sync();
+	}
 
-		const ratio = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
-		const nextWidth = `${(ratio * 100).toFixed(2)}%`;
-		const nextTime = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+	private mountWave(parent: HTMLElement, videoId: string): void {
+		this.disposeWave();
+		const ui = new WaveformProgress(parent, {
+			getTime: () => this.playerSurface.getCurrentTime(),
+			getDuration: () => this.playerSurface.getDuration(),
+			isPlaying: () => this.host.getState().playbackState === 'playing',
+			seekTo: (ratio) => this.playerSurface.seekTo(ratio),
+			reducedMotion: () => this.contentEl.win.matchMedia('(prefers-reduced-motion: reduce)').matches,
+		});
+		this.wave = { videoId, ui };
+		const known = this.host.getPeaksStore?.()?.peek(videoId);
+		if (known) ui.setPeaks(known, false);
+		else void this.loadPeaks(videoId);
+	}
 
-		elements.progressFill.setCssProps({ '--onp-progress-width': nextWidth });
-		this.turntable.setProgress(ratio);
-		if (elements.progressTime.textContent !== nextTime) {
-			elements.progressTime.textContent = nextTime;
-		}
+	private async loadPeaks(videoId: string): Promise<void> {
+		const peaks = await this.host.getPeaksStore?.()?.ensure(videoId);
+		if (peaks && this.wave?.videoId === videoId) this.wave.ui.setPeaks(peaks, true);
+	}
+
+	private disposeWave(): void {
+		this.wave?.ui.destroy();
+		this.wave = null;
 	}
 
 	private async toggleCurrentPlayback(current: PlaylistTrack): Promise<void> {
