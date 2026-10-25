@@ -28,6 +28,8 @@ export interface PlaylistViewState {
 	library: PlaylistTrack[];
 	currentTrack: PlaylistTrack | null;
 	autoplayEnabled: boolean;
+	/** Whether the current track loads playing: after an explicit play, or whenever autoplay is on. */
+	startPlayback: boolean;
 	playbackState: PlaybackState;
 	repeatMode: RepeatMode;
 	turntableSounds: boolean;

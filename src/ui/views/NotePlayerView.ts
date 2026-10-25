@@ -343,7 +343,7 @@ export class NotePlayerView extends ItemView {
 			cls: 'onp-player-video-shell',
 		});
 		videoShell.appendChild(this.playerHostEl);
-		void this.playerSurface.render(current, state.autoplayEnabled);
+		void this.playerSurface.render(current, state.startPlayback);
 
 		this.lastRenderedTrackPath = current.path;
 	}

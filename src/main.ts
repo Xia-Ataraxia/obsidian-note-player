@@ -47,6 +47,8 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private playerSurface: PlayerSurface | null = null;
   private playerHostEl: HTMLDivElement | null = null;
   private viewPlaybackState: PlaybackState = 'idle';
+  /** Set by an explicit play so the track starts even with autoplay off. */
+  private playIntent = false;
   private downloadStatusBar: DownloadStatusBar | null = null;
   private volume: VolumeController | null = null;
   private readonly importer = new TrackImporter({
@@ -67,7 +69,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     this.audioCacheService = this.createAudioCache();
 
     const player = createPlayer(this, {
-      onEnded: () => this.playNext(),
+      onEnded: () => this.playNext(false),
       onStateChange: (state) => {
         if (this.viewPlaybackState === state) return;
         this.viewPlaybackState = state;
@@ -169,6 +171,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       library: this.library.tracks.map(toPlaylistTrack),
       currentTrack,
       autoplayEnabled: this.settings.autoplayEnabled,
+      startPlayback: this.playIntent || this.settings.autoplayEnabled,
       playbackState: this.viewPlaybackState,
       repeatMode: this.settings.repeatMode,
       turntableSounds: this.settings.turntableSounds,
@@ -201,6 +204,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     this.settings.lastPlaylistPath = path;
     await this.saveSettings();
     this.playback.currentTrackPath = null;
+    this.playIntent = false;
     this.notifyChange();
   }
 
@@ -226,6 +230,9 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   }
 
   playTrack(path: string): Promise<void> {
+    this.playIntent = true;
+    // The surface keeps the loaded track, so re-rendering it would not resume a paused one.
+    if (path === this.playback.currentTrackPath && this.playerSurface?.play()) return Promise.resolve();
     this.playback.play(path, this.library.tracks);
     this.notifyChange();
     void this.prefetchNext();
@@ -234,14 +241,17 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
   playPrevious(): Promise<void> {
     if (this.playback.previous(this.currentQueue())) {
+      this.playIntent = true;
       this.notifyChange();
       void this.prefetchNext();
     }
     return Promise.resolve();
   }
 
-  playNext(): Promise<void> {
+  /** `explicit` is false when a track ends on its own, so autoplay alone decides whether the next one starts. */
+  playNext(explicit = true): Promise<void> {
     if (this.playback.next(this.currentQueue())) {
+      this.playIntent = explicit;
       this.notifyChange();
       void this.prefetchNext();
     }
