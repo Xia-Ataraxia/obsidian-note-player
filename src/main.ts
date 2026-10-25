@@ -141,11 +141,14 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     this.settings = normalizeSettings(this.settings);
     await this.saveData(this.settings);
 
+    this.playerSurface?.setRepeatMode(this.settings.repeatMode);
+    // Only a format change needs a new cache; replacing it otherwise orphans in-flight downloads.
+    if (this.audioCacheService?.format === this.settings.audioFormat) return;
     const audioCache = this.createAudioCache();
     if (audioCache) {
+      this.audioCacheService?.dispose();
       this.audioCacheService = audioCache;
       this.playerSurface?.setAudioCacheService(audioCache);
-      this.playerSurface?.setRepeatMode(this.settings.repeatMode);
     }
   }
 
