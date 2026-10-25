@@ -11,10 +11,10 @@ export function dedupe(values: string[]): string[] {
 	return deduped;
 }
 
-export function sanitizeFileName(input: string): string {
+export function sanitizeFileName(input: string, fallback = 'New Playlist'): string {
 	const trimmed = input.trim();
 	if (!trimmed) {
-		return 'New Playlist';
+		return fallback;
 	}
 
 	return trimmed.replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();

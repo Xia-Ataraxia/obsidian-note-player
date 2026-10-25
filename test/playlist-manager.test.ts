@@ -4,6 +4,7 @@ import {
 	getPlaylistOrThrow,
 	toPlaylistSummary,
 	toPlaylistTrack,
+	moveItem,
 } from '../src/domain/playlist-manager';
 import type { MusicTrack, PlaylistNote } from '../src/types/music';
 
@@ -26,7 +27,6 @@ function makeTrack(path: string): MusicTrack {
 		artist: 'Artist',
 		sourceUrl: 'https://youtube.com/watch?v=abc',
 		watchUrl: 'https://youtube.com/watch?v=abc',
-		embedUrl: 'https://youtube.com/embed/abc',
 		videoId: 'abc',
 		thumbnailUrl: 'https://img.youtube.com/vi/abc/mqdefault.jpg',
 		imageUrl: 'https://img.youtube.com/vi/abc/mqdefault.jpg',
@@ -98,5 +98,14 @@ describe('toPlaylistTrack', () => {
 		expect(result.artist).toBe('Artist');
 		expect(result.videoId).toBe('abc');
 		expect(result.tags).toEqual(['rock']);
+	});
+});
+
+describe('moveItem', () => {
+	it('moves an item without mutating the input', () => {
+		const input = ['a', 'b', 'c'];
+		expect(moveItem(input, 0, 2)).toEqual(['b', 'c', 'a']);
+		expect(moveItem(input, 2, 0)).toEqual(['c', 'a', 'b']);
+		expect(input).toEqual(['a', 'b', 'c']);
 	});
 });

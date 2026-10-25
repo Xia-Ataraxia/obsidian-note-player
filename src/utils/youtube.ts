@@ -24,10 +24,7 @@ export function extractYoutubeVideoId(input: string): string | null {
     return sanitizeCandidate(pathname.slice(1));
   }
 
-  if (
-    hostname.endsWith('youtube.com') ||
-    hostname.endsWith('youtube-nocookie.com')
-  ) {
+  if (isYoutubeHost(hostname)) {
     const vParam = sanitizeCandidate(url.searchParams.get('v'));
     if (vParam) {
       return vParam;
@@ -46,21 +43,14 @@ export function buildYoutubeWatchUrl(videoId: string): string {
   return `https://www.youtube.com/watch?v=${videoId}`;
 }
 
-export function buildYoutubeEmbedUrl(videoId: string, autoplay = false): string {
-  const url = new URL(`https://www.youtube.com/embed/${videoId}`);
-  url.searchParams.set('enablejsapi', '1');
-  url.searchParams.set('rel', '0');
-  url.searchParams.set('playsinline', '1');
-
-  if (autoplay) {
-    url.searchParams.set('autoplay', '1');
-  }
-
-  return url.toString();
-}
-
 export function buildYoutubeThumbnailUrl(videoId: string, quality = 'mqdefault'): string {
   return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
+}
+
+function isYoutubeHost(hostname: string): boolean {
+  return ['youtube.com', 'youtube-nocookie.com'].some(
+    (root) => hostname === root || hostname.endsWith(`.${root}`),
+  );
 }
 
 function sanitizeCandidate(value: string | null): string | null {

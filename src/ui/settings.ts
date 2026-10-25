@@ -1,13 +1,13 @@
 import {
 	AbstractInputSuggest,
 	App,
-	FuzzySuggestModal,
 	Plugin,
 	PluginSettingTab,
-	Setting,
-	TFolder,
+	type Setting,
+	type SettingDefinitionItem,
 } from 'obsidian';
 import { DEFAULT_PROPERTY_MAPPING } from '../domain/config';
+import { parsePropertyList } from '../utils/property-list';
 import type { AudioFormat } from '../types/audio';
 import type { NotePlayerSettings } from '../types/settings';
 
@@ -18,28 +18,18 @@ interface SettingsHost extends Plugin {
 	refreshCompanionBases(): Promise<void>;
 }
 
-function resolveVaultFolderPath(folder: TFolder): string {
-	return folder.path === '/' ? '' : folder.path;
-}
+type ListKey = 'musicUrlProperties' | 'musicThumbnailProperties' | 'musicArtistProperties';
+type TextKey =
+	| 'playlistFolder'
+	| 'playlistTrackProperty'
+	| 'playlistDescriptionProperty'
+	| 'playlistCoverProperty'
+	| 'musicNoteType'
+	| 'playlistNoteType';
 
-class VaultFolderSuggestModal extends FuzzySuggestModal<TFolder> {
-	constructor(app: App, private readonly onChoose: (folder: TFolder) => void) {
-		super(app);
-		this.setPlaceholder('Type to search vault folders…');
-	}
-
-	getItems(): TFolder[] {
-		return this.app.vault.getAllFolders(true);
-	}
-
-	getItemText(folder: TFolder): string {
-		return folder.path === '/' ? '/ (vault root)' : folder.path;
-	}
-
-	onChooseItem(folder: TFolder): void {
-		this.onChoose(folder);
-	}
-}
+const LIST_KEYS: readonly string[] = ['musicUrlProperties', 'musicThumbnailProperties', 'musicArtistProperties'];
+const NO_REFRESH_KEYS: readonly string[] = ['audioFormat', 'autoOpenOnStartup'];
+const AUDIO_FORMAT_OPTIONS: Record<AudioFormat, string> = { mp3: 'MP3', wav: 'WAV', opus: 'OPUS', aac: 'AAC' };
 
 function collectVaultProperties(app: App): string[] {
 	const properties = new Set<string>();
@@ -55,21 +45,17 @@ function collectVaultProperties(app: App): string[] {
 }
 
 class PropertySuggest extends AbstractInputSuggest<string> {
-	private readonly inputEl: HTMLInputElement;
-
 	constructor(
 		app: App,
-		inputEl: HTMLInputElement,
-		private getProperties: () => string[],
+		private readonly inputEl: HTMLInputElement,
+		private readonly list: boolean,
 	) {
 		super(app, inputEl);
-		this.inputEl = inputEl;
 	}
 
 	getSuggestions(query: string): string[] {
-		return this.getProperties().filter((p) =>
-			p.toLowerCase().includes(query.toLowerCase()),
-		);
+		const token = (this.list ? query.split(',').pop() ?? '' : query).trim().toLowerCase();
+		return collectVaultProperties(this.app).filter((p) => p.toLowerCase().includes(token));
 	}
 
 	renderSuggestion(value: string, el: HTMLElement): void {
@@ -77,295 +63,126 @@ class PropertySuggest extends AbstractInputSuggest<string> {
 	}
 
 	selectSuggestion(value: string): void {
-		this.inputEl.value = value;
-		this.inputEl.dispatchEvent(new Event('input'));
-		this.close();
-	}
-}
-
-class CommaPropertySuggest extends AbstractInputSuggest<string> {
-	private readonly inputEl: HTMLInputElement;
-
-	constructor(
-		app: App,
-		inputEl: HTMLInputElement,
-		private getProperties: () => string[],
-	) {
-		super(app, inputEl);
-		this.inputEl = inputEl;
-	}
-
-	getSuggestions(query: string): string[] {
-		const lastToken = query.split(',').pop()?.trim() ?? '';
-		return this.getProperties().filter((p) =>
-			p.toLowerCase().includes(lastToken.toLowerCase()),
-		);
-	}
-
-	renderSuggestion(value: string, el: HTMLElement): void {
-		el.setText(value);
-	}
-
-	selectSuggestion(value: string): void {
-		const current = this.inputEl.value;
-		const parts = current.split(',');
-		parts[parts.length - 1] = ' ' + value;
-		this.inputEl.value = parts.join(',').replace(/^,\s*/, '');
+		if (this.list) {
+			const parts = this.inputEl.value.split(',');
+			parts[parts.length - 1] = ' ' + value;
+			this.inputEl.value = parts.join(',').replace(/^,\s*/, '');
+		} else {
+			this.inputEl.value = value;
+		}
 		this.inputEl.dispatchEvent(new Event('input'));
 		this.close();
 	}
 }
 
 export class NotePlayerSettingsTab extends PluginSettingTab {
-	constructor(app: App, private readonly plugin: SettingsHost) {
-		super(app, plugin);
+	constructor(app: App, private readonly host: SettingsHost) {
+		super(app, host);
 	}
 
-	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
+	getControlValue(key: string): unknown {
+		const value: unknown = this.host.settings[key as keyof NotePlayerSettings];
+		return LIST_KEYS.includes(key) && Array.isArray(value) ? value.join(', ') : value;
+	}
 
-		const getProperties = () => collectVaultProperties(this.app);
-		let playlistFolderInput: HTMLInputElement | null = null;
+	async setControlValue(key: string, value: unknown): Promise<void> {
+		const next = LIST_KEYS.includes(key) ? parsePropertyList(String(value)) : typeof value === 'string' ? value.trim() : value;
+		Object.assign(this.host.settings, { [key]: next });
+		await this.host.saveSettings();
+		if (!NO_REFRESH_KEYS.includes(key)) await this.host.refresh();
+	}
 
-		new Setting(containerEl)
-			.setName('Playlist folder')
-			.setDesc('Choose or type the vault folder where new playlist notes are created.')
-			.addText((text) => {
-				playlistFolderInput = text.inputEl;
-				text.inputEl.addClass('onp-setting-input-full');
-				text
-					.setPlaceholder('90. System/playlists')
-					.setValue(this.plugin.settings.playlistFolder)
-					.onChange(async (value) => {
-						this.plugin.settings.playlistFolder = value.trim();
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					});
-			})
-			.addButton((button) => {
-				button
-					.setIcon('folder')
-					.setTooltip('Pick vault folder')
-					.onClick(() => {
-						new VaultFolderSuggestModal(this.app, (folder: TFolder) => {
-							const nextValue = resolveVaultFolderPath(folder);
-							this.plugin.settings.playlistFolder = nextValue;
-							void this.plugin.saveSettings();
-							void this.plugin.refresh();
-							if (playlistFolderInput) playlistFolderInput.value = nextValue;
-						}).open();
-					});
-				button.buttonEl.setAttribute('aria-label', 'Pick vault folder');
-			});
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [
+			{
+				name: 'Playlist folder',
+				desc: 'Vault folder where new playlist notes are created.',
+				control: { type: 'folder', key: 'playlistFolder', placeholder: '90. System/playlists' },
+			},
+			{
+				type: 'group',
+				heading: 'Music note mapping',
+				items: [
+					this.propertyRow('URL properties', 'Comma-separated priority order for the YouTube URL property.', 'musicUrlProperties'),
+					this.propertyRow('Thumbnail properties', 'Comma-separated priority order for music-note artwork lookup.', 'musicThumbnailProperties'),
+					this.propertyRow('Artist properties', 'Comma-separated priority order for artist or author metadata.', 'musicArtistProperties'),
+				],
+			},
+			{
+				type: 'group',
+				heading: 'Playlist note schema',
+				items: [
+					this.propertyRow('Track list property', 'Frontmatter key that stores the ordered track refs for each playlist note.', 'playlistTrackProperty'),
+					this.propertyRow('Description property', 'Frontmatter key used for playlist description text.', 'playlistDescriptionProperty'),
+					this.propertyRow('Cover property', 'Frontmatter key used for playlist cover artwork.', 'playlistCoverProperty'),
+					{
+						name: 'Music note type',
+						desc: 'The frontmatter type value used to identify music notes.',
+						control: { type: 'text', key: 'musicNoteType', placeholder: DEFAULT_PROPERTY_MAPPING.musicNoteType },
+					},
+					{
+						name: 'Playlist note type',
+						desc: 'The frontmatter type value used to identify playlist notes.',
+						control: { type: 'text', key: 'playlistNoteType', placeholder: DEFAULT_PROPERTY_MAPPING.playlistNoteType },
+					},
+				],
+			},
+			{
+				type: 'group',
+				heading: 'Companion bases',
+				items: [
+					{
+						name: 'Refresh companion bases files',
+						desc: 'Rewrite music.base and playlists.base beside your playlist folder to match the current mapping. The first property of each music-note mapping list becomes its bases column.',
+						render: (setting) => {
+							setting.addButton((button) =>
+								button.setButtonText('Refresh bases').onClick(() => {
+									void this.host.refreshCompanionBases();
+								}),
+							);
+						},
+					},
+				],
+			},
+			{
+				type: 'group',
+				heading: 'Playback',
+				items: [
+					{
+						name: 'Audio format',
+						desc: 'The format used when downloading audio via yt-dlp.',
+						control: { type: 'dropdown', key: 'audioFormat', options: AUDIO_FORMAT_OPTIONS },
+					},
+					{
+						name: 'Autoplay next track',
+						desc: 'Advance to the next queued track when the player reports the current track ended.',
+						control: { type: 'toggle', key: 'autoplayEnabled' },
+					},
+					{
+						name: 'Open on startup',
+						desc: 'Open the playlist view automatically when Obsidian finishes loading.',
+						control: { type: 'toggle', key: 'autoOpenOnStartup' },
+					},
+				],
+			},
+		];
+	}
 
-		new Setting(containerEl).setHeading().setName('Music note mapping');
-
-		new Setting(containerEl)
-			.setName('URL properties')
-			.setDesc('Comma-separated priority order for the YouTube URL property.')
-			.addText((text) => {
-				text
-					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.musicUrlProperties.join(', '))
-					.setValue(this.plugin.settings.musicUrlProperties.join(', '))
-					.onChange(async (value) => {
-						this.plugin.settings.musicUrlProperties = parsePropertyList(value);
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					});
-				text.inputEl.addClass('onp-setting-input-full');
-				new CommaPropertySuggest(this.app, text.inputEl, getProperties);
-			});
-
-		new Setting(containerEl)
-			.setName('Thumbnail properties')
-			.setDesc('Comma-separated priority order for music-note artwork lookup.')
-			.addText((text) => {
-				text
-					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.musicThumbnailProperties.join(', '))
-					.setValue(this.plugin.settings.musicThumbnailProperties.join(', '))
-					.onChange(async (value) => {
-						this.plugin.settings.musicThumbnailProperties = parsePropertyList(value);
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					});
-				text.inputEl.addClass('onp-setting-input-full');
-				new CommaPropertySuggest(this.app, text.inputEl, getProperties);
-			});
-
-		new Setting(containerEl)
-			.setName('Artist properties')
-			.setDesc('Comma-separated priority order for artist or author metadata.')
-			.addText((text) => {
-				text
-					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.musicArtistProperties.join(', '))
-					.setValue(this.plugin.settings.musicArtistProperties.join(', '))
-					.onChange(async (value) => {
-						this.plugin.settings.musicArtistProperties = parsePropertyList(value);
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					});
-				text.inputEl.addClass('onp-setting-input-full');
-				new CommaPropertySuggest(this.app, text.inputEl, getProperties);
-			});
-
-		new Setting(containerEl).setHeading().setName('Playlist note schema');
-
-		new Setting(containerEl)
-			.setName('Track list property')
-			.setDesc('Frontmatter key that stores the ordered track refs for each playlist note.')
-			.addText((text) => {
-				text
-					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.playlistTrackProperty)
-					.setValue(this.plugin.settings.playlistTrackProperty)
-					.onChange(async (value) => {
-						this.plugin.settings.playlistTrackProperty = value.trim();
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					});
-				new PropertySuggest(this.app, text.inputEl, getProperties);
-			});
-
-		new Setting(containerEl)
-			.setName('Description property')
-			.setDesc('Frontmatter key used for playlist description text.')
-			.addText((text) => {
-				text
-					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.playlistDescriptionProperty)
-					.setValue(this.plugin.settings.playlistDescriptionProperty)
-					.onChange(async (value) => {
-						this.plugin.settings.playlistDescriptionProperty = value.trim();
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					});
-				new PropertySuggest(this.app, text.inputEl, getProperties);
-			});
-
-		new Setting(containerEl)
-			.setName('Cover property')
-			.setDesc('Frontmatter key used for playlist cover artwork.')
-			.addText((text) => {
-				text
-					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.playlistCoverProperty)
-					.setValue(this.plugin.settings.playlistCoverProperty)
-					.onChange(async (value) => {
-						this.plugin.settings.playlistCoverProperty = value.trim();
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					});
-				new PropertySuggest(this.app, text.inputEl, getProperties);
-			});
-
-		new Setting(containerEl)
-			.setName('Music note type')
-			.setDesc('The frontmatter type value used to identify music notes.')
-			.addText((text) => {
-				text
-					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.musicNoteType)
-					.setValue(this.plugin.settings.musicNoteType)
-					.onChange(async (value) => {
-						this.plugin.settings.musicNoteType = value.trim();
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					});
-				new PropertySuggest(this.app, text.inputEl, getProperties);
-			});
-
-		new Setting(containerEl)
-			.setName('Playlist note type')
-			.setDesc('The frontmatter type value used to identify playlist notes.')
-			.addText((text) => {
-				text
-					.setPlaceholder(DEFAULT_PROPERTY_MAPPING.playlistNoteType)
-					.setValue(this.plugin.settings.playlistNoteType)
-					.onChange(async (value) => {
-						this.plugin.settings.playlistNoteType = value.trim();
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					});
-				new PropertySuggest(this.app, text.inputEl, getProperties);
-			});
-
-		new Setting(containerEl).setHeading().setName('Companion bases');
-		containerEl.createEl('p', {
-			text: 'The plugin can generate music.base and playlists.base beside your playlist folder. For music-note mapping lists, the first property becomes the bases column.',
-			cls: 'setting-item-description',
-		});
-
-		new Setting(containerEl)
-			.setName('Refresh companion bases files')
-			.setDesc('Rewrite the companion bases files to match the current mapping.')
-			.addButton((button) =>
-				button
-					.setButtonText('Refresh bases')
-					.onClick(async () => {
-						await this.plugin.refreshCompanionBases();
-					}),
-			);
-
-		new Setting(containerEl).setHeading().setName('Audio fallback');
-		containerEl.createEl('p', {
-			text: 'When YouTube embed playback is unavailable, the plugin downloads audio via yt-dlp.',
-			cls: 'setting-item-description',
-		});
-
-		new Setting(containerEl)
-			.setName('Audio format')
-			.setDesc('The format used when downloading audio via yt-dlp.')
-			.addDropdown((dropdown) => {
-				const formats: AudioFormat[] = ['mp3', 'wav', 'opus', 'aac'];
-				for (const fmt of formats) {
-					dropdown.addOption(fmt, fmt.toUpperCase());
-				}
-				dropdown.setValue(this.plugin.settings.audioFormat);
-				dropdown.onChange(async (value) => {
-					this.plugin.settings.audioFormat = value as AudioFormat;
-					await this.plugin.saveSettings();
+	private propertyRow(name: string, desc: string, key: ListKey | TextKey) {
+		const list = LIST_KEYS.includes(key);
+		const placeholder = list ? DEFAULT_PROPERTY_MAPPING[key as ListKey].join(', ') : DEFAULT_PROPERTY_MAPPING[key as keyof typeof DEFAULT_PROPERTY_MAPPING];
+		return {
+			name,
+			desc,
+			render: (setting: Setting) => {
+				setting.addText((text) => {
+					text
+						.setPlaceholder(String(placeholder))
+						.setValue(String(this.getControlValue(key)))
+						.onChange((value) => { void this.setControlValue(key, value); });
+					new PropertySuggest(this.app, text.inputEl, list);
 				});
-			});
-
-		new Setting(containerEl)
-			.setName('Autoplay next track')
-			.setDesc('Advance to the next queued track when the player reports the current track ended.')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.autoplayEnabled)
-					.onChange(async (value) => {
-						this.plugin.settings.autoplayEnabled = value;
-						await this.plugin.saveSettings();
-						await this.plugin.refresh();
-					}),
-			);
-
-		new Setting(containerEl)
-			.setName('Open on startup')
-			.setDesc('Open the playlist view automatically when Obsidian finishes loading.')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.autoOpenOnStartup)
-					.onChange(async (value) => {
-						this.plugin.settings.autoOpenOnStartup = value;
-						await this.plugin.saveSettings();
-					}),
-			);
-
-		new Setting(containerEl)
-			.setName('Debug logging')
-			.setDesc('Emit verbose console logs for indexing and playback state.')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.debug)
-					.onChange(async (value) => {
-						this.plugin.settings.debug = value;
-						await this.plugin.saveSettings();
-					}),
-			);
+			},
+		};
 	}
-}
-
-function parsePropertyList(value: string): string[] {
-	return value
-		.split(',')
-		.map((entry) => entry.trim())
-		.filter(Boolean);
 }

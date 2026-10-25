@@ -36,8 +36,14 @@ export function toPlaylistTrack(track: MusicTrack): PlaylistTrack {
     artist: track.artist,
     sourceUrl: track.sourceUrl,
     videoId: track.videoId,
-    embedUrl: track.embedUrl,
     thumbnailUrl: track.thumbnailUrl,
     tags: track.tags,
   };
+}
+
+export function moveItem<T>(items: readonly T[], fromIndex: number, toIndex: number): T[] {
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved as T);
+  return next;
 }

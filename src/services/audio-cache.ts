@@ -1,6 +1,7 @@
 import { spawn, spawnSync, type ChildProcess } from 'child_process';
-import { existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from 'fs';
 import { dirname, join } from 'path';
+import { parseYtdlpError, parseYtdlpProgress } from '../domain/ytdlp';
 import type { AudioCachePort, VaultAdapter } from '../types/view';
 import type { AudioFormat } from '../types/audio';
 
@@ -13,14 +14,23 @@ export class AudioCacheService implements AudioCachePort {
 	private adapter: VaultAdapter;
 	private absBase: string;
 
-	constructor(vaultBasePath: string, adapter: VaultAdapter, format: AudioFormat = 'mp3', configDir: string, ytdlpPath?: string) {
+	constructor(vaultBasePath: string, adapter: VaultAdapter, format: AudioFormat, pluginDir: string, configDir: string, ytdlpPath?: string) {
 		this.adapter = adapter;
 		this.format = format;
 		this.ytdlpPath = ytdlpPath ?? AudioCacheService.discoverYtdlpPath();
 		this.absBase = vaultBasePath;
-		this.cacheDir = `${configDir}/plugins/obsidian-note-player/audio-cache`;
+		this.cacheDir = `${pluginDir}/audio-cache`;
 		const absPath = join(vaultBasePath, this.cacheDir);
 		if (!existsSync(absPath)) mkdirSync(absPath, { recursive: true });
+		this.adoptLegacyCache(join(vaultBasePath, configDir, 'plugins', 'obsidian-note-player', 'audio-cache'), absPath);
+	}
+
+	private adoptLegacyCache(legacyDir: string, targetDir: string): void {
+		if (legacyDir === targetDir || !existsSync(legacyDir)) return;
+		for (const file of readdirSync(legacyDir)) {
+			const target = join(targetDir, file);
+			if (!existsSync(target)) renameSync(join(legacyDir, file), target);
+		}
 	}
 
 	private static discoverYtdlpPath(): string {
@@ -71,10 +81,8 @@ export class AudioCacheService implements AudioCachePort {
 			proc.stderr.on('data', (data: Buffer) => {
 				const line = data.toString();
 				stderrOutput += line;
-				const match = line.match(/\[download\]\s+([\d.]+)%/);
-				if (match) {
-					onProgress(parseFloat(match[1]!));
-				}
+				const percent = parseYtdlpProgress(line);
+				if (percent !== null) onProgress(percent);
 			});
 
 			proc.stdout.on('data', (data: Buffer) => {
@@ -87,7 +95,7 @@ export class AudioCacheService implements AudioCachePort {
 					this.cleanIntermediate(videoId);
 					resolve(output);
 				} else {
-					reject(new Error(this.parseYtdlpError(stderrOutput)));
+					reject(new Error(parseYtdlpError(stderrOutput)));
 				}
 			});
 
@@ -133,15 +141,6 @@ export class AudioCacheService implements AudioCachePort {
 				unlinkSync(join(absDir, file));
 			}
 		}
-	}
-
-	private parseYtdlpError(stderr: string): string {
-		if (/Video unavailable/i.test(stderr)) return 'This video is unavailable or has been removed.';
-		if (/Sign in|age/i.test(stderr)) return 'This video requires age verification.';
-		if (/geo|country/i.test(stderr)) return 'This video is not available in your region.';
-		if (/private/i.test(stderr)) return 'This video is private.';
-		if (/Network|Unable to connect|Connection/i.test(stderr)) return 'Network error — check your connection.';
-		return stderr.slice(-100) || 'Unknown error.';
 	}
 
 	static isAvailable(ytdlpPath?: string): boolean {

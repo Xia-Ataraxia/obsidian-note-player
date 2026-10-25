@@ -10,7 +10,6 @@ function makeTrack(path: string): MusicTrack {
 		artist: '',
 		sourceUrl: '',
 		watchUrl: '',
-		embedUrl: '',
 		videoId: '',
 		thumbnailUrl: '',
 		imageUrl: '',
@@ -25,7 +24,6 @@ function makePlaylistTrack(path: string): PlaylistTrack {
 		artist: '',
 		sourceUrl: '',
 		videoId: '',
-		embedUrl: '',
 		thumbnailUrl: '',
 		tags: [],
 	};
@@ -140,7 +138,6 @@ describe('PlaybackStateManager', () => {
 			artist: t.artist,
 			sourceUrl: t.sourceUrl,
 			videoId: t.videoId,
-			embedUrl: t.embedUrl,
 			thumbnailUrl: t.thumbnailUrl,
 			tags: t.tags,
 		});

@@ -14,7 +14,6 @@ export interface PlaylistTrack {
 	artist: string;
 	sourceUrl: string;
 	videoId: string;
-	embedUrl: string;
 	thumbnailUrl: string;
 	tags: string[];
 }

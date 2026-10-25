@@ -210,17 +210,14 @@ Obsidian Note Player stores downloaded audio locally on your device. No audio is
 ```bash
 git clone https://github.com/Xia-Ataraxia/obsidian-note-player.git
 cd obsidian-note-player
-pnpm install
-pnpm run dev        # development build/watch (scripts/dev.mjs)
-pnpm run build      # sync styles, type-check, production bundle
-pnpm run lint       # ESLint
-pnpm run test       # Vitest
-pnpm run ci         # build + lint + test
+bun install
+bun run dev         # watch build into dist/
+bun run ci          # build + typecheck + lint + test
 ```
 
-For manual install, copy `main.js`, `manifest.json`, and `styles.css` into `.obsidian/plugins/note-player/`.
+For manual install, copy `dist/main.js`, `manifest.json`, and `styles.css` into `<vault>/<config dir>/plugins/note-player/`.
 
-Releases: `pnpm run release:patch|minor|major`.
+Releases are cut by CI only.
 
 Issues and pull requests are welcome on [GitHub](https://github.com/Xia-Ataraxia/obsidian-note-player).
 

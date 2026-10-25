@@ -4,7 +4,6 @@ export interface MusicTrack {
   artist: string;
   sourceUrl: string;
   watchUrl: string;
-  embedUrl: string;
   videoId: string;
   thumbnailUrl: string;
   imageUrl: string;

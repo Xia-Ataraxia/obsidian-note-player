@@ -1,28 +1,11 @@
-# vscode
-.vscode 
-
-# Intellij
-*.iml
+.vscode
 .idea
-
-# npm
+*.iml
 node_modules
-
-# Don't include the compiled main.js file in the repo.
-# They should be uploaded to GitHub releases instead.
-main.js
-
-# Exclude sourcemaps
+dist/
 *.map
-
-# obsidian
 data.json
-test-results.xml
-current-*.png
-test-*.png
-
-# Exclude macOS Finder (System Explorer) View States
 .DS_Store
 .claude/
-.omc/state/hud-stdin-cache.json
-obsidian-note-player/
+.omc/
+.openchrome/
