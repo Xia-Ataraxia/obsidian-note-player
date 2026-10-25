@@ -1005,6 +1005,7 @@
 
 /* Volume */
 .onp-volume-row {
+	margin-top: 4px;
 	display: flex;
 	justify-content: flex-end;
 }
