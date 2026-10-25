@@ -738,7 +738,7 @@
 	--np-bakelite: color-mix(in oklab, var(--color-orange) 9%, var(--np-ink));
 	--np-vinyl: color-mix(in oklab, var(--color-blue) 7%, var(--np-ink));
 	--np-lamp: var(--color-orange);
-	--onp-thick: 5.6cqw;
+	--onp-thick: 9cqw;
 	--onp-tilt: 52deg;
 	--onp-arm-swing: 600ms;
 	--onp-bounce: 0.9;
@@ -749,7 +749,7 @@
 	width: 100%;
 	aspect-ratio: 1 / 1.05;
 	container-type: inline-size;
-	perspective: 260cqw;
+	perspective: 190cqw;
 }
 
 .theme-dark .onp-turntable {
@@ -834,6 +834,7 @@
 	pointer-events: none;
 	background:
 		radial-gradient(ellipse 55% 38% at 20% 6%, color-mix(in oklab, var(--np-key) 38%, transparent), transparent 72%),
+		linear-gradient(160deg, transparent 52%, color-mix(in oklab, var(--np-key) 16%, transparent) 60%, transparent 70%),
 		linear-gradient(112deg, color-mix(in oklab, var(--np-key) 20%, transparent), transparent 40%),
 		linear-gradient(180deg, color-mix(in oklab, var(--np-key) 14%, transparent), transparent 18% 72%, color-mix(in oklab, var(--np-ink) 32%, transparent));
 }
@@ -865,7 +866,17 @@
 		linear-gradient(180deg, color-mix(in oklab, var(--np-wood-base) 80%, var(--np-ink)), color-mix(in oklab, var(--np-wood-dark) 85%, var(--np-ink)));
 	background-size: 100% 6%, 100% 6%, 100% 100%, 100% 100%;
 	background-repeat: no-repeat, no-repeat, repeat, no-repeat;
-	box-shadow: inset 0 0.22cqw 0 color-mix(in oklab, var(--np-key) 55%, transparent);
+	box-shadow: inset 0 0.22cqw 0 color-mix(in oklab, var(--np-key) 55%, transparent), inset 0 -0.3cqw 0.4cqw color-mix(in oklab, var(--np-ink) 50%, transparent);
+}
+
+.onp-front::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 46%;
+	height: 0.5cqw;
+	background: linear-gradient(180deg, color-mix(in oklab, var(--np-ink) 70%, transparent), color-mix(in oklab, var(--np-key) 30%, transparent));
 }
 
 /* Static deck hardware */
@@ -1410,8 +1421,8 @@
 	transition: transform 1000ms var(--onp-spring-lid);
 	background:
 		linear-gradient(180deg, color-mix(in oklab, var(--color-yellow) 8%, transparent), transparent 60%),
-		color-mix(in oklab, var(--np-ink) 6%, transparent);
-	border: 1px solid color-mix(in oklab, var(--np-paper) 40%, transparent);
+		color-mix(in oklab, var(--np-ink) 11%, transparent);
+	border: 1px solid color-mix(in oklab, var(--np-ink) 28%, transparent);
 	will-change: transform;
 }
 
