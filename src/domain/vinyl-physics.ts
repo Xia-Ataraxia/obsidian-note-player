@@ -87,3 +87,10 @@ export function angleDelta(from: number, to: number): number {
 export function scrubSeconds(deg: number): number {
   return (deg / 360) * SCRUB_SECONDS_PER_REV;
 }
+
+/** Screen-space offset back onto the deck plane, inverting rotateX(tilt) rotateZ(yaw). */
+export function unprojectDeck(dx: number, dy: number, tiltDeg: number, yawDeg: number): { x: number; y: number } {
+  const py = dy / Math.cos((tiltDeg * Math.PI) / 180);
+  const r = (yawDeg * Math.PI) / 180;
+  return { x: dx * Math.cos(r) + py * Math.sin(r), y: -dx * Math.sin(r) + py * Math.cos(r) };
+}

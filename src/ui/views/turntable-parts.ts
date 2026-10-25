@@ -20,6 +20,7 @@ function hardware(deck: HTMLElement): SVGElement {
   shape(svg, 'circle', 'onp-deck-well', { cx: at(centre.x), cy: at(centre.y), r: '33.4' });
   shape(svg, 'rect', 'onp-base', { x: at(pivot.x - 6.4), y: at(pivot.y - 6.4), width: '12.8', height: '12.8', rx: '3.4' });
   shape(svg, 'circle', 'onp-base-ring', { cx: at(pivot.x), cy: at(pivot.y), r: '5.2' });
+  shape(svg, 'rect', 'onp-plate', { x: '83', y: '58', width: '16.5', height: '21', rx: '3' });
   const rest = restPost();
   shape(svg, 'circle', 'onp-rest-ring', { cx: at(rest.x), cy: at(rest.y), r: '2.3' });
   shape(svg, 'circle', 'onp-rest-pin', { cx: at(rest.x), cy: at(rest.y), r: '0.9' });
@@ -28,11 +29,11 @@ function hardware(deck: HTMLElement): SVGElement {
     shape(svg, 'circle', 'onp-screw', { cx: at(x + 1.6), cy: '2.3', r: '0.45' });
     shape(svg, 'circle', 'onp-screw', { cx: at(x + 6.4), cy: '2.3', r: '0.45' });
   }
-  for (const [x, label, on] of [[9, '33', true], [17, '45', false]] as const) {
-    shape(svg, 'circle', ['onp-speed', on ? 'is-on' : 'is-off'], { cx: at(x), cy: '72.6', r: '2.3' });
-    shape(svg, 'text', 'onp-speed-label', { x: at(x), y: '77.6', 'text-anchor': 'middle' }).setText(label);
+  for (const [x, label, on] of [[87, '33', true], [93.5, '45', false]] as const) {
+    shape(svg, 'circle', ['onp-speed', on ? 'is-on' : 'is-off'], { cx: at(x), cy: '73.6', r: '1.9' });
+    shape(svg, 'text', 'onp-speed-label', { x: at(x), y: '77.8', 'text-anchor': 'middle' }).setText(label);
   }
-  return shape(svg, 'circle', 'onp-lamp', { cx: '8', cy: '65.5', r: '1.15' });
+  return shape(svg, 'circle', 'onp-lamp', { cx: '86.4', cy: '60.6', r: '1.15' });
 }
 
 function platterStack(scene: HTMLElement): { warp: HTMLElement; platter: HTMLElement } {
@@ -53,9 +54,9 @@ function platterStack(scene: HTMLElement): { warp: HTMLElement; platter: HTMLEle
 
 function lid(scene: HTMLElement): void {
   const el = scene.createDiv({ cls: 'onp-lid' });
-  el.createDiv({ cls: 'onp-lid-scratch' });
-  el.createDiv({ cls: 'onp-lid-streak' });
-  el.createDiv({ cls: 'onp-lid-edge' });
+  el.createDiv({ cls: 'onp-lid-plate' });
+  el.createDiv({ cls: 'onp-lid-label' });
+  for (const side of ['is-left', 'is-right', 'is-front']) el.createDiv({ cls: ['onp-lid-wall', side] });
   for (const side of ['is-left', 'is-right']) el.createDiv({ cls: ['onp-lid-hinge', side] });
 }
 
@@ -66,7 +67,9 @@ export function buildTurntableParts(root: HTMLElement): TurntableParts {
 
   const scene = root.createDiv({ cls: 'onp-scene' });
   scene.createDiv({ cls: 'onp-contact' });
-  scene.createDiv({ cls: 'onp-front' });
+  const front = scene.createDiv({ cls: 'onp-front' });
+  front.createDiv({ cls: 'onp-grille' }).createSpan({ cls: 'onp-grille-mark', text: 'note player' });
+  for (const side of ['is-left', 'is-right']) front.createDiv({ cls: ['onp-foot', side] });
   scene.createDiv({ cls: 'onp-side' });
   const deck = scene.createDiv({ cls: 'onp-deck' });
   buildWood(deck);

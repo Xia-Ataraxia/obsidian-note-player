@@ -1,7 +1,7 @@
 import type { PlaybackState } from '../../types/playback';
 import { lidOpen, SPIN_DOWN_MS, SPIN_UP_MS, strobeSharpness, swingMs } from '../../domain/turntable';
 import {
-  angleDelta, ARM_END, ARM_REST, ARM_START, armPointerAngle, coastDegrees, PLAY_OMEGA, pointerAngle,
+  angleDelta, ARM_END, ARM_REST, ARM_START, armPointerAngle, coastDegrees, PLAY_OMEGA, pointerAngle, unprojectDeck,
   ratioFromArmAngle, scrubSeconds, stepSpin, type Spin,
 } from '../../domain/vinyl-physics';
 import type { PlaylistTrack } from '../../types/view';
@@ -17,8 +17,10 @@ const MAX_OMEGA = 2;
 const TAP_DEGREES = 4;
 const WARP_DEGREES = 0.5;
 const VISIBILITY_CHECK_MS = 500;
-const TILT_WIDE = 55;
-const TILT_NARROW = 30;
+const TILT_WIDE = 60;
+const TILT_NARROW = 52;
+const YAW_WIDE = -22;
+const YAW_NARROW = -14;
 const WIDE_PX = 480;
 const NARROW_PX = 200;
 const PARALLAX_DEGREES = 3;
@@ -64,6 +66,7 @@ export class Turntable {
   private drag: Drag | null = null;
   private frameWin: Window | null = null;
   private tilt = TILT_WIDE;
+  private yaw = YAW_WIDE;
   private readonly resizer: ResizeObserver;
   private knob: VolumeKnob | null = null;
 
@@ -138,7 +141,8 @@ export class Turntable {
     if (width <= 0) return;
     const t = Math.min(Math.max((width - NARROW_PX) / (WIDE_PX - NARROW_PX), 0), 1);
     this.tilt = TILT_NARROW + (TILT_WIDE - TILT_NARROW) * t;
-    this.el.setCssProps({ '--onp-tilt': `${this.tilt.toFixed(1)}deg` });
+    this.yaw = YAW_NARROW + (YAW_WIDE - YAW_NARROW) * t;
+    this.el.setCssProps({ '--onp-tilt': `${this.tilt.toFixed(1)}deg`, '--onp-yaw': `${this.yaw.toFixed(1)}deg` });
   }
 
   private parallax(e: PointerEvent): void {
@@ -152,8 +156,8 @@ export class Turntable {
 
   /** Pointer angle around a screen-space centre, undoing the deck's tilt so the circle reads round. */
   private deckAngle(cx: number, cy: number, e: PointerEvent): number {
-    const dy = (e.clientY - cy) / Math.cos((this.tilt * Math.PI) / 180);
-    return pointerAngle(cx, cy, e.clientX, cy + dy);
+    const { x, y } = unprojectDeck(e.clientX - cx, e.clientY - cy, this.tilt, this.yaw);
+    return pointerAngle(0, 0, x, y);
   }
 
   private setCreep(ratio: number): void {
@@ -271,8 +275,8 @@ export class Turntable {
   private armDegrees(e: PointerEvent): number {
     const rect = this.parts.hub.getBoundingClientRect();
     const cy = rect.top + rect.height / 2;
-    const dy = (e.clientY - cy) / Math.cos((this.tilt * Math.PI) / 180);
-    return Math.min(Math.max(armPointerAngle(rect.left + rect.width / 2, cy, e.clientX, cy + dy), ARM_REST), ARM_END + 2);
+    const { x, y } = unprojectDeck(e.clientX - (rect.left + rect.width / 2), e.clientY - cy, this.tilt, this.yaw);
+    return Math.min(Math.max(armPointerAngle(0, 0, x, y), ARM_REST), ARM_END + 2);
   }
 
   private moveDrag(e: PointerEvent): void {

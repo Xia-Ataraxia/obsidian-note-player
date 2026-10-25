@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  angleDelta, ARM_END, ARM_REST, ARM_START, armAngle, grooveAngle, armPointerAngle, coastDegrees, PLAY_OMEGA, pointerAngle, ratioFromArmAngle, stepSpin,
+  angleDelta, ARM_END, ARM_REST, ARM_START, armAngle, grooveAngle, armPointerAngle, coastDegrees, PLAY_OMEGA, pointerAngle, ratioFromArmAngle, stepSpin, unprojectDeck,
 } from '../src/domain/vinyl-physics';
 
 const run = (omega: number, target: number, ms: number, settle: number) => {
@@ -60,5 +60,20 @@ describe('arm geometry', () => {
     expect(ARM_END).toBeCloseTo(47.4, 0);
     expect(grooveAngle(21)).toBeGreaterThan(ARM_START);
     expect(grooveAngle(21)).toBeLessThan(ARM_END);
+  });
+});
+
+describe('unprojectDeck', () => {
+  const project = (x: number, y: number, tilt: number, yaw: number) => {
+    const t = (tilt * Math.PI) / 180;
+    const r = (yaw * Math.PI) / 180;
+    return { dx: x * Math.cos(r) - y * Math.sin(r), dy: (x * Math.sin(r) + y * Math.cos(r)) * Math.cos(t) };
+  };
+
+  it('round-trips a deck point through the camera', () => {
+    const { dx, dy } = project(7, -3, 58, -22);
+    const back = unprojectDeck(dx, dy, 58, -22);
+    expect(back.x).toBeCloseTo(7);
+    expect(back.y).toBeCloseTo(-3);
   });
 });
