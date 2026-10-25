@@ -1,6 +1,6 @@
 export const NOTICE_CATALOG = {
-	library_refreshed: { template: 'Refreshed {{trackCount}} tracks across {{playlistCount}} playlists.' },
-	bases_refreshed: { template: 'Refreshed {{count}} companion Bases files in {{folder}}.' },
+	library_refreshed: { template: 'Refreshed {{tracks}} across {{playlists}}.' },
+	bases_refreshed: { template: 'Refreshed {{files}} in {{folder}}.' },
 	playlist_saved: { template: 'Saved playlist {{name}}.' },
 	playlist_created: { template: 'Created playlist {{name}}.' },
 	playlist_loaded: { template: 'Loaded playlist {{name}}.' },
@@ -16,7 +16,7 @@ export const NOTICE_CATALOG = {
 	track_already_in_playlist: { template: '{{title}} is already in {{playlist}}.' },
 	invalid_youtube_url: { template: 'Not a YouTube video or playlist URL.' },
 	metadata_unavailable: { template: 'YouTube metadata unavailable; saved with a placeholder title.' },
-	tracks_imported: { template: 'Added {{count}} tracks to {{playlist}}.' },
+	tracks_imported: { template: 'Added {{tracks}} to {{playlist}}.' },
 	ytdlp_unavailable: { template: 'yt-dlp is not installed. Install via: brew install yt-dlp' },
 } as const;
 

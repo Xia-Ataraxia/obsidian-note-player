@@ -1,4 +1,5 @@
 import type { App } from 'obsidian';
+import { plural } from '../utils/plural';
 import { buildCompanionBaseFiles } from '../domain/base-files';
 import type { NotePlayerSettings } from '../types/settings';
 import { showNotice } from '../ui/notices';
@@ -13,7 +14,7 @@ export async function writeCompanionBaseFiles(app: App, settings: NotePlayerSett
     const firstFile = baseFiles[0]?.path ?? '';
     const folder = firstFile.includes('/') ? firstFile.slice(0, firstFile.lastIndexOf('/')) : '/';
     showNotice('bases_refreshed', {
-      count: baseFiles.length,
+      files: plural(baseFiles.length, 'companion Bases file'),
       folder: folder || '/',
     });
   }

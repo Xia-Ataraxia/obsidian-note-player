@@ -1,4 +1,5 @@
 import { setIcon } from 'obsidian';
+import { plural } from '../../utils/plural';
 import type { PlaylistSummary, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from '../../types/view';
 import { openTrackMenu } from './view-menus';
 import { buildClass, createIconButton, renderEmptyState, type RunAction } from './view-parts';
@@ -18,7 +19,7 @@ export function renderQueue(panel: HTMLElement, state: PlaylistViewState, ctx: Q
 	header.createDiv({ cls: 'onp-section-title', text: 'Tracks' });
 	header.createDiv({
 		cls: 'onp-section-meta',
-		text: ctx.selectedPlaylist ? `${state.queue.length} tracks` : 'Select a playlist first',
+		text: ctx.selectedPlaylist ? plural(state.queue.length, 'track') : 'Select a playlist first',
 	});
 
 	if (state.isLoading) {
