@@ -5,7 +5,7 @@ import {
   ratioFromArmAngle, scrubSeconds, stepSpin, type Spin,
 } from '../../domain/vinyl-physics';
 import type { PlaylistTrack } from '../../types/view';
-import { buildTurntableParts, PIVOT_X, PIVOT_Y, type TurntableParts } from './turntable-parts';
+import { buildTurntableParts, type TurntableParts } from './turntable-parts';
 import type { TurntableSound } from './turntable-sound';
 
 const SETTLE_MS = 260;
@@ -16,6 +16,11 @@ const MAX_OMEGA = 2;
 const TAP_DEGREES = 4;
 const WARP_DEGREES = 0.5;
 const VISIBILITY_CHECK_MS = 500;
+const TILT_WIDE = 55;
+const TILT_NARROW = 30;
+const WIDE_PX = 480;
+const NARROW_PX = 200;
+const PARALLAX_DEGREES = 3;
 
 export interface TurntableHost {
   position(): { time: number; duration: number } | null;
@@ -57,11 +62,17 @@ export class Turntable {
   private timerWin: Window | null = null;
   private drag: Drag | null = null;
   private frameWin: Window | null = null;
+  private tilt = TILT_WIDE;
+  private readonly resizer: ResizeObserver;
 
   constructor(private readonly sound: TurntableSound, private readonly host: TurntableHost) {
     this.el = createDiv({ cls: 'onp-turntable is-idle' });
     this.el.setAttribute('aria-hidden', 'true');
     this.parts = buildTurntableParts(this.el);
+    this.resizer = new ResizeObserver(([entry]) => this.setTilt(entry?.contentRect.width ?? 0));
+    this.resizer.observe(this.el);
+    this.el.addEventListener('pointermove', (e) => this.parallax(e));
+    this.el.addEventListener('pointerleave', () => this.el.setCssProps({ '--onp-px': '0', '--onp-py': '0' }));
     this.parts.platter.addEventListener('pointerdown', (e) => this.grabPlatter(e));
     this.parts.armGrab.addEventListener('pointerdown', (e) => this.grabArm(e));
     this.parts.platter.addEventListener('pointermove', (e) => this.moveDrag(e));
@@ -104,11 +115,35 @@ export class Turntable {
   }
 
   destroy(): void {
+    this.resizer.disconnect();
     this.cancelTimers();
     this.frameWin?.cancelAnimationFrame(this.frame);
     this.frame = 0;
     this.drag = null;
     this.el.remove();
+  }
+
+  /** Camera eases from a low 3/4 angle toward a flatter one as the card narrows, with no breakpoint. */
+  private setTilt(width: number): void {
+    if (width <= 0) return;
+    const t = Math.min(Math.max((width - NARROW_PX) / (WIDE_PX - NARROW_PX), 0), 1);
+    this.tilt = TILT_NARROW + (TILT_WIDE - TILT_NARROW) * t;
+    this.el.setCssProps({ '--onp-tilt': `${this.tilt.toFixed(1)}deg` });
+  }
+
+  private parallax(e: PointerEvent): void {
+    if (this.drag || this.slowdown > 1) return;
+    const rect = this.el.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+    this.el.setCssProps({ '--onp-px': (nx * PARALLAX_DEGREES).toFixed(2), '--onp-py': (ny * PARALLAX_DEGREES).toFixed(2) });
+  }
+
+  /** Pointer angle around a screen-space centre, undoing the deck's tilt so the circle reads round. */
+  private deckAngle(cx: number, cy: number, e: PointerEvent): number {
+    const dy = (e.clientY - cy) / Math.cos((this.tilt * Math.PI) / 180);
+    return pointerAngle(cx, cy, e.clientX, cy + dy);
   }
 
   private setCreep(ratio: number): void {
@@ -196,7 +231,7 @@ export class Turntable {
     this.begin(e, this.parts.platter, {
       kind: 'platter',
       pointerId: e.pointerId,
-      last: pointerAngle(rect.left + rect.width / 2, rect.top + rect.height / 2, e.clientX, e.clientY),
+      last: this.deckAngle(rect.left + rect.width / 2, rect.top + rect.height / 2, e),
       travelled: 0,
       armDeg: 0,
       at: e.timeStamp,
@@ -222,10 +257,10 @@ export class Turntable {
   }
 
   private armDegrees(e: PointerEvent): number {
-    const rect = this.el.getBoundingClientRect();
-    const px = rect.left + (rect.width * PIVOT_X) / 100;
-    const py = rect.top + (rect.height * PIVOT_Y) / 100;
-    return Math.min(Math.max(armPointerAngle(px, py, e.clientX, e.clientY), ARM_REST), ARM_END + 2);
+    const rect = this.parts.hub.getBoundingClientRect();
+    const cy = rect.top + rect.height / 2;
+    const dy = (e.clientY - cy) / Math.cos((this.tilt * Math.PI) / 180);
+    return Math.min(Math.max(armPointerAngle(rect.left + rect.width / 2, cy, e.clientX, cy + dy), ARM_REST), ARM_END + 2);
   }
 
   private moveDrag(e: PointerEvent): void {
@@ -237,7 +272,7 @@ export class Turntable {
       return;
     }
     const rect = this.parts.platter.getBoundingClientRect();
-    const now = pointerAngle(rect.left + rect.width / 2, rect.top + rect.height / 2, e.clientX, e.clientY);
+    const now = this.deckAngle(rect.left + rect.width / 2, rect.top + rect.height / 2, e);
     const delta = angleDelta(drag.last, now);
     const elapsed = Math.max(e.timeStamp - drag.at, 1);
     drag.last = now;

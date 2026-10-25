@@ -267,7 +267,16 @@ export class NotePlayerView extends ItemView {
 
 		const current = state.currentTrack;
 		if (!current) {
-			elements.playerPanel.addClass('onp-hidden');
+			// Keep the slot (and its height) so the track list never jumps when playback starts.
+			elements.playerPanel.removeClass('onp-hidden');
+			const idleRail = elements.playerPanel.createDiv({ cls: 'onp-now-playing-shell' });
+			idleRail.prepend(this.turntable.el);
+			const idleMeta = idleRail.createDiv({ cls: 'onp-now-playing-summary' })
+				.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb' })
+				.createDiv({ cls: 'onp-track-meta' });
+			idleMeta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
+			idleMeta.createDiv({ cls: 'onp-track-title', text: 'Nothing playing' });
+			idleMeta.createDiv({ cls: 'onp-track-subtitle', text: 'Pick a track to drop the needle' });
 			this.lastRenderedTrackPath = null;
 			this.disposeWave();
 			this.stopProgressInterval();
