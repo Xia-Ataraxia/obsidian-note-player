@@ -303,6 +303,7 @@ export class NotePlayerView extends ItemView {
 			void this.runAction('Moved to next track', () => this.host.playNext());
 		}, { iconOnly: true }));
 		controls.createDiv({ cls: 'onp-controls-spacer' });
+		this.disposeVolumeControl = renderVolumeControl(controls, this.volume);
 		controls.appendChild(createActionButton('Open note', 'file-text', () => {
 			void this.runAction('', () => this.host.openNote(current.path), false);
 		}, { iconOnly: true }));
@@ -329,8 +330,6 @@ export class NotePlayerView extends ItemView {
 		}
 
 		this.mountWave(summary, current.videoId);
-		const volumeRow = summary.createDiv({ cls: 'onp-volume-row' });
-		this.disposeVolumeControl = renderVolumeControl(volumeRow, this.volume);
 
 		this.syncProgressBar();
 		if (playbackState === 'playing') {
