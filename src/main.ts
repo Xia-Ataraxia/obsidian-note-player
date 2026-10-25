@@ -4,7 +4,7 @@ import { MUSIC_BASE_NAME, PLAYLISTS_BASE_NAME } from './domain/base-files';
 import { DEFAULT_SETTINGS, normalizeSettings } from './domain/config';
 import { buildMusicLibrary } from './domain/library-index';
 import { PlaybackStateManager } from './domain/playback-state';
-import { resolveSelectedPlaylistPath, getPlaylistOrThrow, moveItem, toPlaylistSummary, toPlaylistTrack } from './domain/playlist-manager';
+import { resolveSelectedPlaylistPath, getPlaylistOrThrow, moveItem, moveValue, toPlaylistSummary, toPlaylistTrack } from './domain/playlist-manager';
 import { createPlaylistNoteContent, updatePlaylistNoteContent } from './domain/playlist-storage';
 import type { MusicLibrarySnapshot, PlaylistNote } from './types/music';
 import type { NotePlayerSettings } from './types/settings';
@@ -308,12 +308,12 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       return;
     }
 
-    const nextTrackPaths = moveItem(playlist.trackPaths, fromIndex, toIndex);
-    playlist.trackPaths = nextTrackPaths;
+    const movedPath = playlist.trackPaths[fromIndex] as string;
+    playlist.trackPaths = moveItem(playlist.trackPaths, fromIndex, toIndex);
     playlist.tracks = moveItem(playlist.tracks, fromIndex, toIndex);
     this.notifyChange();
 
-    await this.savePlaylistTracks(playlist.path, () => nextTrackPaths);
+    await this.savePlaylistTracks(playlist.path, (current) => moveValue(current, movedPath, toIndex));
   }
 
   async openNote(path: string): Promise<void> {
