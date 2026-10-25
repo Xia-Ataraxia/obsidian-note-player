@@ -893,16 +893,16 @@
 
 .onp-status[data-tone='live'],
 .onp-status[data-tone='done'] {
-	color: var(--text-accent);
+	color: var(--interactive-accent);
 }
 
 .onp-status[data-tone='failed'] {
-	color: var(--text-faint);
+	color: var(--text-muted);
 	cursor: pointer;
 }
 
-.onp-status[data-icon='wrench'] {
-	color: var(--text-muted);
+.onp-status[data-tone='failed']:hover {
+	color: var(--text-normal);
 }
 
 .onp-status-icon,
