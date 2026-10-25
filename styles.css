@@ -669,6 +669,10 @@
 	display: none;
 }
 
+.onp-view-root.is-compact .onp-player-controls {
+	gap: 4px;
+}
+
 .onp-view-root.is-compact .onp-toolbar-controls {
 	width: 100%;
 }
