@@ -371,6 +371,7 @@ export class NotePlayerView extends ItemView {
 
 	/** Updates the subtitle in place so the connecting and failed states appear with no re-render. */
 	private showPhase(phase: StreamPhase): void {
+		this.turntable.el.toggleClass('is-connecting', phase === 'connecting');
 		this.turntable.el.toggleClass('is-failed', phase === 'failed');
 		const el = this.subtitleEl;
 		if (!el) return;

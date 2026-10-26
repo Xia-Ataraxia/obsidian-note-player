@@ -1800,6 +1800,56 @@
 	filter: grayscale(1) brightness(0.8);
 }
 
+/* The deck carries the stream state too: the lamp searches while connecting, and a failed deck settles and goes dark. */
+.onp-turntable.is-connecting .onp-lamp {
+	animation: onp-lamp-search 1.6s ease-in-out infinite;
+}
+
+.onp-turntable.is-connecting .onp-min-label,
+.onp-turntable.is-connecting .onp-strobe {
+	animation: onp-label-search 1.6s ease-in-out infinite;
+}
+
+.onp-turntable.is-failed .onp-lamp,
+.onp-turntable.is-failed .onp-strobe {
+	opacity: 0.35;
+}
+
+.onp-turntable.is-failed .onp-platter,
+.onp-turntable.is-failed .onp-min-platter {
+	animation: onp-platter-wobble 520ms ease-out;
+}
+
+@keyframes onp-lamp-search {
+	0%,
+	100% {
+		fill: color-mix(in oklab, var(--np-lamp) 26%, var(--np-ink));
+		filter: none;
+	}
+
+	50% {
+		fill: var(--np-lamp);
+		filter: none;
+	}
+}
+
+@keyframes onp-label-search {
+	50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.onp-turntable.is-connecting .onp-lamp,
+	.onp-turntable.is-connecting .onp-min-label,
+	.onp-turntable.is-connecting .onp-strobe {
+		animation-duration: 4s;
+	}
+
+	.onp-turntable.is-failed .onp-platter,
+	.onp-turntable.is-failed .onp-min-platter {
+		animation-duration: 900ms;
+	}
+}
+
 .onp-min-spindle {
 	position: absolute;
 	inset: 48.5%;
