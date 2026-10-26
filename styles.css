@@ -106,7 +106,9 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.onp-toolbar-count.is-tick {
-		animation: onp-row-fade 200ms ease-out;
+		animation:
+			onp-row-fade 200ms ease-out,
+			onp-count-flash 480ms ease-out;
 	}
 }
 
