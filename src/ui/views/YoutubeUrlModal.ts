@@ -1,10 +1,14 @@
 import { App, ButtonComponent, Modal, Setting, TextComponent } from 'obsidian';
 import { parseYoutubeUrl } from '../../utils/youtube';
 
+/** Typing stays calm; a still-invalid value turns red after this pause. */
+const IDLE_ERROR_MS = 600;
+
 export class YoutubeUrlModal extends Modal {
 	private input: TextComponent | null = null;
 	private addButton: ButtonComponent | null = null;
 	private hintEl: HTMLElement | null = null;
+	private idleTimer: number | null = null;
 
 	constructor(
 		app: App,
@@ -52,7 +56,14 @@ export class YoutubeUrlModal extends Modal {
 		this.addButton?.setDisabled(!valid);
 		this.hintEl?.setText(value && !valid ? 'Not a YouTube video or playlist URL.' : '');
 		this.hintEl?.toggleClass('is-visible', value !== '' && !valid);
-		if (valid) this.hintEl?.removeClass('is-error');
+		this.clearIdle();
+		this.hintEl?.removeClass('is-error');
+		if (value && !valid) this.idleTimer = activeWindow.setTimeout(() => this.flagInvalid(false), IDLE_ERROR_MS);
+	}
+
+	private clearIdle(): void {
+		if (this.idleTimer !== null) activeWindow.clearTimeout(this.idleTimer);
+		this.idleTimer = null;
 	}
 
 	/** Muted while typing; red once the user leaves the field or presses Enter on a miss. */
@@ -72,6 +83,7 @@ export class YoutubeUrlModal extends Modal {
 	}
 
 	onClose(): void {
+		this.clearIdle();
 		this.contentEl.empty();
 	}
 

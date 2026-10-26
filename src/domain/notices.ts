@@ -18,7 +18,7 @@ export const NOTICE_CATALOG = {
 export type NoticeId = keyof typeof NOTICE_CATALOG;
 
 /** Confirmations fade fast and alike; warnings keep Obsidian's default time. */
-export const SUCCESS_NOTICE_MS = 2500;
+export const SUCCESS_NOTICE_MS = 3500;
 const SUCCESS_NOTICES: ReadonlySet<NoticeId> = new Set([
 	'library_refreshed',
 	'bases_refreshed',
