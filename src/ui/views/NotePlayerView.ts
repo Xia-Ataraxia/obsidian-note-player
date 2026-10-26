@@ -86,7 +86,7 @@ export class NotePlayerView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return 'Note player';
+		return 'Note Player';
 	}
 
 	getIcon(): string {

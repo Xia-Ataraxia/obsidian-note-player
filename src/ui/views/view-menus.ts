@@ -29,10 +29,10 @@ export function openPlaylistMenu(
 	}
 
 	if (host.openBase) {
-		add('Open music table', 'table-2', () => {
+		add('Open music base', 'table-2', () => {
 			void run('', () => host.openBase?.('music') ?? Promise.resolve(), false);
 		});
-		add('Open playlists table', 'files', () => {
+		add('Open playlists base', 'files', () => {
 			void run('', () => host.openBase?.('playlists') ?? Promise.resolve(), false);
 		});
 	}
