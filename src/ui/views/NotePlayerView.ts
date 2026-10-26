@@ -1,6 +1,7 @@
 import {
 	ItemView,
 	Notice,
+	setIcon,
 	WorkspaceLeaf,
 } from 'obsidian';
 import type {
@@ -301,6 +302,9 @@ export class NotePlayerView extends ItemView {
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
 		meta.createDiv({ cls: 'onp-track-title', text: current.title });
 		this.subtitleEl = meta.createDiv({ cls: 'onp-track-subtitle' });
+		this.subtitleEl.addEventListener('click', () => {
+			if (this.playerSurface.phase === 'failed') this.playerSurface.retry();
+		});
 		this.subtitleText = [current.artist, state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'].filter(Boolean).join(' • ');
 		this.showPhase(this.playerSurface.phase);
 
@@ -365,13 +369,21 @@ export class NotePlayerView extends ItemView {
 		this.lastRenderedTrackPath = current.path;
 	}
 
-	/** Updates the subtitle in place so the connecting state appears with no re-render. */
+	/** Updates the subtitle in place so the connecting and failed states appear with no re-render. */
 	private showPhase(phase: StreamPhase): void {
+		this.turntable.el.toggleClass('is-failed', phase === 'failed');
 		const el = this.subtitleEl;
 		if (!el) return;
-		const connecting = phase === 'connecting';
-		el.toggleClass('is-connecting', connecting);
-		el.setText(connecting ? 'Connecting…' : this.subtitleText);
+		el.toggleClass('is-connecting', phase === 'connecting');
+		el.toggleClass('is-failed', phase === 'failed');
+		el.setAttr('role', phase === 'failed' ? 'button' : null);
+		if (phase === 'failed') {
+			el.empty();
+			setIcon(el.createSpan(), 'cloud-off');
+			el.createSpan({ text: "Couldn't load · tap to retry" });
+		} else {
+			el.setText(phase === 'connecting' ? 'Connecting…' : this.subtitleText);
+		}
 	}
 
 	private getSelectedPlaylist(state: PlaylistViewState): PlaylistSummary | undefined {
@@ -437,6 +449,10 @@ export class NotePlayerView extends ItemView {
 		const playbackState = this.host.getState().playbackState;
 		if (playbackState === 'playing') {
 			this.playerSurface.pause();
+			return;
+		}
+		if (this.playerSurface.phase === 'failed') {
+			this.playerSurface.retry();
 			return;
 		}
 
