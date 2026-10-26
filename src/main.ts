@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, normalizeSettings } from './domain/config';
 import { buildMusicLibrary } from './domain/library-index';
 import { trackLabel } from './domain/track-import';
 import { PlaybackStateManager } from './domain/playback-state';
-import { resolveSelectedPlaylistPath, getPlaylistOrThrow, moveItem, moveValue, toPlaylistSummary, toPlaylistTrack } from './domain/playlist-manager';
+import { resolveSelectedPlaylistPath, getPlaylistOrThrow, successorAfterRemoval, moveItem, moveValue, toPlaylistSummary, toPlaylistTrack } from './domain/playlist-manager';
 import { createPlaylistNoteContent, mergeTrackEntries } from './domain/playlist-storage';
 import type { MusicLibrarySnapshot, PlaylistNote } from './types/music';
 import type { NotePlayerSettings } from './types/settings';
@@ -319,9 +319,12 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       return;
     }
 
+    const queueBefore = this.currentQueue().map((track) => track.path);
     await this.removeTrackFromSpecificPlaylist(playlistPath, trackPath);
     if (this.playback.currentTrackPath === trackPath) {
-      this.playback.currentTrackPath = this.currentQueue()[0]?.path ?? null;
+      // A paused track's replacement must not start just because an earlier play left the intent set.
+      this.playIntent = this.viewPlaybackState === 'playing';
+      this.playback.currentTrackPath = successorAfterRemoval(queueBefore, trackPath);
       this.notifyChange();
     }
   }
