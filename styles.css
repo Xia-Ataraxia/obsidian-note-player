@@ -2178,3 +2178,18 @@ input[type="range"].onp-volume-slider:focus-visible {
 	65% { scale: 0.994; }
 	100% { scale: 1; }
 }
+
+.note-player-url-hint {
+	min-height: var(--font-ui-small);
+	margin-bottom: var(--size-4-2);
+	color: var(--text-error);
+	font-size: var(--font-ui-small);
+	opacity: 0;
+	translate: 0 calc(var(--size-4-1) * -1);
+	transition: opacity 160ms ease-out, translate 160ms ease-out;
+}
+
+.note-player-url-hint.is-visible {
+	opacity: 1;
+	translate: 0 0;
+}

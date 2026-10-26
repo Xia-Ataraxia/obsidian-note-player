@@ -17,6 +17,22 @@ export const NOTICE_CATALOG = {
 
 export type NoticeId = keyof typeof NOTICE_CATALOG;
 
+/** Confirmations fade fast and alike; warnings keep Obsidian's default time. */
+export const SUCCESS_NOTICE_MS = 2500;
+const SUCCESS_NOTICES: ReadonlySet<NoticeId> = new Set([
+	'library_refreshed',
+	'bases_refreshed',
+	'playlist_created',
+	'playlist_loaded',
+	'track_added',
+	'track_removed',
+	'tracks_imported',
+]);
+
+export function noticeDuration(id: NoticeId): number | undefined {
+	return SUCCESS_NOTICES.has(id) ? SUCCESS_NOTICE_MS : undefined;
+}
+
 export function renderNotice(template: string, params: Record<string, string | number> = {}): string {
 	const text = template.replace(/{{\s*([\w.-]+)\s*}}/g, (_match, key: string) => String(params[key] ?? ''));
 	return text;
