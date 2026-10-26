@@ -25,6 +25,7 @@ export class YoutubeUrlModal extends Modal {
 				this.input = text;
 				text.setPlaceholder('Paste a YouTube URL');
 				text.onChange(() => this.refresh());
+				text.inputEl.addEventListener('blur', () => this.flagInvalid(false));
 				text.inputEl.addEventListener('keydown', (event) => {
 					if (event.key === 'Enter') this.submit();
 				});
@@ -51,6 +52,23 @@ export class YoutubeUrlModal extends Modal {
 		this.addButton?.setDisabled(!valid);
 		this.hintEl?.setText(value && !valid ? 'Not a YouTube video or playlist URL.' : '');
 		this.hintEl?.toggleClass('is-visible', value !== '' && !valid);
+		if (valid) this.hintEl?.removeClass('is-error');
+	}
+
+	/** Muted while typing; red once the user leaves the field or presses Enter on a miss. */
+	private flagInvalid(pulse: boolean): void {
+		const hint = this.hintEl;
+		if (!hint?.hasClass('is-visible')) {
+			if (pulse && hint) hint.setText('Paste a YouTube video or playlist URL.');
+			if (!pulse) return;
+			hint?.addClass('is-visible');
+		}
+		hint?.addClass('is-error');
+		if (!pulse) return;
+		hint?.removeClass('is-pulse');
+		void hint?.offsetWidth;
+		hint?.addClass('is-pulse');
+		hint?.addEventListener('animationend', () => hint.removeClass('is-pulse'), { once: true });
 	}
 
 	onClose(): void {
@@ -59,7 +77,10 @@ export class YoutubeUrlModal extends Modal {
 
 	private submit(): void {
 		const value = this.input?.getValue().trim() ?? '';
-		if (!parseYoutubeUrl(value)) return;
+		if (!parseYoutubeUrl(value)) {
+			this.flagInvalid(true);
+			return;
+		}
 		this.close();
 		this.onSubmit(value);
 	}
