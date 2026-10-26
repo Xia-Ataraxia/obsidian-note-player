@@ -32,6 +32,8 @@ export class TrackImporter {
   private queue: Promise<void> = Promise.resolve();
   private pending: PendingImport[] = [];
   private nextPendingId = 0;
+  /** Videos added since the queue last drained; one paste of several links gets a single notice. */
+  private added: Array<{ title: string; playlist: string }> = [];
 
   constructor(private readonly deps: TrackImporterDeps) {}
 
@@ -53,9 +55,21 @@ export class TrackImporter {
       .then(() => target.kind === 'video'
         ? this.importVideo(target.videoId, id)
         : this.importPlaylist(target.listId))
-      .finally(() => this.setPending(this.pending.filter((entry) => entry.id !== id)));
+      .finally(() => {
+        this.setPending(this.pending.filter((entry) => entry.id !== id));
+        if (this.pending.length === 0) this.announceAdded();
+      });
     this.queue = run.catch(() => undefined);
     await run;
+  }
+
+  private announceAdded(): void {
+    const added = this.added;
+    this.added = [];
+    const last = added[added.length - 1];
+    if (!last) return;
+    if (added.length === 1) showNotice('track_added', last);
+    else showNotice('tracks_imported', { tracks: plural(added.length, 'video'), playlist: last.playlist });
   }
 
   private setPending(next: PendingImport[]): void {
@@ -92,7 +106,7 @@ export class TrackImporter {
       trackPath = file.path;
     }
     await this.deps.addTracks(playlistPath, [trackPath]);
-    showNotice('track_added', { title, playlist: playlist.title });
+    this.added.push({ title: title === videoId ? 'unavailable video' : title, playlist: playlist.title });
     this.deps.playIfIdle(trackPath);
   }
 
