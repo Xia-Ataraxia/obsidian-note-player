@@ -2180,7 +2180,7 @@ input[type="range"].onp-volume-slider:focus-visible {
 }
 
 .onp-url-hint {
-	min-height: var(--font-ui-small);
+	min-height: 1lh;
 	margin-bottom: var(--size-4-2);
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);

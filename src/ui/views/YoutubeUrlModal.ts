@@ -1,5 +1,6 @@
 import { App, ButtonComponent, Modal, Setting, TextComponent } from 'obsidian';
 import { parseYoutubeUrl } from '../../utils/youtube';
+import { NOTICE_CATALOG } from '../../domain/notices';
 
 /** Typing stays calm; a still-invalid value turns red after this pause. */
 const IDLE_ERROR_MS = 600;
@@ -54,7 +55,7 @@ export class YoutubeUrlModal extends Modal {
 		const value = this.input?.getValue().trim() ?? '';
 		const valid = parseYoutubeUrl(value) !== null;
 		this.addButton?.setDisabled(!valid);
-		this.hintEl?.setText(value && !valid ? 'Not a YouTube video or playlist URL.' : '');
+		this.hintEl?.setText(value && !valid ? NOTICE_CATALOG.invalid_youtube_url.template : '');
 		this.hintEl?.toggleClass('is-visible', value !== '' && !valid);
 		this.clearIdle();
 		this.hintEl?.removeClass('is-error');
