@@ -24,7 +24,6 @@ export class AudioCacheService implements AudioCachePort {
 	onMeta: ((videoId: string) => void) | null = null;
 	/** Fires when a stream resolve starts or ends, so views can swap loading for loaded or failed. */
 	onResolveChange: (() => void) | null = null;
-	private resolveFailed = new Set<string>();
 	private resolvers = new Set<ChildProcess>();
 	private adapter: VaultAdapter;
 	private absBase: string;
@@ -176,8 +175,7 @@ export class AudioCacheService implements AudioCachePort {
 			});
 		}));
 		if (started) {
-			this.resolveFailed.delete(videoId);
-			promise.catch(() => this.resolveFailed.add(videoId)).finally(() => this.onResolveChange?.());
+			promise.catch(() => undefined).finally(() => this.onResolveChange?.());
 			this.onResolveChange?.();
 		}
 		return promise;
@@ -185,10 +183,6 @@ export class AudioCacheService implements AudioCachePort {
 
 	isResolving(videoId: string): boolean {
 		return this.streamPromises.has(videoId);
-	}
-
-	hasResolveFailed(videoId: string): boolean {
-		return this.resolveFailed.has(videoId);
 	}
 
 	metaFor(videoId: string): { title: string; author: string } | undefined {

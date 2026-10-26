@@ -197,15 +197,14 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     };
   }
 
-  /** The playing track counts as loading until its resolve fails; others only while a resolve or heal is in flight. */
+  /** A bare-id track is loading only while its resolve or heal is in flight; play starts the resolve synchronously via prefetchNext. */
   private loadingTitles(queue: PlaylistTrack[], current: PlaylistTrack | null): Set<string> {
     const cache = this.audioCacheService;
     const ids = new Set<string>();
     if (!cache) return ids;
     for (const track of current ? [...queue, current] : queue) {
       if (!isUnavailable(track)) continue;
-      const trying = track.path === current?.path && cache.isAvailable() && !cache.hasResolveFailed(track.videoId);
-      if (trying || cache.isResolving(track.videoId) || this.importer.isHealing(track.videoId)) ids.add(track.videoId);
+      if (cache.isResolving(track.videoId) || this.importer.isHealing(track.videoId)) ids.add(track.videoId);
     }
     return ids;
   }

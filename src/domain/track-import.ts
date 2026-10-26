@@ -37,7 +37,7 @@ export function isUnavailable(track: { title: string; artist: string; videoId: s
 
 export const LOADING_TITLE = 'Loading title…';
 
-/** A bare-id track is still loading while its title may yet arrive; unavailable only once that has failed. */
+/** `inFlight` = a resolve or heal is running; any other state (failed, no title, cached audio) is unavailable. */
 export function titleState(
   track: { title: string; artist: string; videoId: string },
   loading: boolean,

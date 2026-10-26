@@ -118,9 +118,16 @@ describe('classifyBacklinks', () => {
 
 describe('titleState', () => {
   const bare = { title: 'zzzzzzzzzz1', artist: '', videoId: 'zzzzzzzzzz1' };
-  it('is loading until the resolve fails', () => {
+  it('is loading only while a resolve or heal is in flight', () => {
     expect(titleState(bare, true)).toBe('loading');
-    expect(titleState(bare, false)).toBe('unavailable');
     expect(titleState({ ...bare, title: 'Song' }, true)).toBe('ready');
+  });
+
+  it('is unavailable once the resolve ended without a title', () => {
+    expect(titleState(bare, false)).toBe('unavailable');
+  });
+
+  it('is unavailable for a cached-audio track with no resolve pending', () => {
+    expect(titleState({ ...bare }, false)).toBe('unavailable');
   });
 });
