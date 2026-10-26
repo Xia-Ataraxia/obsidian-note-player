@@ -5,7 +5,7 @@
 	height: 100%;
 	max-width: 1120px;
 	margin: 0 auto;
-	padding: 18px 20px 28px;
+	padding: 18px 20px var(--size-4-12);
 	overflow: auto;
 	background: var(--background-primary);
 }
@@ -17,6 +17,7 @@
 .onp-view-root.is-compact {
 	gap: 14px;
 	padding: 12px;
+	padding-bottom: var(--size-4-12);
 }
 
 .onp-pane-section {
