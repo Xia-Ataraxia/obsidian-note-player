@@ -23,7 +23,7 @@ export class YoutubeUrlModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		this.modalEl.addEventListener('pointerdown', (event) => {
-			this.leaving = event.target instanceof Element && !!event.target.closest('.modal-close-button, button:not(.mod-cta)');
+			this.leaving = event.target instanceof Element && !!event.target.closest('.modal-header-button, .modal-close-button, button:not(.mod-cta)');
 		});
 		new Setting(contentEl).setHeading().setName('Add YouTube URL to playlist');
 
