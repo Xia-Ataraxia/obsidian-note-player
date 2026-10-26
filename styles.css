@@ -1829,7 +1829,7 @@
 
 	50% {
 		fill: var(--np-lamp);
-		filter: drop-shadow(0 0 1.1px var(--np-lamp));
+		filter: none;
 	}
 }
 
