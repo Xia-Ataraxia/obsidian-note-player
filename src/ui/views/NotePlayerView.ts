@@ -19,7 +19,6 @@ import { TurntableSound } from './turntable-sound';
 import { parseYoutubeUrl } from '../../utils/youtube';
 import { PlayerSurface, type StreamPhase } from './PlayerSurface';
 import { WaveformProgress } from './WaveformProgress';
-import { renderHero } from './hero-panel';
 import { renderQueue } from './queue-list';
 import { createActionButton, createIconButton, type RunAction } from './view-parts';
 
@@ -29,7 +28,6 @@ export const VIEW_TYPE_LEGACY = 'youtube-note-playlist-view';
 interface ViewElements {
 	root: HTMLElement;
 	toolbarPanel: HTMLElement;
-	heroPanel: HTMLElement;
 	playerPanel: HTMLElement;
 	playerVideo: HTMLElement;
 	queuePanel: HTMLElement;
@@ -114,14 +112,12 @@ export class NotePlayerView extends ItemView {
 		this.unsubscribeSound = this.volume.subscribe(() => this.sound.applyVolume());
 
 		const toolbarPanel = root.createDiv({ cls: 'onp-pane-section onp-toolbar-panel' });
-		const heroPanel = root.createDiv({ cls: 'onp-pane-section onp-hero-panel' });
 		const playerPanel = root.createDiv({ cls: 'onp-pane-section onp-player-panel' });
 		const queuePanel = root.createDiv({ cls: 'onp-pane-section onp-queue-panel' });
 
 		this.elements = {
 			root,
 			toolbarPanel,
-			heroPanel,
 			playerPanel,
 			playerVideo: this.playerHostEl,
 			queuePanel,
@@ -187,7 +183,6 @@ export class NotePlayerView extends ItemView {
 		try {
 			const state = this.host.getState();
 			this.renderToolbar(state);
-			this.renderHero(state);
 			this.renderPlayer(state);
 			renderQueue(elements.queuePanel, state, {
 					host: this.host,
@@ -250,12 +245,6 @@ export class NotePlayerView extends ItemView {
 		controls.appendChild(createIconButton('Refresh library', 'refresh-cw', () => {
 			void this.runAction('', () => this.host.refresh(true), false);
 		}));
-	}
-
-	private renderHero(state: PlaylistViewState): void {
-		const elements = this.elements;
-		if (!elements) return;
-		renderHero(elements.heroPanel, state, this.getSelectedPlaylist(state), this.host, this.runAction);
 	}
 
 	private renderPlayer(state: PlaylistViewState): void {

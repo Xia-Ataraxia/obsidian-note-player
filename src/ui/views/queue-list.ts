@@ -2,7 +2,7 @@ import { setIcon } from 'obsidian';
 import { plural } from '../../utils/plural';
 import { buildYoutubeThumbnailUrl } from '../../utils/youtube';
 import type { PendingImport, PlaylistSummary, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from '../../types/view';
-import { openTrackMenu } from './view-menus';
+import { openPlaylistMenu, openTrackMenu } from './view-menus';
 import { buildClass, createIconButton, renderEmptyState, type RunAction } from './view-parts';
 
 export interface QueueContext {
@@ -23,7 +23,7 @@ function visiblePending(state: PlaylistViewState): PendingImport[] {
 function queueSignature(state: PlaylistViewState, ctx: QueueContext): string {
 	const rows = state.queue.map((t) => [t.path, t.title, t.artist, t.thumbnailUrl].join('\u0001'));
 	const pending = visiblePending(state).map((p) => [p.id, p.title ?? ''].join('\u0001'));
-	return [ctx.selectedPlaylist?.path ?? '', ...rows, ...pending].join('\u0002');
+	return [ctx.selectedPlaylist?.path ?? '', ctx.selectedPlaylist?.title ?? '', state.errorMessage ?? '', ...rows, ...pending].join('\u0002');
 }
 
 // Same rows, new current track: toggle in place so the highlight transition can run.
@@ -63,12 +63,23 @@ export function renderQueue(panel: HTMLElement, state: PlaylistViewState, ctx: Q
 	renderedSignatures.set(panel, signature);
 	panel.empty();
 
+	if (state.errorMessage) {
+		renderEmptyState(panel, 'Playlist error', state.errorMessage);
+		return;
+	}
+
 	const header = panel.createDiv({ cls: 'onp-section-header' });
-	header.createDiv({ cls: 'onp-section-title', text: 'Tracks' });
+	const playlist = ctx.selectedPlaylist;
+	header.createDiv({ cls: 'onp-section-title', text: playlist?.title ?? 'Tracks' });
 	header.createDiv({
 		cls: 'onp-section-meta',
-		text: ctx.selectedPlaylist ? plural(state.queue.length, 'track') : 'Select a playlist first',
+		text: playlist ? plural(state.queue.length, 'track') : 'Select a playlist first',
 	});
+	if (playlist) {
+		header.createDiv({ cls: 'onp-section-actions' }).appendChild(
+			createIconButton('Playlist actions', 'more-vertical', (event) => openPlaylistMenu(event, ctx.host, playlist, ctx.run, state)),
+		);
+	}
 
 	const pending = visiblePending(state);
 	const hasPending = pending.length > 0;

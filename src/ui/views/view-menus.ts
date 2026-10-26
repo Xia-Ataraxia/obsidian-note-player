@@ -1,5 +1,5 @@
 import { Menu } from 'obsidian';
-import type { PlaylistSummary, PlaylistTrack, PlaylistViewHost } from '../../types/view';
+import type { PlaylistSummary, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from '../../types/view';
 import type { RunAction } from './view-parts';
 
 export function openPlaylistMenu(
@@ -7,10 +7,18 @@ export function openPlaylistMenu(
 	host: PlaylistViewHost,
 	playlist: PlaylistSummary,
 	run: RunAction,
+	state: PlaylistViewState,
 ): void {
 	const menu = new Menu();
 	const add = (title: string, icon: string, onClick: () => void) =>
 		menu.addItem((item) => item.setTitle(title).setIcon(icon).onClick(onClick));
+
+	const firstTrack = state.queue[0];
+	if (firstTrack) {
+		add('Play all', 'play', () => {
+			void run('', () => host.playTrack(firstTrack.path), false);
+		});
+	}
 
 	add('Open playlist note', 'file-text', () => {
 		void run('', () => host.openPlaylist(playlist.path), false);
