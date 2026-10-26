@@ -49,11 +49,13 @@
 }
 
 .onp-row-title.is-healed,
-.onp-row-subtitle.is-healed {
+.onp-row-subtitle.is-healed,
+.onp-track-title.is-healed,
+.onp-track-subtitle.is-healed {
 	animation: onp-row-fade 360ms ease-out;
 }
 
-.onp-track-title.is-unavailable {
+.onp-now-playing-summary .onp-track-title {
 	white-space: normal;
 	display: -webkit-box;
 	-webkit-line-clamp: 2;

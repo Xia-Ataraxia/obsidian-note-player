@@ -54,6 +54,7 @@ export class NotePlayerView extends ItemView {
 	private lastCount: { path: string; count: number; changedAt: number } | null = null;
 	private progressIntervalId: number | null = null;
 	private subtitleEl: HTMLElement | null = null;
+	private unavailableShown: string | null = null;
 	private subtitleParts = { artist: '', state: '' };
 	private wave: { videoId: string; ui: WaveformProgress } | null = null;
 	private isRendering = false;
@@ -320,8 +321,12 @@ export class NotePlayerView extends ItemView {
 		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb onp-player-track-card' });
 		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
-		meta.createDiv({ cls: buildClass('onp-track-title', { 'is-unavailable': isUnavailable(current) }), text: trackLabel(current) });
-		this.subtitleEl = meta.createDiv({ cls: 'onp-track-subtitle' });
+		const unavailable = isUnavailable(current);
+		// The same track last drawn as unavailable that now has a title was just healed; fade the new text in.
+		const healed = !unavailable && this.unavailableShown === current.videoId;
+		this.unavailableShown = unavailable ? current.videoId : null;
+		meta.createDiv({ cls: buildClass('onp-track-title', { 'is-unavailable': unavailable, 'is-healed': healed }), text: trackLabel(current) });
+		this.subtitleEl = meta.createDiv({ cls: buildClass('onp-track-subtitle', { 'is-healed': healed }) });
 		const activate = () => {
 			const phase = this.playerSurface.phase;
 			if (phase === 'failed') this.playerSurface.retry();

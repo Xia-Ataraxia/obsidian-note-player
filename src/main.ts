@@ -3,7 +3,7 @@ import { plural } from './utils/plural';
 import { MUSIC_BASE_NAME, PLAYLISTS_BASE_NAME } from './domain/base-files';
 import { DEFAULT_SETTINGS, normalizeSettings } from './domain/config';
 import { buildMusicLibrary } from './domain/library-index';
-import { trackLabel } from './domain/track-import';
+import { isUnavailable, trackLabel } from './domain/track-import';
 import { PlaybackStateManager } from './domain/playback-state';
 import { resolveSelectedPlaylistPath, getPlaylistOrThrow, successorAfterRemoval, moveItem, moveValue, toPlaylistSummary, toPlaylistTrack } from './domain/playlist-manager';
 import { createPlaylistNoteContent, mergeTrackEntries } from './domain/playlist-storage';
@@ -560,6 +560,9 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     const cache = this.audioCacheService;
     const queue = this.currentQueue();
     const index = queue.findIndex((track) => track.path === this.playback.currentTrackPath);
+    // A bare-id track playing from cached audio never resolves a stream, so resolve once to learn its title.
+    const current = this.library.tracks.find((track) => track.path === this.playback.currentTrackPath);
+    if (current && isUnavailable(current) && cache?.isAvailable()) cache.prefetchStream(current.videoId);
     const next = index >= 0 ? queue[index + 1] : undefined;
     if (!cache?.prefetchStream || !next?.videoId || !cache.isAvailable()) return;
     if (!(await cache.hasCached(next.videoId))) cache.prefetchStream(next.videoId);
