@@ -34,7 +34,7 @@ export class PlaylistNameModal extends Modal {
 					.onClick(() => {
 						const value = this.input?.getValue().trim() ?? '';
 						if (!value) {
-							new Notice('Playlist name is required.');
+							new Notice('Enter a playlist name.');
 							return;
 						}
 						this.close();

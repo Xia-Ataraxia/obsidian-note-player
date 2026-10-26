@@ -170,7 +170,7 @@ function renderRow(
 		const rawIndex = event.dataTransfer?.getData('text/plain');
 		const fromIndex = rawIndex ? Number(rawIndex) : ctx.getDragFrom();
 		if (fromIndex === null || Number.isNaN(fromIndex) || fromIndex === index) return;
-		void run('Saved new queue order', () => host.moveTrackInPlaylist(fromIndex, index));
+		void run('Queue order saved.', () => host.moveTrackInPlaylist(fromIndex, index));
 	});
 
 	const play = () => {

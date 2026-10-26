@@ -18,7 +18,7 @@ export class DownloadStatusBar {
 	private swapTimer: number | null = null;
 	private pendingText = '';
 	private nowPlaying: string | null = null;
-	private base = { icon: 'music', text: 'Note player', tone: 'idle' as Tone };
+	private base = { icon: 'music', text: 'Note Player', tone: 'idle' as Tone };
 	private flashTimer: number | null = null;
 
 	constructor(plugin: Plugin, onCancel: () => void, onRetry: () => void) {
@@ -26,7 +26,7 @@ export class DownloadStatusBar {
 		this.container = item.createEl('a', { cls: 'onp-status' });
 		this.iconEl = this.container.createDiv({ cls: 'onp-status-icon' });
 		this.msgEl = this.container.createSpan({ cls: 'onp-status-msg' });
-		this.show('music', 'Note player', 'idle');
+		this.show('music', 'Note Player', 'idle');
 
 		plugin.registerDomEvent(this.container, 'click', () => {
 			if (this.isDownloading) onCancel();
@@ -146,6 +146,6 @@ export class DownloadStatusBar {
 		this.canRetry = false;
 		const title = this.nowPlayingText();
 		if (title) this.show('audio-lines', title, 'idle');
-		else this.show('music', 'Note player', 'idle');
+		else this.show('music', 'Note Player', 'idle');
 	}
 }

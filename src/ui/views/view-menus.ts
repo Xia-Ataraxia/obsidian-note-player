@@ -29,17 +29,17 @@ export function openPlaylistMenu(
 	}
 
 	if (host.openBase) {
-		add('Open music.base', 'table-2', () => {
+		add('Open music base', 'table-2', () => {
 			void run('', () => host.openBase?.('music') ?? Promise.resolve(), false);
 		});
-		add('Open playlists.base', 'files', () => {
+		add('Open playlists base', 'files', () => {
 			void run('', () => host.openBase?.('playlists') ?? Promise.resolve(), false);
 		});
 	}
 
 	if (host.refreshCompanionBases) {
-		add('Refresh companion bases files', 'layout-grid', () => {
-			void run('Refreshed companion Bases files', () => host.refreshCompanionBases?.() ?? Promise.resolve());
+		add('Refresh companion Bases files', 'layout-grid', () => {
+			void run('', () => host.refreshCompanionBases?.() ?? Promise.resolve(), false);
 		});
 	}
 
@@ -66,9 +66,11 @@ export function openTrackMenu(
 	add('Open note', 'file-text', () => {
 		void run('', () => host.openNote(track.path), false);
 	});
-	add('Remove from playlist', 'minus-circle', () => {
-		void run('', () => host.removeTrackFromPlaylist(track.path), false);
-	});
+	menu.addItem((item) =>
+		item.setTitle('Remove from playlist').setIcon('minus-circle').setWarning(true).onClick(() => {
+			void run('', () => host.removeTrackFromPlaylist(track.path), false);
+		}),
+	);
 
 	menu.showAtMouseEvent(event);
 }
