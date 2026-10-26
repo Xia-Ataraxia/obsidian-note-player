@@ -1,4 +1,4 @@
-import { trackLabel } from '../../domain/track-import';
+import { isUnavailable, trackLabel } from '../../domain/track-import';
 import { showNotice } from '../notices';
 import {
 	ItemView,
@@ -23,7 +23,7 @@ import { PlayerSurface, type StreamPhase } from './PlayerSurface';
 import { WaveformProgress } from './WaveformProgress';
 import { renderQueue } from './queue-list';
 import { openPlaylistMenu } from './view-menus';
-import { createActionButton, createIconButton, type RunAction } from './view-parts';
+import { buildClass, createActionButton, createIconButton, type RunAction } from './view-parts';
 
 export const VIEW_TYPE_NOTE_PLAYER = 'obsidian-note-player-view';
 export const VIEW_TYPE_LEGACY = 'youtube-note-playlist-view';
@@ -320,7 +320,7 @@ export class NotePlayerView extends ItemView {
 		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb onp-player-track-card' });
 		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
-		meta.createDiv({ cls: 'onp-track-title', text: trackLabel(current) });
+		meta.createDiv({ cls: buildClass('onp-track-title', { 'is-unavailable': isUnavailable(current) }), text: trackLabel(current) });
 		this.subtitleEl = meta.createDiv({ cls: 'onp-track-subtitle' });
 		const activate = () => {
 			const phase = this.playerSurface.phase;

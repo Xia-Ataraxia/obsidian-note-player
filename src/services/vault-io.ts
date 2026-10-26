@@ -1,6 +1,7 @@
 import { normalizePath, TFile, TFolder, type App } from 'obsidian';
 import type { CompanionBaseFile } from '../domain/base-files';
 import { collectScopedFiles } from '../domain/music-scope';
+import { uniqueName } from '../utils/dedupe';
 import type { MarkdownNoteSnapshot } from '../types/notes';
 
 export async function ensureFolder(app: App, folderPath: string): Promise<void> {
@@ -14,15 +15,7 @@ export async function ensureFolder(app: App, folderPath: string): Promise<void> 
 }
 
 export function getAvailablePath(app: App, folder: string, baseName: string): string {
-	let attempt = normalizePath(`${folder}/${baseName}.md`);
-	let index = 2;
-
-	while (app.vault.getAbstractFileByPath(attempt)) {
-		attempt = normalizePath(`${folder}/${baseName} ${index}.md`);
-		index += 1;
-	}
-
-	return attempt;
+	return normalizePath(`${folder}/${uniqueName(baseName, (name) => !!app.vault.getAbstractFileByPath(normalizePath(`${folder}/${name}.md`)))}.md`);
 }
 
 /** Resolves once the metadata cache has parsed a freshly written note, or after `timeoutMs`. */

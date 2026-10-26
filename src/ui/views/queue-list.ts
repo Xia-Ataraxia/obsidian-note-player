@@ -190,7 +190,7 @@ function renderRow(
 		cls: buildClass('onp-row-title', { 'is-unavailable': unavailable, 'is-healed': healed }),
 		text: trackLabel(track),
 	}).setAttribute('title', track.path);
-	const subtitle = track.artist || (unavailable ? track.videoId : '');
+	const subtitle = track.artist || (unavailable ? "Couldn't load" : '');
 	if (subtitle) body.createDiv({ cls: buildClass('onp-row-subtitle', { 'is-healed': healed }), text: subtitle });
 	body.addEventListener('click', play);
 

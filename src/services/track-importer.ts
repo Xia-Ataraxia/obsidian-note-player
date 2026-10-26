@@ -1,12 +1,13 @@
-import { MarkdownView, normalizePath, requestUrl, type App, type TFile } from 'obsidian';
+import { MarkdownView, requestUrl, type App, type TFile } from 'obsidian';
 import { plural } from '../utils/plural';
 import {
-  buildMusicFrontmatter, classifyImport, isUnavailable, parseFlatPlaylistOutput, parseOembed, trackLabel, type TrackMeta,
+  buildMusicFrontmatter, classifyBacklinks, classifyImport, isUnavailable, parseFlatPlaylistOutput, parseOembed, trackLabel, type TrackMeta,
 } from '../domain/track-import';
 import type { MusicLibrarySnapshot } from '../types/music';
 import type { NotePlayerSettings } from '../types/settings';
 import type { AudioCachePort, PendingImport } from '../types/view';
 import { sanitizeFileName } from '../utils/dedupe';
+import { parsePlaylistTrackReference, toObsidianWikilink } from '../utils/wikilink';
 import { retryUntil } from '../utils/retry';
 import { withTimeout } from '../utils/timeout';
 import { buildYoutubeThumbnailUrl, buildYoutubeWatchUrl, parseYoutubeUrl } from '../utils/youtube';
@@ -125,26 +126,75 @@ export class TrackImporter {
     const file = app.vault.getFileByPath(track.path);
     if (!file) return;
     this.healing.add(videoId);
-    const target = normalizePath(`${file.parent?.path ?? ''}/${sanitizeFileName(meta.title, 'Untitled track')}.md`);
-    const rename = target !== track.path && !app.vault.getAbstractFileByPath(target) && !(await this.hasUnsavedEdits(file));
     try {
-      if (rename) {
-        this.deps.onTrackRename(track.path, target);
-        await app.fileManager.renameFile(file, target).catch((error: unknown) => {
-          this.deps.onTrackRename(target, track.path);
-          throw error;
-        });
-      }
-      if (meta.author) {
-        const artistProperty = this.deps.getSettings().musicArtistProperties[0] ?? 'author';
-        await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
-          frontmatter[artistProperty] = meta.author;
-        });
+      // Renaming under unsaved editor text could lose it; the next stream resolve heals the track instead.
+      if (await this.hasUnsavedEdits(file)) return;
+      const title = sanitizeFileName(meta.title, 'Untitled track');
+      const links = this.playlistsLinking(file);
+      // Other notes link here by name; renaming would break them (or ask the user), so the title goes into metadata.
+      if (links.elsewhere) title !== file.basename && await this.writeMeta(file, meta, true);
+      else {
+        if (title !== file.basename) await this.renameTrack(file, getAvailablePath(app, file.parent?.path ?? '', title), links.playlists);
+        await this.writeMeta(file, meta, false);
       }
     } catch (error) {
       console.error('Note Player title heal failed', error);
     } finally {
       this.healing.delete(videoId);
+    }
+  }
+
+  private async writeMeta(file: TFile, meta: { title: string; author: string }, withTitle: boolean): Promise<void> {
+    if (!withTitle && !meta.author) return;
+    const artistProperty = this.deps.getSettings().musicArtistProperties[0] ?? 'author';
+    await this.deps.app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
+      if (withTitle) frontmatter.title = meta.title;
+      if (meta.author) frontmatter[artistProperty] = meta.author;
+    });
+  }
+
+  /** vault.rename never prompts; the playlists that linked the note are relinked by hand. */
+  private async renameTrack(file: TFile, target: string, playlists: Map<string, Set<string>>): Promise<void> {
+    const from = file.path;
+    this.deps.onTrackRename(from, target);
+    try {
+      await this.deps.app.vault.rename(file, target);
+    } catch (error) {
+      this.deps.onTrackRename(target, from);
+      throw error;
+    }
+    await this.relink(playlists, file);
+  }
+
+  /** Playlist entries that resolve to `file`, keyed by playlist path, and whether any other note links to it. */
+  private playlistsLinking(file: TFile): { playlists: Map<string, Set<string>>; elsewhere: boolean } {
+    const { app } = this.deps;
+    const property = this.deps.getSettings().playlistTrackProperty;
+    const playlistPaths = new Set(this.deps.getLibrary().playlists.map((playlist) => playlist.path));
+    const { playlistSources, elsewhere } = classifyBacklinks(app.metadataCache.resolvedLinks, file.path, playlistPaths);
+    const playlists = new Map<string, Set<string>>();
+    for (const source of playlistSources) {
+      const entries: unknown = app.metadataCache.getCache(source)?.frontmatter?.[property];
+      const own = (Array.isArray(entries) ? entries : []).filter((entry): entry is string => {
+        const reference = typeof entry === 'string' ? parsePlaylistTrackReference(entry) : null;
+        return reference !== null && app.metadataCache.getFirstLinkpathDest(reference.normalized, source) === file;
+      });
+      playlists.set(source, new Set(own));
+    }
+    return { playlists, elsewhere };
+  }
+
+  private async relink(playlists: Map<string, Set<string>>, file: TFile): Promise<void> {
+    const { app } = this.deps;
+    const property = this.deps.getSettings().playlistTrackProperty;
+    for (const [path, entries] of playlists) {
+      const playlist = app.vault.getFileByPath(path);
+      if (!playlist) continue;
+      await app.fileManager.processFrontMatter(playlist, (frontmatter: Record<string, unknown>) => {
+        const current: unknown = frontmatter[property];
+        if (!Array.isArray(current)) return;
+        frontmatter[property] = current.map((entry: unknown) => typeof entry === 'string' && entries.has(entry) ? toObsidianWikilink(file.path) : entry);
+      });
     }
   }
 

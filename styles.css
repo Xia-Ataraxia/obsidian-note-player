@@ -53,6 +53,14 @@
 	animation: onp-row-fade 360ms ease-out;
 }
 
+.onp-track-title.is-unavailable {
+	white-space: normal;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+
+.onp-track-title.is-unavailable,
 .onp-row-title.is-unavailable {
 	font-weight: 400;
 	color: var(--text-muted);
