@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-note-player",
-	"version": "0.8.4",
+	"version": "0.8.5",
 	"description": "Play note-backed playlists inside Obsidian — YouTube, cached audio, and local files.",
 	"main": "main.js",
 	"type": "module",
@@ -24,6 +24,7 @@
 	"devDependencies": {
 		"@eslint/js": "10.0.1",
 		"@types/node": "^26.6.5",
+		"@vitest/eslint-plugin": "^1.6.28",
 		"esbuild": "0.28.2",
 		"eslint": "^10.13.0",
 		"eslint-plugin-obsidianmd": "^0.4.2",
