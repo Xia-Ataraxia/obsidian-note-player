@@ -1,4 +1,5 @@
 import { trackLabel } from '../../domain/track-import';
+import { showNotice } from '../notices';
 import {
 	ItemView,
 	Notice,
@@ -540,7 +541,7 @@ export class NotePlayerView extends ItemView {
 		try {
 			await action();
 			if (showSuccess && successMessage) {
-				new Notice(successMessage, 1800);
+				showNotice('action_succeeded', { message: successMessage });
 			}
 		} catch (error) {
 			console.error('Note Player action failed', error);

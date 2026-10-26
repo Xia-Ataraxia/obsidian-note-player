@@ -13,6 +13,7 @@ export const NOTICE_CATALOG = {
 	invalid_youtube_url: { template: 'Not a YouTube video or playlist URL.' },
 	paste_youtube_url: { template: 'Paste a YouTube video or playlist URL.' },
 	tracks_imported: { template: 'Added {{tracks}} to {{playlist}}.' },
+	action_succeeded: { template: '{{message}}' },
 	ytdlp_unavailable: { template: 'yt-dlp is not installed. Run brew install yt-dlp, then try again.' },
 } as const;
 
