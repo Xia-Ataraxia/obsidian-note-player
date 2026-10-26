@@ -107,7 +107,7 @@ export class NotePlayerView extends ItemView {
 		}
 		// Rendering empties the panels, which drops focus to body; listen on the document so Cmd+V keeps working.
 		const listenPaste = (doc: Document) => this.registerDomEvent(doc, 'paste', (event) => {
-			if (root.doc === doc && this.app.workspace.getActiveViewOfType(NotePlayerView) === this) this.handlePaste(event);
+			if (root.doc === doc && this.app.workspace.getActiveViewOfType(NotePlayerView) === this) this.importPastedLinks(event);
 		});
 		listenPaste(root.doc);
 		this.register(root.onWindowMigrated((win) => listenPaste(win.document)));
@@ -511,7 +511,7 @@ export class NotePlayerView extends ItemView {
 		}
 	}
 
-	private handlePaste(event: ClipboardEvent): void {
+	private importPastedLinks(event: ClipboardEvent): void {
 		const target = event.target as Node | null;
 		if (target?.instanceOf(HTMLElement) && target.closest('input, textarea, select, [contenteditable="true"]')) return;
 		const text = event.clipboardData?.getData('text') ?? '';
