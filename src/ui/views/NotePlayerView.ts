@@ -208,9 +208,6 @@ export class NotePlayerView extends ItemView {
 		elements.toolbarPanel.empty();
 
 		const bar = elements.toolbarPanel.createDiv({ cls: 'onp-toolbar-bar' });
-		const copy = bar.createDiv({ cls: 'onp-toolbar-copy' });
-		copy.createDiv({ cls: 'onp-toolbar-label', text: 'Note Player' });
-
 		const controls = bar.createDiv({ cls: 'onp-toolbar-controls' });
 		const select = controls.createEl('select', { cls: 'dropdown onp-toolbar-select' });
 		select.createEl('option', { value: '', text: 'Select a playlist' });
@@ -302,9 +299,12 @@ export class NotePlayerView extends ItemView {
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
 		meta.createDiv({ cls: 'onp-track-title', text: current.title });
 		this.subtitleEl = meta.createDiv({ cls: 'onp-track-subtitle' });
-		this.subtitleEl.addEventListener('click', () => {
-			if (this.playerSurface.phase === 'failed') this.playerSurface.retry();
-		});
+		const activate = () => {
+			const phase = this.playerSurface.phase;
+			if (phase === 'failed') this.playerSurface.retry();
+			else if (phase === 'missing') this.playerSurface.onNeedSetup?.();
+		};
+		this.subtitleEl.addEventListener('click', activate);
 		this.subtitleText = [current.artist, state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'].filter(Boolean).join(' • ');
 		this.showPhase(this.playerSurface.phase);
 
@@ -343,7 +343,7 @@ export class NotePlayerView extends ItemView {
 				'repeat-1',
 				() => {
 					void this.runAction(
-						state.repeatMode === 'one' ? 'Repeat off.' : 'Repeating this track.',
+						state.repeatMode === 'one' ? 'Repeat off.' : 'Repeat on.',
 						() => this.host.toggleRepeatMode?.() ?? Promise.resolve(),
 					);
 				},
@@ -372,16 +372,17 @@ export class NotePlayerView extends ItemView {
 	/** Updates the subtitle in place so the connecting and failed states appear with no re-render. */
 	private showPhase(phase: StreamPhase): void {
 		this.turntable.el.toggleClass('is-connecting', phase === 'connecting');
-		this.turntable.el.toggleClass('is-failed', phase === 'failed');
+		this.turntable.el.toggleClass('is-failed', phase === 'failed' || phase === 'missing');
 		const el = this.subtitleEl;
 		if (!el) return;
 		el.toggleClass('is-connecting', phase === 'connecting');
-		el.toggleClass('is-failed', phase === 'failed');
-		el.setAttr('role', phase === 'failed' ? 'button' : null);
-		if (phase === 'failed') {
+		const needsAction = phase === 'failed' || phase === 'missing';
+		el.toggleClass('is-failed', needsAction);
+		if (needsAction) {
 			el.empty();
-			setIcon(el.createSpan(), 'cloud-off');
-			el.createSpan({ text: "Couldn't load · click to retry" });
+			const cue = el.createEl('button', { cls: 'clickable-icon onp-deck-cue' });
+			setIcon(cue.createSpan(), phase === 'missing' ? 'wrench' : 'cloud-off');
+			cue.createSpan({ text: phase === 'missing' ? 'yt-dlp not found · click for setup' : "Couldn't load · click to retry" });
 		} else {
 			el.setText(phase === 'connecting' ? 'Connecting…' : this.subtitleText);
 		}
