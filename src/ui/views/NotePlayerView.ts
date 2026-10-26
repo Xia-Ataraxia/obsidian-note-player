@@ -105,7 +105,12 @@ export class NotePlayerView extends ItemView {
 		for (const gesture of ['pointerdown', 'keydown'] as const) {
 			this.registerDomEvent(root, gesture, () => this.sound.unlock(root.win));
 		}
-		this.registerDomEvent(root, 'paste', (event) => this.handlePaste(event));
+		// Rendering empties the panels, which drops focus to body; listen on the document so Cmd+V keeps working.
+		const listenPaste = (doc: Document) => this.registerDomEvent(doc, 'paste', (event) => {
+			if (root.doc === doc && this.app.workspace.getActiveViewOfType(NotePlayerView) === this) this.handlePaste(event);
+		});
+		listenPaste(root.doc);
+		this.register(root.onWindowMigrated((win) => listenPaste(win.document)));
 		this.playerSurface.trackLanding(true);
 		this.playerSurface.onCached = (videoId) => void this.loadPeaks(videoId);
 		this.registerEvent(this.app.workspace.on('css-change', () => this.wave?.ui.refreshColors()));
