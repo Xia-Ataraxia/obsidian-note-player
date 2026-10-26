@@ -48,7 +48,6 @@
 	min-width: 0;
 }
 
-.onp-toolbar-description,
 .onp-row-title.is-unavailable {
 	font-weight: 400;
 	color: var(--text-muted);
@@ -758,7 +757,6 @@
 	padding: 12px;
 }
 
-.onp-view-root.is-compact .onp-toolbar-description,
 .onp-view-root.is-compact .onp-track-path {
 	display: none;
 }
