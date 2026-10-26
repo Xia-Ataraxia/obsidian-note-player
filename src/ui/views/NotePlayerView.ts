@@ -47,6 +47,7 @@ export class NotePlayerView extends ItemView {
 	private resizeFrame: { win: Window; id: number } | null = null;
 	private dragFromIndex: number | null = null;
 	private lastRenderedTrackPath: string | null = null;
+	private lastCount: { path: string; count: number } | null = null;
 	private progressIntervalId: number | null = null;
 	private subtitleEl: HTMLElement | null = null;
 	private subtitleParts = { artist: '', state: '' };
@@ -234,7 +235,10 @@ export class NotePlayerView extends ItemView {
 		const playlist = this.getSelectedPlaylist(state);
 		if (playlist) {
 			const unit = state.queue.length === 1 ? 'track' : 'tracks';
+			const ticked = this.lastCount?.path === playlist.path && this.lastCount.count !== state.queue.length;
+			this.lastCount = { path: playlist.path, count: state.queue.length };
 			const count = controls.createSpan({ cls: 'onp-toolbar-count', attr: { title: `${state.queue.length} ${unit}` } });
+			count.toggleClass('is-tick', ticked);
 			count.createSpan({ text: String(state.queue.length) });
 			count.createSpan({ cls: 'onp-toolbar-count-unit', text: ` ${unit}` });
 			controls.appendChild(createIconButton('Playlist actions', 'more-vertical', (event) => {
