@@ -1,4 +1,4 @@
-import { isUnavailable, trackLabel } from '../../domain/track-import';
+import { LOADING_TITLE, titleState, trackLabel } from '../../domain/track-import';
 import { showNotice } from '../notices';
 import {
 	ItemView,
@@ -321,11 +321,15 @@ export class NotePlayerView extends ItemView {
 		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb onp-player-track-card' });
 		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
-		const unavailable = isUnavailable(current);
-		// The same track last drawn as unavailable that now has a title was just healed; fade the new text in.
-		const healed = !unavailable && this.unavailableShown === current.videoId;
-		this.unavailableShown = unavailable ? current.videoId : null;
-		meta.createDiv({ cls: buildClass('onp-track-title', { 'is-unavailable': unavailable, 'is-healed': healed }), text: trackLabel(current) });
+		const titleStatus = titleState(current, state.loadingTitles.has(current.videoId));
+		const loading = titleStatus === 'loading';
+		// The same track last drawn without a title that now has one was just healed; fade the new text in.
+		const healed = titleStatus === 'ready' && this.unavailableShown === current.videoId;
+		this.unavailableShown = titleStatus === 'ready' ? null : current.videoId;
+		meta.createDiv({
+			cls: buildClass('onp-track-title', { 'is-unavailable': titleStatus === 'unavailable', 'is-resolving': loading, 'is-healed': healed }),
+			text: loading ? LOADING_TITLE : trackLabel(current),
+		});
 		this.subtitleEl = meta.createDiv({ cls: buildClass('onp-track-subtitle', { 'is-healed': healed }) });
 		const activate = () => {
 			const phase = this.playerSurface.phase;

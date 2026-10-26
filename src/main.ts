@@ -169,7 +169,8 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     if (!this.vaultBasePath) return null;
     const pluginDir = this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`;
     const cache = new AudioCacheService(this.vaultBasePath, this.app.vault.adapter, this.settings.audioFormat, pluginDir);
-    cache.onMeta = (videoId) => void this.importer.healTrack(videoId);
+    cache.onMeta = (videoId) => void this.importer.healTrack(videoId).finally(() => this.notifyChange());
+    cache.onResolveChange = () => this.notifyChange();
     return cache;
   }
 
@@ -194,7 +195,21 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       turntableSounds: this.settings.turntableSounds,
       turntableStyle: this.settings.turntableStyle,
       pendingImports: this.importer.getPending(),
+      loadingTitles: this.loadingTitles(queue, currentTrack),
     };
+  }
+
+  /** The playing track counts as loading until its resolve fails; others only while a resolve or heal is in flight. */
+  private loadingTitles(queue: PlaylistTrack[], current: PlaylistTrack | null): Set<string> {
+    const cache = this.audioCacheService;
+    const ids = new Set<string>();
+    if (!cache) return ids;
+    for (const track of current ? [...queue, current] : queue) {
+      if (!isUnavailable(track)) continue;
+      const trying = track.path === current?.path && cache.isAvailable() && !cache.hasResolveFailed(track.videoId);
+      if (trying || cache.isResolving(track.videoId) || this.importer.isHealing(track.videoId)) ids.add(track.videoId);
+    }
+    return ids;
   }
 
   subscribe(callback: () => void): () => void {
@@ -570,7 +585,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
   private syncStatusBar(): void {
     const track = this.viewPlaybackState === 'idle' ? null : this.getState().currentTrack;
-    this.downloadStatusBar?.setNowPlaying(track ? trackLabel(track) : null, this.viewPlaybackState, !!track && isUnavailable(track));
+    this.downloadStatusBar?.setNowPlaying(track ? trackLabel(track) : null, this.viewPlaybackState, !!track && this.getState().loadingTitles.has(track.videoId));
   }
 
   private notifyChange(): void {

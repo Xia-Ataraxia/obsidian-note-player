@@ -35,6 +35,17 @@ export function isUnavailable(track: { title: string; artist: string; videoId: s
   return !track.artist && track.title === track.videoId;
 }
 
+export const LOADING_TITLE = 'Loading title…';
+
+/** A bare-id track is still loading while its title may yet arrive; unavailable only once that has failed. */
+export function titleState(
+  track: { title: string; artist: string; videoId: string },
+  loading: boolean,
+): 'ready' | 'loading' | 'unavailable' {
+  if (!isUnavailable(track)) return 'ready';
+  return loading ? 'loading' : 'unavailable';
+}
+
 export function trackLabel(track: { title: string; artist: string; videoId: string }, midSentence = false): string {
   if (!isUnavailable(track)) return track.title;
   return midSentence ? 'unavailable video' : 'Unavailable video';

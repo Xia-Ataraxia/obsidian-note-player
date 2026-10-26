@@ -117,6 +117,10 @@ export class TrackImporter {
     void this.healTrack(videoId);
   }
 
+  isHealing(videoId: string): boolean {
+    return this.healing.has(videoId);
+  }
+
   /** Gives a track saved under its bare id the title and artist yt-dlp reported; quiet, no notice. */
   async healTrack(videoId: string): Promise<void> {
     const { app } = this.deps;
@@ -137,10 +141,20 @@ export class TrackImporter {
         if (title !== file.basename) await this.renameTrack(file, getAvailablePath(app, file.parent?.path ?? '', title), links.playlists);
         await this.writeMeta(file, meta, false);
       }
+      await this.libraryHealed(videoId);
     } catch (error) {
       console.error('Note Player title heal failed', error);
     } finally {
       this.healing.delete(videoId);
+    }
+  }
+
+  /** The debounced index trails the write; keep the track reading as loading until it shows the new title. */
+  private async libraryHealed(videoId: string): Promise<void> {
+    for (let waited = 0; waited < 1500; waited += 50) {
+      const track = this.deps.getLibrary().tracks.find((entry) => entry.videoId === videoId);
+      if (!track || !isUnavailable(track)) return;
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
     }
   }
 

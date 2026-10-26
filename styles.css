@@ -68,6 +68,31 @@
 	color: var(--text-muted);
 }
 
+.onp-track-title.is-resolving,
+.onp-row-title.is-resolving {
+	font-weight: 400;
+	color: var(--text-faint);
+}
+
+.onp-track-title.is-resolving,
+.onp-row-subtitle.is-resolving {
+	color: var(--text-muted);
+	animation: onp-title-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes onp-title-breathe {
+	50% {
+		color: var(--text-faint);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.onp-track-title.is-resolving,
+	.onp-row-subtitle.is-resolving {
+		animation-duration: 3.6s;
+	}
+}
+
 .onp-track-subtitle,
 .onp-track-path,
 .onp-row-subtitle,

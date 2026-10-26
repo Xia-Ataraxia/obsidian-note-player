@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROPERTY_MAPPING } from '../src/domain/config';
-import { buildMusicFrontmatter, classifyBacklinks, classifyImport, isUnavailable, parseFlatPlaylistOutput, parseOembed, trackLabel } from '../src/domain/track-import';
+import { buildMusicFrontmatter, classifyBacklinks, classifyImport, isUnavailable, parseFlatPlaylistOutput, parseOembed, titleState, trackLabel } from '../src/domain/track-import';
 
 describe('parseOembed', () => {
   it('reads title, author and thumbnail', () => {
@@ -113,5 +113,14 @@ describe('classifyBacklinks', () => {
   it('is safe to rename when only playlists link to it', () => {
     expect(classifyBacklinks(links, 'Other.md', new Set(['Road Trip.md', 'Unrelated.md']))).toEqual({ playlistSources: ['Road Trip.md', 'Unrelated.md'], elsewhere: false });
     expect(classifyBacklinks(links, 'Nobody.md', playlists)).toEqual({ playlistSources: [], elsewhere: false });
+  });
+});
+
+describe('titleState', () => {
+  const bare = { title: 'zzzzzzzzzz1', artist: '', videoId: 'zzzzzzzzzz1' };
+  it('is loading until the resolve fails', () => {
+    expect(titleState(bare, true)).toBe('loading');
+    expect(titleState(bare, false)).toBe('unavailable');
+    expect(titleState({ ...bare, title: 'Song' }, true)).toBe('ready');
   });
 });
