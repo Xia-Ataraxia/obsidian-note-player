@@ -305,12 +305,6 @@ export class NotePlayerView extends ItemView {
 			else if (phase === 'missing') this.playerSurface.onNeedSetup?.();
 		};
 		this.subtitleEl.addEventListener('click', activate);
-		this.subtitleEl.addEventListener('keydown', (event) => {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				activate();
-			}
-		});
 		this.subtitleText = [current.artist, state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'].filter(Boolean).join(' • ');
 		this.showPhase(this.playerSurface.phase);
 
@@ -384,12 +378,11 @@ export class NotePlayerView extends ItemView {
 		el.toggleClass('is-connecting', phase === 'connecting');
 		const needsAction = phase === 'failed' || phase === 'missing';
 		el.toggleClass('is-failed', needsAction);
-		el.setAttr('role', needsAction ? 'button' : null);
-		el.tabIndex = needsAction ? 0 : -1;
 		if (needsAction) {
 			el.empty();
-			setIcon(el.createSpan(), phase === 'missing' ? 'wrench' : 'cloud-off');
-			el.createSpan({ text: phase === 'missing' ? 'yt-dlp not found · click for setup' : "Couldn't load · click to retry" });
+			const cue = el.createEl('button', { cls: 'clickable-icon onp-deck-cue' });
+			setIcon(cue.createSpan(), phase === 'missing' ? 'wrench' : 'cloud-off');
+			cue.createSpan({ text: phase === 'missing' ? 'yt-dlp not found · click for setup' : "Couldn't load · click to retry" });
 		} else {
 			el.setText(phase === 'connecting' ? 'Connecting…' : this.subtitleText);
 		}
