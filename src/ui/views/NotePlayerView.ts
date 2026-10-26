@@ -123,16 +123,8 @@ export class NotePlayerView extends ItemView {
 			queuePanel,
 		};
 
-		this.resizeObserver = new (root.ownerDocument.defaultView ?? window).ResizeObserver((entries) => {
-			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
-			this.cancelResizeFrame();
-			const win = root.win;
-			this.resizeFrame = {
-				win,
-				id: win.requestAnimationFrame(() => this.applyResponsiveClasses(nextWidth)),
-			};
-		});
-		this.resizeObserver.observe(root);
+		this.observeResize(root, root.win);
+		this.register(root.onWindowMigrated((win) => this.observeResize(root, win)));
 		this.applyResponsiveClasses(root.clientWidth);
 
 		this.unsubscribe = this.host.subscribe(() => {
@@ -141,6 +133,18 @@ export class NotePlayerView extends ItemView {
 
 		this.render();
 		return Promise.resolve();
+	}
+
+	/** The root moves into a popout after onOpen, so the observer must be rebuilt on the window that owns it. */
+	private observeResize(root: HTMLElement, win: Window): void {
+		this.resizeObserver?.disconnect();
+		this.cancelResizeFrame();
+		this.resizeObserver = new win.ResizeObserver((entries) => {
+			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
+			this.cancelResizeFrame();
+			this.resizeFrame = { win, id: win.requestAnimationFrame(() => this.applyResponsiveClasses(nextWidth)) };
+		});
+		this.resizeObserver.observe(root);
 	}
 
 	private cancelResizeFrame(): void {
