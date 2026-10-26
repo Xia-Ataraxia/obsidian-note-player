@@ -108,16 +108,15 @@ export class AudioCacheService implements AudioCachePort {
 
 			this.activeDownloads.set(videoId, proc);
 
-			proc.stderr.on('data', (data: Buffer) => {
-				const line = data.toString();
-				stderrOutput += line;
-				const percent = parseYtdlpProgress(line);
+			// yt-dlp prints `[download] NN%` to stdout; stderr carries warnings and errors.
+			const onOutput = (data: Buffer) => {
+				const chunk = data.toString();
+				stderrOutput += chunk;
+				const percent = parseYtdlpProgress(chunk);
 				if (percent !== null) this.progressListeners.get(videoId)?.forEach((notify) => notify(percent));
-			});
-
-			proc.stdout.on('data', (data: Buffer) => {
-				stderrOutput += data.toString();
-			});
+			};
+			proc.stdout.on('data', onOutput);
+			proc.stderr.on('data', onOutput);
 
 			proc.on('close', (code) => {
 				this.forget(videoId, proc);

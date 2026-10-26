@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { parseStreamOutput, parseYtdlpError, parseYtdlpProgress } from '../src/domain/ytdlp';
+import { busyLabel, downloadStage, parseStreamOutput, parseYtdlpError, parseYtdlpProgress } from '../src/domain/ytdlp';
 
 describe('parseYtdlpProgress', () => {
   it('reads the download percentage', () => {
     expect(parseYtdlpProgress('[download]  42.5% of 3.2MiB')).toBe(42.5);
+  });
+
+  it('reads the latest percentage from a chunk of carriage-return updates', () => {
+    expect(parseYtdlpProgress('[download]   2.8% of 6.7MiB\r[download]  51.6% of 6.7MiB\r')).toBe(51.6);
   });
 
   it('returns null for unrelated lines', () => {
@@ -37,5 +41,19 @@ describe('parseStreamOutput', () => {
   it('keeps an empty uploader and rejects output without a url', () => {
     expect(parseStreamOutput('Song\n\nhttps://x/y')?.author).toBe('');
     expect(parseStreamOutput('Song\nBand\n')).toBeNull();
+  });
+});
+
+describe('downloadStage / busyLabel', () => {
+  it('switches to converting once the transfer reaches 100%', () => {
+    expect(downloadStage(0)).toBe('downloading');
+    expect(downloadStage(99.9)).toBe('downloading');
+    expect(downloadStage(100)).toBe('converting');
+  });
+
+  it('labels each busy phase', () => {
+    expect(busyLabel('connecting', 0)).toBe('Connecting…');
+    expect(busyLabel('downloading', 41.6)).toBe('Downloading 42%');
+    expect(busyLabel('converting', 100)).toBe('Converting…');
   });
 });

@@ -1,8 +1,22 @@
-const PROGRESS_PATTERN = /\[download\]\s+([\d.]+)%/;
+const PROGRESS_PATTERN = /\[download\]\s+([\d.]+)%/g;
 
-export function parseYtdlpProgress(line: string): number | null {
-	const match = PROGRESS_PATTERN.exec(line);
-	return match ? parseFloat(match[1]!) : null;
+/** Latest percent in a chunk; one stdout chunk often holds several `\r`-separated updates. */
+export function parseYtdlpProgress(chunk: string): number | null {
+	const matches = [...chunk.matchAll(PROGRESS_PATTERN)];
+	const last = matches[matches.length - 1];
+	return last ? parseFloat(last[1]!) : null;
+}
+
+export type BusyPhase = 'connecting' | 'downloading' | 'converting';
+
+/** yt-dlp reports 100% when the transfer ends, then converts to audio without any progress of its own. */
+export function downloadStage(percent: number): 'downloading' | 'converting' {
+	return percent >= 100 ? 'converting' : 'downloading';
+}
+
+export function busyLabel(phase: BusyPhase, percent: number): string {
+	if (phase === 'downloading') return `Downloading ${Math.round(percent)}%`;
+	return phase === 'converting' ? 'Converting…' : 'Connecting…';
 }
 
 export function parseYtdlpError(stderr: string): string {
