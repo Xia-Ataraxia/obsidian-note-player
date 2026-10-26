@@ -40,7 +40,7 @@ export class WaveformProgress {
 	private height = 0;
 	private level = 0;
 	private hold = 0;
-	private raf = 0;
+	private raf: { win: Window; id: number } | null = null;
 	private last = 0;
 	private destroyed = false;
 
@@ -106,8 +106,8 @@ export class WaveformProgress {
 	destroy(): void {
 		this.destroyed = true;
 		this.stopResize();
-		if (this.raf) this.el.win.cancelAnimationFrame(this.raf);
-		this.raf = 0;
+		this.raf?.win.cancelAnimationFrame(this.raf.id);
+		this.raf = null;
 	}
 
 	private bindStage(): void {
@@ -175,12 +175,15 @@ export class WaveformProgress {
 	}
 
 	private schedule(): void {
-		if (this.destroyed || this.raf) return;
-		this.raf = this.el.win.requestAnimationFrame((now) => this.frame(now));
+		const win = this.el.win;
+		if (this.destroyed || this.raf?.win === win) return;
+		// A frame requested before the canvas moved into a popout may never fire in a hidden window.
+		this.raf?.win.cancelAnimationFrame(this.raf.id);
+		this.raf = { win, id: win.requestAnimationFrame((now) => this.frame(now)) };
 	}
 
 	private frame(now: number): void {
-		this.raf = 0;
+		this.raf = null;
 		if (this.destroyed || !this.canvas.isShown()) return;
 		const dt = this.last ? Math.min((now - this.last) / 1000, 0.05) : 1 / 60;
 		this.last = now;
