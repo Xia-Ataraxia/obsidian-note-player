@@ -1,4 +1,4 @@
-import { normalizePath, TFile, type App } from 'obsidian';
+import { normalizePath, TFile, TFolder, type App } from 'obsidian';
 import type { CompanionBaseFile } from '../domain/base-files';
 import type { MarkdownNoteSnapshot } from '../types/notes';
 
@@ -85,8 +85,22 @@ export async function writeBaseFiles(app: App, baseFiles: CompanionBaseFile[]): 
 	}
 }
 
-export function collectNoteSnapshots(app: App): MarkdownNoteSnapshot[] {
-	return app.vault.getMarkdownFiles().map((file) => ({
+/** Walks the music folder's own children, never the whole vault. */
+export function collectMusicFiles(app: App, musicFolder: string): TFile[] {
+	const root = app.vault.getFolderByPath(normalizePath(musicFolder || app.fileManager.getNewFileParent('').path));
+	const files: TFile[] = [];
+	const visit = (folder: TFolder): void => {
+		for (const child of folder.children) {
+			if (child instanceof TFolder) visit(child);
+			else if (child instanceof TFile && child.extension === 'md') files.push(child);
+		}
+	};
+	if (root) visit(root);
+	return files;
+}
+
+export function collectNoteSnapshots(app: App, musicFolder: string): MarkdownNoteSnapshot[] {
+	return collectMusicFiles(app, musicFolder).map((file) => ({
 		path: file.path,
 		basename: file.basename,
 		frontmatter: app.metadataCache.getFileCache(file)?.frontmatter,

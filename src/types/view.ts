@@ -84,6 +84,8 @@ export interface PlaylistViewHost {
 export interface VaultAdapter {
 	exists(path: string): Promise<boolean>;
 	getResourcePath(path: string): string;
+	list(path: string): Promise<{ files: string[] }>;
+	remove(path: string): Promise<void>;
 }
 
 export interface AudioCachePort {
@@ -94,6 +96,7 @@ export interface AudioCachePort {
 	resolveStreamUrl?(videoId: string): Promise<string>;
 	prefetchStream?(videoId: string): void;
 	isAvailable(): boolean;
+	checkAvailable(): Promise<boolean>;
 	listPlaylist?(listId: string): Promise<string>;
 }
 

@@ -125,7 +125,7 @@ export class PlayerSurface {
 			this.activateTrack(videoId, autoplayEnabled);
 			return;
 		}
-		if (!this.audioCacheService.isAvailable()) {
+		if (!(await this.audioCacheService.checkAvailable())) {
 			// Only a real play attempt reports the missing tool; browsing stays quiet.
 			this.setPhase(autoplayEnabled ? 'missing' : 'idle');
 			this.emit('paused');
