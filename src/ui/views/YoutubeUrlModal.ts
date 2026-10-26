@@ -19,7 +19,7 @@ export class YoutubeUrlModal extends Modal {
 
 		new Setting(contentEl)
 			.setName('YouTube URL')
-			.setDesc('A video or playlist link. The note is created from YouTube metadata.')
+			.setDesc('Paste a video or playlist link. It is added right away.')
 			.addText((text) => {
 				this.input = text;
 				text.setPlaceholder('Paste a YouTube URL');

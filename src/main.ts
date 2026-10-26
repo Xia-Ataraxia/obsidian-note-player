@@ -457,7 +457,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private async refreshIndex(): Promise<void> {
     this.errorMessage = null;
     try {
-      this.library = buildMusicLibrary(collectNoteSnapshots(this.app, this.settings.musicFolder), this.settings);
+      this.library = buildMusicLibrary(collectNoteSnapshots(this.app, [this.settings.musicFolder, this.settings.playlistFolder]), this.settings);
 
       const selected = resolveSelectedPlaylistPath(this.settings.lastPlaylistPath, this.library.playlists);
       if (this.library.playlists.length > 0 && selected !== this.settings.lastPlaylistPath) {

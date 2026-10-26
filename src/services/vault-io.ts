@@ -85,22 +85,24 @@ export async function writeBaseFiles(app: App, baseFiles: CompanionBaseFile[]): 
 	}
 }
 
-/** Walks the music folder's own children, never the whole vault. */
-export function collectMusicFiles(app: App, musicFolder: string): TFile[] {
-	const root = app.vault.getFolderByPath(normalizePath(musicFolder || app.fileManager.getNewFileParent('').path));
-	const files: TFile[] = [];
+/** Walks the given folders' own children, never the whole vault. Empty folder = Obsidian's new-note location. */
+export function collectMusicFiles(app: App, folders: string[]): TFile[] {
+	const files = new Map<string, TFile>();
 	const visit = (folder: TFolder): void => {
 		for (const child of folder.children) {
 			if (child instanceof TFolder) visit(child);
-			else if (child instanceof TFile && child.extension === 'md') files.push(child);
+			else if (child instanceof TFile && child.extension === 'md') files.set(child.path, child);
 		}
 	};
-	if (root) visit(root);
-	return files;
+	for (const path of folders) {
+		const root = app.vault.getFolderByPath(normalizePath(path || app.fileManager.getNewFileParent('').path));
+		if (root) visit(root);
+	}
+	return [...files.values()];
 }
 
-export function collectNoteSnapshots(app: App, musicFolder: string): MarkdownNoteSnapshot[] {
-	return collectMusicFiles(app, musicFolder).map((file) => ({
+export function collectNoteSnapshots(app: App, folders: string[]): MarkdownNoteSnapshot[] {
+	return collectMusicFiles(app, folders).map((file) => ({
 		path: file.path,
 		basename: file.basename,
 		frontmatter: app.metadataCache.getFileCache(file)?.frontmatter,

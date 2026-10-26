@@ -36,7 +36,7 @@ const AUDIO_FORMAT_OPTIONS: Record<AudioFormat, string> = { mp3: 'MP3', wav: 'WA
 
 function collectVaultProperties(app: App, musicFolder: string): string[] {
 	const properties = new Set<string>();
-	for (const file of collectMusicFiles(app, musicFolder)) {
+	for (const file of collectMusicFiles(app, [musicFolder])) {
 		const cache = app.metadataCache.getFileCache(file);
 		if (cache?.frontmatter) {
 			for (const key of Object.keys(cache.frontmatter)) {
@@ -157,7 +157,7 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 				},
 				{
 					name: 'Music folder',
-					desc: 'Vault folder for notes created from pasted YouTube URLs. Leave empty to use the default location for new notes.',
+					desc: 'Vault folder for notes created from pasted YouTube URLs. The library only reads track notes in this folder and its subfolders (and playlists in the playlist folder). Leave empty to use the default location for new notes.',
 					control: { type: 'folder', key: 'musicFolder', placeholder: 'Default location' },
 				},
 				],
