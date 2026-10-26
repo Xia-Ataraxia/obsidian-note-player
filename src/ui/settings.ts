@@ -1,6 +1,7 @@
 import {
 	AbstractInputSuggest,
 	App,
+	debounce,
 	Plugin,
 	PluginSettingTab,
 	type Setting,
@@ -77,6 +78,10 @@ class PropertySuggest extends AbstractInputSuggest<string> {
 }
 
 export class NotePlayerSettingsTab extends PluginSettingTab {
+	private refreshPending = false;
+	// Text inputs report every keystroke; saving and re-rendering the view each time stutters typing.
+	private readonly persist = debounce(() => { void this.flush(); }, 500, true);
+
 	constructor(app: App, private readonly host: SettingsHost) {
 		super(app, host);
 	}
@@ -86,11 +91,24 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 		return LIST_KEYS.includes(key) && Array.isArray(value) ? value.join(', ') : value;
 	}
 
-	async setControlValue(key: string, value: unknown): Promise<void> {
+	setControlValue(key: string, value: unknown): void {
 		const next = LIST_KEYS.includes(key) ? parsePropertyList(String(value)) : typeof value === 'string' ? value.trim() : value;
 		Object.assign(this.host.settings, { [key]: next });
+		this.refreshPending ||= !NO_REFRESH_KEYS.includes(key);
+		this.persist();
+		if (typeof value !== 'string') this.persist.run();
+	}
+
+	hide(): void {
+		this.persist.run();
+		super.hide();
+	}
+
+	private async flush(): Promise<void> {
+		const refresh = this.refreshPending;
+		this.refreshPending = false;
 		await this.host.saveSettings();
-		if (!NO_REFRESH_KEYS.includes(key)) await this.host.refresh();
+		if (refresh) await this.host.refresh();
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
