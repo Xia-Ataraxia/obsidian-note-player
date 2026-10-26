@@ -20,6 +20,8 @@ import { parseYoutubeUrl } from '../../utils/youtube';
 import { PlayerSurface, type StreamPhase } from './PlayerSurface';
 import { WaveformProgress } from './WaveformProgress';
 import { renderQueue } from './queue-list';
+import { openPlaylistMenu } from './view-menus';
+import { plural } from '../../utils/plural';
 import { createActionButton, createIconButton, type RunAction } from './view-parts';
 
 export const VIEW_TYPE_NOTE_PLAYER = 'obsidian-note-player-view';
@@ -230,9 +232,13 @@ export class NotePlayerView extends ItemView {
 			);
 		});
 
-		controls.appendChild(createIconButton('Create playlist', 'plus', () => {
-			this.openCreatePlaylistModal();
-		}));
+		const playlist = this.getSelectedPlaylist(state);
+		if (playlist) {
+			controls.createSpan({ cls: 'onp-toolbar-count', text: plural(state.queue.length, 'track') });
+			controls.appendChild(createIconButton('Playlist actions', 'more-vertical', (event) => {
+				openPlaylistMenu(event, this.host, playlist, this.runAction, state);
+			}));
+		}
 
 		if (this.host.addTrackFromUrl) {
 			controls.appendChild(createIconButton('Add YouTube URL', 'link', () => {
@@ -240,14 +246,8 @@ export class NotePlayerView extends ItemView {
 			}));
 		}
 
-		if (this.host.selectActivePlaylist) {
-			controls.appendChild(createIconButton('Load active playlist note', 'crosshair', () => {
-				void this.runAction('', () => this.host.selectActivePlaylist?.() ?? Promise.resolve(), false);
-			}));
-		}
-
-		controls.appendChild(createIconButton('Refresh library', 'refresh-cw', () => {
-			void this.runAction('', () => this.host.refresh(true), false);
+		controls.appendChild(createIconButton('Create playlist', 'plus', () => {
+			this.openCreatePlaylistModal();
 		}));
 	}
 

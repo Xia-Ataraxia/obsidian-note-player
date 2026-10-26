@@ -1,8 +1,7 @@
 import { setIcon } from 'obsidian';
-import { plural } from '../../utils/plural';
 import { buildYoutubeThumbnailUrl } from '../../utils/youtube';
 import type { PendingImport, PlaylistSummary, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from '../../types/view';
-import { openPlaylistMenu, openTrackMenu } from './view-menus';
+import { openTrackMenu } from './view-menus';
 import { buildClass, createIconButton, renderEmptyState, type RunAction } from './view-parts';
 
 export interface QueueContext {
@@ -66,19 +65,6 @@ export function renderQueue(panel: HTMLElement, state: PlaylistViewState, ctx: Q
 	if (state.errorMessage) {
 		renderEmptyState(panel, 'Playlist error', state.errorMessage);
 		return;
-	}
-
-	const header = panel.createDiv({ cls: 'onp-section-header' });
-	const playlist = ctx.selectedPlaylist;
-	header.createDiv({ cls: 'onp-section-title', text: playlist?.title ?? 'Tracks' });
-	header.createDiv({
-		cls: 'onp-section-meta',
-		text: playlist ? plural(state.queue.length, 'track') : 'Select a playlist first',
-	});
-	if (playlist) {
-		header.createDiv({ cls: 'onp-section-actions' }).appendChild(
-			createIconButton('Playlist actions', 'more-vertical', (event) => openPlaylistMenu(event, ctx.host, playlist, ctx.run, state)),
-		);
 	}
 
 	const pending = visiblePending(state);
