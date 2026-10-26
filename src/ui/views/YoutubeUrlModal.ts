@@ -58,11 +58,11 @@ export class YoutubeUrlModal extends Modal {
 		this.hintEl?.toggleClass('is-visible', value !== '' && !valid);
 		this.clearIdle();
 		this.hintEl?.removeClass('is-error');
-		if (value && !valid) this.idleTimer = activeWindow.setTimeout(() => this.flagInvalid(false), IDLE_ERROR_MS);
+		if (value && !valid) this.idleTimer = window.setTimeout(() => this.flagInvalid(false), IDLE_ERROR_MS);
 	}
 
 	private clearIdle(): void {
-		if (this.idleTimer !== null) activeWindow.clearTimeout(this.idleTimer);
+		if (this.idleTimer !== null) window.clearTimeout(this.idleTimer);
 		this.idleTimer = null;
 	}
 
