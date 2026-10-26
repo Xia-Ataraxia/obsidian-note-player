@@ -1,3 +1,4 @@
+import { observeResize } from './observe-resize';
 import type { PlaybackState } from '../../types/playback';
 import { deckSteps, type DeckPose } from '../../domain/deck-sequence';
 import { SPIN_DOWN_MS, SPIN_UP_MS, strobeSharpness } from '../../domain/turntable';
@@ -72,14 +73,13 @@ export class Turntable {
   private frameWin: Window | null = null;
   private tilt = TILT_WIDE;
   private yaw = YAW_WIDE;
-  private readonly resizer: ResizeObserver;
+  private readonly stopResize: () => void;
   private knob: VolumeKnob | null = null;
 
   constructor(private readonly sound: TurntableSound, private readonly host: TurntableHost) {
     this.el = createDiv({ cls: 'onp-turntable is-idle' });
     this.el.setAttribute('aria-hidden', 'true');
-    this.resizer = new ResizeObserver(([entry]) => this.setTilt(entry?.contentRect.width ?? 0));
-    this.resizer.observe(this.el);
+    this.stopResize = observeResize(this.el, (rect) => this.setTilt(rect.width));
     this.el.addEventListener('pointermove', (e) => this.parallax(e));
     this.el.addEventListener('pointerleave', () => this.el.setCssProps({ '--onp-px': '0', '--onp-py': '0' }));
     this.mount();
@@ -178,7 +178,7 @@ export class Turntable {
 
   destroy(): void {
     this.knob?.destroy();
-    this.resizer.disconnect();
+    this.stopResize();
     this.cancelTimers();
     this.frameWin?.cancelAnimationFrame(this.frame);
     this.frame = 0;

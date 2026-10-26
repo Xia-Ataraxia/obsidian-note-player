@@ -1,3 +1,4 @@
+import { observeResize } from './observe-resize';
 import { meterStep, nudgeRatio, placeholderHeight, ratioAt, resamplePeaks, smoothBars, springStep } from '../../domain/peaks';
 import { formatTime } from './PlayerSurface';
 import { barCountFor, drawMeter, drawWave, readColors, type WaveColors } from './waveform-draw';
@@ -27,7 +28,7 @@ export class WaveformProgress {
 	private readonly tipEl: HTMLElement;
 	private readonly elapsedEl: HTMLElement;
 	private readonly remainEl: HTMLElement;
-	private readonly observer: ResizeObserver;
+	private readonly stopResize: () => void;
 	private colors: WaveColors;
 	private peaks: number[] | null = null;
 	private pooled: number[] = [];
@@ -75,11 +76,7 @@ export class WaveformProgress {
 
 		this.colors = readColors(this.el);
 		this.bindStage();
-		this.observer = new ResizeObserver((entries) => {
-			const rect = entries.at(0)?.contentRect;
-			if (rect) this.resize(rect.width, rect.height);
-		});
-		this.observer.observe(this.canvas);
+		this.stopResize = observeResize(this.canvas, (rect) => this.resize(rect.width, rect.height));
 		this.update(true);
 	}
 
@@ -108,7 +105,7 @@ export class WaveformProgress {
 
 	destroy(): void {
 		this.destroyed = true;
-		this.observer.disconnect();
+		this.stopResize();
 		if (this.raf) this.el.win.cancelAnimationFrame(this.raf);
 		this.raf = 0;
 	}
