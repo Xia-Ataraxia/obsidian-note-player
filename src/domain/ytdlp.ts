@@ -7,6 +7,18 @@ export function parseYtdlpProgress(chunk: string): number | null {
 	return last ? parseFloat(last[1]!) : null;
 }
 
+export type BusyPhase = 'connecting' | 'downloading' | 'converting';
+
+/** yt-dlp reports 100% when the transfer ends, then converts to audio without any progress of its own. */
+export function downloadStage(percent: number): 'downloading' | 'converting' {
+	return percent >= 100 ? 'converting' : 'downloading';
+}
+
+export function busyLabel(phase: BusyPhase, percent: number): string {
+	if (phase === 'downloading') return `Downloading ${Math.round(percent)}%`;
+	return phase === 'converting' ? 'Converting…' : 'Connecting…';
+}
+
 export function parseYtdlpError(stderr: string): string {
 	if (/Video unavailable/i.test(stderr)) return 'This video is unavailable or has been removed.';
 	if (/Sign in|\bage\b/i.test(stderr)) return 'This video requires age verification.';

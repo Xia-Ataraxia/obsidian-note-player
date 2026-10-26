@@ -19,6 +19,7 @@ import { YoutubeUrlModal } from './YoutubeUrlModal';
 import { Turntable } from './Turntable';
 import { TurntableSound } from './turntable-sound';
 import { parseYoutubeUrl } from '../../utils/youtube';
+import { busyLabel } from '../../domain/ytdlp';
 import { PlayerSurface, type StreamPhase } from './PlayerSurface';
 import { WaveformProgress } from './WaveformProgress';
 import { renderQueue } from './queue-list';
@@ -403,11 +404,12 @@ export class NotePlayerView extends ItemView {
 
 	/** Updates the subtitle in place so the connecting and failed states appear with no re-render. */
 	private showPhase(phase: StreamPhase): void {
-		this.turntable.el.toggleClass('is-connecting', phase === 'connecting');
+		const busy = phase === 'connecting' || phase === 'downloading' || phase === 'converting';
+		this.turntable.el.toggleClass('is-connecting', busy);
 		this.turntable.el.toggleClass('is-failed', phase === 'failed' || phase === 'missing');
 		const el = this.subtitleEl;
 		if (!el) return;
-		el.toggleClass('is-connecting', phase === 'connecting');
+		el.toggleClass('is-connecting', busy);
 		const needsAction = phase === 'failed' || phase === 'missing';
 		el.toggleClass('is-failed', needsAction);
 		if (needsAction) {
@@ -415,8 +417,8 @@ export class NotePlayerView extends ItemView {
 			const cue = el.createEl('button', { cls: 'clickable-icon onp-deck-cue' });
 			setIcon(cue.createSpan(), phase === 'missing' ? 'wrench' : 'cloud-off');
 			cue.createSpan({ text: phase === 'missing' ? 'yt-dlp not found · click for setup' : "Couldn't load · click to retry" });
-		} else if (phase === 'connecting') {
-			el.setText('Connecting…');
+		} else if (busy) {
+			el.setText(busyLabel(phase, this.playerSurface.downloadPercent));
 		} else {
 			const { artist, state } = this.subtitleParts;
 			el.empty();

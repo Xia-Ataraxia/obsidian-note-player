@@ -1,5 +1,6 @@
 import { setIcon } from 'obsidian';
 import type { Plugin } from 'obsidian';
+import { busyLabel } from '../domain/ytdlp';
 import { restingLabel, restingLook, statusLabel } from '../domain/status-look';
 import type { StatusAction, StatusPlayback, StatusTone } from '../domain/status-look';
 
@@ -60,13 +61,14 @@ export class DownloadStatusBar {
 	}
 
 	/** Shows the live-source state; progress and completion from `update` take over from it. */
-	showStream(phase: 'connecting' | 'streaming' | 'failed' | 'missing' | 'idle'): void {
+	showStream(phase: 'connecting' | 'downloading' | 'converting' | 'streaming' | 'failed' | 'missing' | 'idle'): void {
+		if (phase === 'downloading') return; // `update` paints the percent
 		this.streaming = phase === 'streaming';
 		if (phase === 'idle') return this.reset();
 		this.clearCompletionTimer();
-		this.isDownloading = false;
+		this.isDownloading = phase === 'converting'; // still cancellable
 		this.canRetry = phase === 'failed' || phase === 'missing';
-		if (phase === 'connecting') this.show('loader', 'Connecting…', 'busy');
+		if (phase === 'connecting' || phase === 'converting') this.show('loader', busyLabel(phase, 0), 'busy');
 		else if (phase === 'streaming') this.rest();
 		else if (phase === 'missing') this.show('wrench', 'yt-dlp missing', 'warn');
 		else this.show('cloud-off', "Couldn't load", 'failed');

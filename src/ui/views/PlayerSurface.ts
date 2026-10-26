@@ -1,13 +1,14 @@
 import type { AudioCachePort } from '../../types/view';
 import type { PlaylistTrack } from '../../types/view';
 import type { PlaybackState, RepeatMode } from '../../types/playback';
+import { downloadStage } from '../../domain/ytdlp';
 import { chooseSource, shouldKeepSaving } from '../../domain/playback-source';
 import { VOLUME_RAMP_MS } from '../../domain/volume';
 import { FADE_IN_MS, leadRemainingMs, FADE_OUT_MS, needleDelayMs, rampRate } from '../../domain/turntable';
 
 export type { PlaybackState };
 
-export type StreamPhase = 'connecting' | 'streaming' | 'failed' | 'missing' | 'idle';
+export type StreamPhase = 'connecting' | 'downloading' | 'converting' | 'streaming' | 'failed' | 'missing' | 'idle';
 
 const FADE_STEP_MS = 20;
 
@@ -49,6 +50,8 @@ export class PlayerSurface {
 	onPhaseView: ((phase: StreamPhase) => void) | null = null;
 	onNeedSetup: (() => void) | null = null;
 	phase: StreamPhase = 'idle';
+	/** Latest yt-dlp percent, shown by the view while the phase is `downloading`. */
+	downloadPercent = 0;
 	/** The audio file for this track now exists in the cache. */
 	onCached: ((videoId: string) => void) | null = null;
 	/** True while the needle is down but the music is not ready yet. */
@@ -223,7 +226,11 @@ export class PlayerSurface {
 		try {
 			await this.audioCacheService.download(videoId, (percent) => {
 				if (token !== this.downloadToken) return;
-				this.onDownloadProgress?.(percent);
+				const stage = downloadStage(percent);
+				this.downloadPercent = percent;
+				// The bar's own "Downloaded" waits for the audio; the converting phase covers the gap.
+				if (stage === 'downloading') this.onDownloadProgress?.(percent);
+				this.setPhase(stage);
 			});
 			if (token !== this.downloadToken) return;
 			this.onDownloadProgress?.(100);
