@@ -81,6 +81,8 @@ export class AudioCacheService implements AudioCachePort {
 			const proc = spawn(this.ytdlpPath, [
 				'-x', '--audio-format', this.format, '--audio-quality', '0',
 				'--no-playlist',
+				// Defaults retry an unreachable network for minutes; these fail in ~15s so retry is offered.
+				'--socket-timeout', '5', '--retries', '2', '--extractor-retries', '0',
 				'-o', join(this.absBase, this.cacheDir, `${videoId}.%(ext)s`),
 				`https://www.youtube.com/watch?v=${videoId}`,
 			], { env: this.spawnEnv() });
