@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-note-player",
-	"version": "0.8.6",
+	"version": "0.8.7",
 	"description": "Play note-backed playlists inside Obsidian — YouTube, cached audio, and local files.",
 	"main": "main.js",
 	"type": "module",
