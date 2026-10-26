@@ -2178,3 +2178,44 @@ input[type="range"].onp-volume-slider:focus-visible {
 	65% { scale: 0.994; }
 	100% { scale: 1; }
 }
+
+.onp-url-hint {
+	min-height: 1lh;
+	margin-bottom: var(--size-4-2);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	opacity: 0;
+	translate: 0 calc(var(--size-4-1) * -1);
+	transition: opacity 160ms ease-out, translate 160ms ease-out;
+}
+
+.onp-url-hint.is-visible {
+	opacity: 1;
+	translate: 0 0;
+}
+
+.onp-url-hint.is-error {
+	color: var(--text-error);
+}
+
+.onp-url-hint.is-pulse {
+	animation: onp-url-hint-shake 280ms ease-out;
+}
+
+@keyframes onp-url-hint-shake {
+	0%, 100% { translate: 0 0; }
+	20% { translate: calc(var(--size-4-1) * -1) 0; }
+	45% { translate: var(--size-4-1) 0; }
+	70% { translate: calc(var(--size-4-1) * -0.5) 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.onp-url-hint {
+		transition: opacity 160ms ease-out;
+		translate: 0 0;
+	}
+
+	.onp-url-hint.is-pulse {
+		animation-name: onp-row-fade;
+	}
+}

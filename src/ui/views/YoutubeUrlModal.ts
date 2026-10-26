@@ -1,9 +1,16 @@
-import { App, Modal, Setting, TextComponent } from 'obsidian';
+import { App, ButtonComponent, Modal, Setting, TextComponent } from 'obsidian';
 import { parseYoutubeUrl } from '../../utils/youtube';
-import { showNotice } from '../notices';
+import { NOTICE_CATALOG } from '../../domain/notices';
+
+/** Typing stays calm; a still-invalid value turns red after this pause. */
+const IDLE_ERROR_MS = 600;
 
 export class YoutubeUrlModal extends Modal {
 	private input: TextComponent | null = null;
+	private addButton: ButtonComponent | null = null;
+	private hintEl: HTMLElement | null = null;
+	private idleTimer: number | null = null;
+	private leaving = false;
 
 	constructor(
 		app: App,
@@ -15,6 +22,9 @@ export class YoutubeUrlModal extends Modal {
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
+		this.modalEl.addEventListener('pointerdown', (event) => {
+			this.leaving = event.target instanceof Element && !!event.target.closest('.modal-header-button, .modal-close-button, button:not(.mod-cta)');
+		});
 		new Setting(contentEl).setHeading().setName('Add YouTube URL to playlist');
 
 		new Setting(contentEl)
@@ -23,6 +33,10 @@ export class YoutubeUrlModal extends Modal {
 			.addText((text) => {
 				this.input = text;
 				text.setPlaceholder('Paste a YouTube URL');
+				text.onChange(() => this.refresh());
+				text.inputEl.addEventListener('blur', () => {
+					if (!this.leaving) this.flagInvalid(false);
+				});
 				text.inputEl.addEventListener('keydown', (event) => {
 					if (event.key === 'Enter') this.submit();
 				});
@@ -30,19 +44,60 @@ export class YoutubeUrlModal extends Modal {
 				text.inputEl.focus();
 			});
 
+		this.hintEl = contentEl.createDiv({ cls: 'onp-url-hint' });
+		this.hintEl.setAttr('role', 'status');
+
 		new Setting(contentEl)
-			.addButton((button) => button.setButtonText('Add').setCta().onClick(() => this.submit()))
+			.addButton((button) => {
+				this.addButton = button;
+				button.setButtonText('Add').setCta().onClick(() => this.submit());
+			})
 			.addButton((button) => button.setButtonText('Cancel').onClick(() => this.close()));
+		this.refresh();
+	}
+
+	/** Add stays off until the text is a YouTube link; a non-empty miss explains itself inline. */
+	private refresh(): void {
+		const value = this.input?.getValue().trim() ?? '';
+		const valid = parseYoutubeUrl(value) !== null;
+		this.addButton?.setDisabled(!valid);
+		this.hintEl?.setText(value && !valid ? NOTICE_CATALOG.invalid_youtube_url.template : '');
+		this.hintEl?.toggleClass('is-visible', value !== '' && !valid);
+		this.clearIdle();
+		this.hintEl?.removeClass('is-error');
+		if (value && !valid) this.idleTimer = window.setTimeout(() => this.flagInvalid(false), IDLE_ERROR_MS);
+	}
+
+	private clearIdle(): void {
+		if (this.idleTimer !== null) window.clearTimeout(this.idleTimer);
+		this.idleTimer = null;
+	}
+
+	/** Muted while typing; red once the user leaves the field or presses Enter on a miss. */
+	private flagInvalid(pulse: boolean): void {
+		const hint = this.hintEl;
+		if (!hint?.hasClass('is-visible')) {
+			if (pulse && hint) hint.setText(NOTICE_CATALOG.paste_youtube_url.template);
+			if (!pulse) return;
+			hint?.addClass('is-visible');
+		}
+		hint?.addClass('is-error');
+		if (!pulse) return;
+		hint?.removeClass('is-pulse');
+		void hint?.offsetWidth;
+		hint?.addClass('is-pulse');
+		hint?.addEventListener('animationend', () => hint.removeClass('is-pulse'), { once: true });
 	}
 
 	onClose(): void {
+		this.clearIdle();
 		this.contentEl.empty();
 	}
 
 	private submit(): void {
 		const value = this.input?.getValue().trim() ?? '';
 		if (!parseYoutubeUrl(value)) {
-			showNotice('invalid_youtube_url');
+			this.flagInvalid(true);
 			return;
 		}
 		this.close();
