@@ -393,7 +393,7 @@ export class NotePlayerView extends ItemView {
 			el.empty();
 			if (artist) {
 				el.createSpan({ cls: 'onp-subtitle-artist', text: artist, attr: { title: artist } });
-				el.createSpan({ cls: 'onp-subtitle-state', text: ` • ${state}` });
+				el.createSpan({ cls: 'onp-subtitle-state', text: state });
 			} else {
 				el.createSpan({ cls: 'onp-subtitle-state', text: state });
 			}

@@ -175,6 +175,27 @@
 	white-space: nowrap;
 }
 
+.onp-subtitle-artist + .onp-subtitle-state {
+	margin-inline-start: var(--size-4-2);
+}
+
+.onp-subtitle-artist + .onp-subtitle-state::before {
+	content: '•';
+	margin-inline-end: var(--size-4-2);
+}
+
+.onp-view-root.is-compact .onp-track-subtitle {
+	flex-direction: column;
+}
+
+.onp-view-root.is-compact .onp-subtitle-artist + .onp-subtitle-state {
+	margin-inline-start: 0;
+}
+
+.onp-view-root.is-compact .onp-subtitle-artist + .onp-subtitle-state::before {
+	content: none;
+}
+
 .onp-track-path {
 	font-size: var(--font-ui-smaller);
 }
