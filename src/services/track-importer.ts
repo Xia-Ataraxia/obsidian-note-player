@@ -140,12 +140,12 @@ export class TrackImporter {
   private async fetchMeta(videoId: string): Promise<TrackMeta> {
     const fallback: TrackMeta = {
       videoId,
-      title: `YouTube ${videoId}`,
+      title: videoId,
       author: '',
       thumbnailUrl: buildYoutubeThumbnailUrl(videoId),
     };
     const watchUrl = buildYoutubeWatchUrl(videoId);
-    // A slow or unreachable oEmbed must not hold up the import; the placeholder title is good enough.
+    // A slow or unreachable oEmbed must not hold up the import; the bare id stands in as the title (rows label it as unavailable).
     const oembed = await withTimeout(
       requestUrl({
         url: `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`,

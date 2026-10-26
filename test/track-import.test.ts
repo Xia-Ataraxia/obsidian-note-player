@@ -71,7 +71,7 @@ describe('parseFlatPlaylistOutput', () => {
       entries: [
         { videoId: 'Zs3CIgFET_Y', title: 'First', author: 'Band' },
         { videoId: 'DEyzYWLvXqA', title: 'Second', author: '' },
-        { videoId: 'wOzHXgqNpe8', title: 'YouTube wOzHXgqNpe8', author: '' },
+        { videoId: 'wOzHXgqNpe8', title: 'wOzHXgqNpe8', author: '' },
       ],
     });
   });

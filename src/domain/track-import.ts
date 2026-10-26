@@ -61,7 +61,7 @@ export function parseFlatPlaylistOutput(stdout: string): FlatPlaylist {
     const [id = '', title = '', author = '', playlistTitle = ''] = line.replace(/\r$/, '').split('\t');
     if (!VIDEO_ID_PATTERN.test(id)) continue;
     result.title ||= asText(playlistTitle);
-    result.entries.push({ videoId: id, title: asText(title) || `YouTube ${id}`, author: asText(author) });
+    result.entries.push({ videoId: id, title: asText(title) || id, author: asText(author) });
   }
   return result;
 }
