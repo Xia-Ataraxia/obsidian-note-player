@@ -64,13 +64,39 @@ The now-playing card shows a spinning record with a tonearm. Starting playback l
 
 Playlist folder, music folder, property mapping for URL, thumbnail, and artist, playlist schema (track list, description, cover, note types), audio format (MP3 or WAV), autoplay, open on startup, and **Turntable sounds**.
 
-## Network use and storage
+## Disclosures
 
-- Adding a track sends its video URL to `youtube.com/oembed` (through Obsidian's `requestUrl`) to read the title, channel, and thumbnail. No API key is used.
+Note Player is desktop only. It has no telemetry and no accounts, and it sends nothing to any server except YouTube.
+
+### Network
+
+- Adding a track sends its video URL to `youtube.com/oembed`, through Obsidian's `requestUrl`, to read the title, channel and thumbnail. No API key is used.
 - Thumbnails load from `img.youtube.com`.
-- Audio downloads and playlist expansion run yt-dlp on your machine, which contacts YouTube.
-- Nothing else is contacted, and there is no telemetry.
-- Downloaded audio is cached in `<vault>/<config folder>/plugins/note-player/audio-cache`. Delete the folder to clear it.
+- Downloads, playlist expansion and streaming run yt-dlp, which contacts YouTube. A track that isn't cached yet streams straight from YouTube's media servers while it downloads.
+- While a track plays, the stream link for the next uncached track in the queue is looked up ahead of time. Apart from that and thumbnails, YouTube is only contacted when you add a track or play one that isn't cached. Local vault audio never uses the network.
+
+### Running programs (yt-dlp and ffmpeg)
+
+- The plugin runs `yt-dlp` as a child process to download audio, resolve stream links and expand playlist links. yt-dlp calls `ffmpeg` to convert audio. No other programs are run.
+- It finds yt-dlp on your `PATH` or in the usual install folders (`~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`).
+- To turn this off, don't install yt-dlp (or uninstall it). Local audio files in your vault still play.
+
+### Files outside the Obsidian API
+
+- Downloaded audio and waveform data (`<id>.peaks.json`) are stored in `<vault>/<config folder>/plugins/note-player/audio-cache`. The plugin uses Node's file system module there because yt-dlp writes into this folder directly.
+- Files from an older cache folder (`plugins/obsidian-note-player/audio-cache`) are moved into it once.
+- Nothing outside your vault is written. To clear the cache, delete the folder.
+
+### Reading your vault
+
+- To build the music library, the plugin lists your Markdown notes and reads their frontmatter from Obsidian's metadata cache. It does this on startup, when notes change, and when you run **Refresh music library**. Note contents aren't read, and nothing leaves your device.
+- The property fields in settings suggest frontmatter keys found in your vault.
+
+### Clipboard
+
+- When the **Add YouTube URL to playlist** dialog opens, the plugin reads the clipboard once. If it holds a YouTube link, the field is filled in for you. Anything else is ignored, and nothing is stored or sent.
+- Pasting a YouTube link into the player view adds that track. Other pasted text is ignored.
+- If you deny clipboard access, the field stays empty and you can paste the link yourself.
 
 ## Troubleshooting
 
