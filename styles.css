@@ -1709,6 +1709,10 @@
 		transition: transform 1400ms ease-in-out;
 	}
 
+	.onp-scene {
+		transition: transform 520ms ease-out, translate 900ms ease-in-out;
+	}
+
 	.onp-knob-grip,
 	.onp-knob-mark {
 		transition-duration: 120ms;
