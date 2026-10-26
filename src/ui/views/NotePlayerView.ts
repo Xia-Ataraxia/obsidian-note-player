@@ -515,9 +515,10 @@ export class NotePlayerView extends ItemView {
 		const target = event.target as Node | null;
 		if (target?.instanceOf(HTMLElement) && target.closest('input, textarea, select, [contenteditable="true"]')) return;
 		const text = event.clipboardData?.getData('text') ?? '';
-		if (!/youtu/i.test(text) || !parseYoutubeUrl(text)) return;
+		const urls = text.split(/\s+/).filter((part) => /youtu/i.test(part) && parseYoutubeUrl(part));
+		if (urls.length === 0) return;
 		event.preventDefault();
-		this.addFromUrl(text);
+		for (const url of urls) this.addFromUrl(url);
 	}
 
 	private addFromUrl(input: string): void {
