@@ -380,7 +380,7 @@ export class NotePlayerView extends ItemView {
 		if (phase === 'failed') {
 			el.empty();
 			setIcon(el.createSpan(), 'cloud-off');
-			el.createSpan({ text: "Couldn't load · tap to retry" });
+			el.createSpan({ text: "Couldn't load · click to retry" });
 		} else {
 			el.setText(phase === 'connecting' ? 'Connecting…' : this.subtitleText);
 		}

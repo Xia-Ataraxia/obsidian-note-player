@@ -1946,9 +1946,16 @@
 	animation: onp-status-pulse 1.6s ease-in-out infinite;
 }
 
+/* Breathes in color, not opacity, so its faintest frame is still full --text-muted. */
 .onp-track-subtitle.is-connecting {
 	color: var(--text-muted);
-	animation: onp-status-pulse 1.6s ease-in-out infinite;
+	animation: onp-subtitle-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes onp-subtitle-breathe {
+	50% {
+		color: var(--text-normal);
+	}
 }
 
 .onp-track-subtitle.is-failed {
@@ -1993,9 +2000,12 @@
 		animation-duration: 3s;
 	}
 
-	.onp-status[data-tone='live'] .onp-status-icon svg,
-	.onp-track-subtitle.is-connecting {
+	.onp-status[data-tone='live'] .onp-status-icon svg {
 		animation: onp-status-pulse-soft 4s ease-in-out infinite;
+	}
+
+	.onp-track-subtitle.is-connecting {
+		animation-duration: 4s;
 	}
 }
 
