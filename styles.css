@@ -606,12 +606,27 @@
 	border-radius: var(--radius-m);
 	border: 1px solid var(--background-modifier-border);
 	background-color: var(--background-primary-alt);
-	background-image: var(--onp-thumb-image);
-	background-size: cover;
-	background-position: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-faint);
 	cursor: pointer;
 	position: relative;
 	overflow: hidden;
+}
+
+.onp-row-thumb::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image: var(--onp-thumb-image);
+	background-size: cover;
+	background-position: center;
+}
+
+/* No opacity here: it would lift the note above the image layer. */
+.onp-row-thumb-placeholder {
+	display: flex;
 }
 
 .onp-row-thumb::after {

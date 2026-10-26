@@ -86,11 +86,18 @@ export function renderQueue(panel: HTMLElement, state: PlaylistViewState, ctx: Q
 	pending.forEach((entry, offset) => renderPendingRow(list, entry, state.queue.length + offset));
 }
 
+/** The music note sits under the image layer, so it shows only when the thumbnail is missing or fails to load. */
+function createRowThumb(row: HTMLElement): HTMLElement {
+	const thumb = row.createDiv({ cls: 'onp-row-thumb' });
+	setIcon(thumb.createDiv({ cls: 'onp-row-thumb-placeholder' }), 'music');
+	return thumb;
+}
+
 function renderPendingRow(list: HTMLElement, entry: PendingImport, index: number): void {
 	const row = list.createDiv({ cls: 'onp-track-row is-importing' });
 	row.setAttribute('aria-busy', 'true');
 	row.createDiv({ cls: 'onp-row-grip' }).createSpan({ cls: 'onp-row-order', text: String(index + 1).padStart(2, '0') });
-	const thumb = row.createDiv({ cls: 'onp-row-thumb' });
+	const thumb = createRowThumb(row);
 	if (entry.videoId) thumb.setCssProps({ '--onp-thumb-image': `url("${buildYoutubeThumbnailUrl(entry.videoId)}")` });
 	const body = row.createDiv({ cls: 'onp-row-copy' });
 	body.createDiv({ cls: 'onp-row-title', text: entry.title ?? (entry.videoId ? 'Importing…' : 'Importing playlist…') });
@@ -163,7 +170,7 @@ function renderRow(
 		void run('', () => host.playTrack(track.path), false);
 	};
 
-	const thumb = row.createDiv({ cls: 'onp-row-thumb' });
+	const thumb = createRowThumb(row);
 	thumb.setCssProps({ '--onp-thumb-image': `url("${track.thumbnailUrl}")` });
 	setIcon(thumb.createDiv({ cls: 'onp-row-thumb-play' }), 'play');
 	thumb.addEventListener('click', play);
