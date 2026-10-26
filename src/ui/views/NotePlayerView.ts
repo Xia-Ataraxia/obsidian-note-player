@@ -128,7 +128,7 @@ export class NotePlayerView extends ItemView {
 
 		this.resizeObserver = new ResizeObserver((entries) => {
 			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
-			this.applyResponsiveClasses(nextWidth);
+			root.win.requestAnimationFrame(() => this.applyResponsiveClasses(nextWidth));
 		});
 		this.resizeObserver.observe(root);
 		this.applyResponsiveClasses(root.clientWidth);
