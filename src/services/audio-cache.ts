@@ -22,6 +22,8 @@ export class AudioCacheService implements AudioCachePort {
 	private streamMeta = new Map<string, { title: string; author: string }>();
 	/** Fires when a stream resolve returns the video's title and uploader. */
 	onMeta: ((videoId: string) => void) | null = null;
+	/** Fires when a stream resolve starts or ends, so views can swap loading for loaded or failed. */
+	onResolveChange: (() => void) | null = null;
 	private resolvers = new Set<ChildProcess>();
 	private adapter: VaultAdapter;
 	private absBase: string;
@@ -148,7 +150,8 @@ export class AudioCacheService implements AudioCachePort {
 	resolveStreamUrl(videoId: string): Promise<string> {
 		const cached = this.streamUrls.get(videoId);
 		if (cached && isStreamUrlFresh(cached, Date.now())) return Promise.resolve(cached);
-		return shareInFlight(this.streamPromises, videoId, () => new Promise<string>((resolve, reject) => {
+		const started = !this.streamPromises.has(videoId);
+		const promise = shareInFlight(this.streamPromises, videoId, () => new Promise<string>((resolve, reject) => {
 			let stdout = '';
 			let stderr = '';
 			const proc = spawn(this.ytdlpPath, [
@@ -171,6 +174,15 @@ export class AudioCacheService implements AudioCachePort {
 				else reject(new Error(parseYtdlpError(stderr)));
 			});
 		}));
+		if (started) {
+			promise.catch(() => undefined).finally(() => this.onResolveChange?.());
+			this.onResolveChange?.();
+		}
+		return promise;
+	}
+
+	isResolving(videoId: string): boolean {
+		return this.streamPromises.has(videoId);
 	}
 
 	metaFor(videoId: string): { title: string; author: string } | undefined {

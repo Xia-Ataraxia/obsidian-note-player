@@ -168,5 +168,21 @@ describe('PlaybackStateManager', () => {
 			mgr.currentTrackPath = 'missing.md';
 			expect(mgr.resolveCurrentTrack([], [], toPlaylistTrack)).toBeNull();
 		});
+
+		it('keeps resolving the current track under its new path until the index catches up', () => {
+			const mgr = new PlaybackStateManager();
+			mgr.currentTrackPath = 'old.md';
+			mgr.followRename('old.md', 'new.md');
+			expect(mgr.currentTrackPath).toBe('new.md');
+			expect(mgr.resolveCurrentTrack([], [makeTrack('old.md')], toPlaylistTrack)?.path).toBe('new.md');
+			expect(mgr.resolveCurrentTrack([], [makeTrack('new.md')], toPlaylistTrack)?.path).toBe('new.md');
+		});
+
+		it('ignores a rename of a track that is not current', () => {
+			const mgr = new PlaybackStateManager();
+			mgr.currentTrackPath = 'a.md';
+			mgr.followRename('b.md', 'c.md');
+			expect(mgr.currentTrackPath).toBe('a.md');
+		});
 	});
 });

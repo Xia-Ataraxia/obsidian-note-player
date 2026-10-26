@@ -45,6 +45,8 @@ export interface PlaylistViewState {
 	turntableSounds: boolean;
 	turntableStyle: TurntableStyle;
 	pendingImports: readonly PendingImport[];
+	/** Video ids whose title is still being fetched; they read as loading, not unavailable. */
+	loadingTitles: ReadonlySet<string>;
 }
 
 /**
@@ -95,6 +97,7 @@ export interface AudioCachePort {
 	cancel(videoId: string): void;
 	resolveStreamUrl?(videoId: string): Promise<string>;
 	prefetchStream?(videoId: string): void;
+	isResolving?(videoId: string): boolean;
 	metaFor?(videoId: string): { title: string; author: string } | undefined;
 	isAvailable(): boolean;
 	checkAvailable(): Promise<boolean>;

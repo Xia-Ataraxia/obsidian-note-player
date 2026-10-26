@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROPERTY_MAPPING } from '../src/domain/config';
-import { buildMusicFrontmatter, classifyBacklinks, classifyImport, isUnavailable, parseFlatPlaylistOutput, parseOembed, trackLabel } from '../src/domain/track-import';
+import { buildMusicFrontmatter, classifyBacklinks, classifyImport, isUnavailable, parseFlatPlaylistOutput, parseOembed, titleState, trackLabel } from '../src/domain/track-import';
 
 describe('parseOembed', () => {
   it('reads title, author and thumbnail', () => {
@@ -113,5 +113,21 @@ describe('classifyBacklinks', () => {
   it('is safe to rename when only playlists link to it', () => {
     expect(classifyBacklinks(links, 'Other.md', new Set(['Road Trip.md', 'Unrelated.md']))).toEqual({ playlistSources: ['Road Trip.md', 'Unrelated.md'], elsewhere: false });
     expect(classifyBacklinks(links, 'Nobody.md', playlists)).toEqual({ playlistSources: [], elsewhere: false });
+  });
+});
+
+describe('titleState', () => {
+  const bare = { title: 'zzzzzzzzzz1', artist: '', videoId: 'zzzzzzzzzz1' };
+  it('is loading only while a resolve or heal is in flight', () => {
+    expect(titleState(bare, true)).toBe('loading');
+    expect(titleState({ ...bare, title: 'Song' }, true)).toBe('ready');
+  });
+
+  it('is unavailable once the resolve ended without a title', () => {
+    expect(titleState(bare, false)).toBe('unavailable');
+  });
+
+  it('is unavailable for a cached-audio track with no resolve pending', () => {
+    expect(titleState({ ...bare }, false)).toBe('unavailable');
   });
 });

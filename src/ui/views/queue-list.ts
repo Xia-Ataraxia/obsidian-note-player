@@ -1,5 +1,5 @@
 import { setIcon } from 'obsidian';
-import { isUnavailable, trackLabel } from '../../domain/track-import';
+import { LOADING_TITLE, titleState, trackLabel } from '../../domain/track-import';
 import { buildYoutubeThumbnailUrl } from '../../utils/youtube';
 import type { PendingImport, PlaylistSummary, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from '../../types/view';
 import { openTrackMenu } from './view-menus';
@@ -21,7 +21,7 @@ function visiblePending(state: PlaylistViewState): PendingImport[] {
 }
 
 function queueSignature(state: PlaylistViewState, ctx: QueueContext): string {
-	const rows = state.queue.map((t) => [t.path, t.title, t.artist, t.thumbnailUrl].join('\u0001'));
+	const rows = state.queue.map((t) => [t.path, t.title, t.artist, t.thumbnailUrl, state.loadingTitles.has(t.videoId)].join('\u0001'));
 	const pending = visiblePending(state).map((p) => [p.id, p.title ?? ''].join('\u0001'));
 	return [ctx.selectedPlaylist?.path ?? '', ctx.selectedPlaylist?.title ?? '', state.errorMessage ?? '', ...rows, ...pending].join('\u0002');
 }
@@ -182,16 +182,18 @@ function renderRow(
 	thumb.addEventListener('click', play);
 
 	const body = row.createDiv({ cls: 'onp-row-copy' });
-	const unavailable = isUnavailable(track);
+	const titleStatus = titleState(track, state.loadingTitles.has(track.videoId));
+	const unavailable = titleStatus === 'unavailable';
+	const loading = titleStatus === 'loading';
 	// A row last drawn as unavailable that now has a real title was just healed; fade the new text in.
-	const healed = !unavailable && unavailableSeen.delete(track.videoId);
-	if (unavailable) unavailableSeen.add(track.videoId);
+	const healed = titleStatus === 'ready' && unavailableSeen.delete(track.videoId);
+	if (titleStatus !== 'ready') unavailableSeen.add(track.videoId);
 	body.createDiv({
-		cls: buildClass('onp-row-title', { 'is-unavailable': unavailable, 'is-healed': healed }),
-		text: trackLabel(track),
+		cls: buildClass('onp-row-title', { 'is-unavailable': unavailable, 'is-resolving': loading, 'is-healed': healed }),
+		text: loading ? track.title : trackLabel(track),
 	}).setAttribute('title', track.path);
-	const subtitle = track.artist || (unavailable ? "Couldn't load" : '');
-	if (subtitle) body.createDiv({ cls: buildClass('onp-row-subtitle', { 'is-healed': healed }), text: subtitle });
+	const subtitle = track.artist || (unavailable ? "Couldn't load" : loading ? LOADING_TITLE : '');
+	if (subtitle) body.createDiv({ cls: buildClass('onp-row-subtitle', { 'is-healed': healed, 'is-resolving': loading }), text: subtitle });
 	body.addEventListener('click', play);
 
 	const rowActions = row.createDiv({ cls: 'onp-row-actions' });
