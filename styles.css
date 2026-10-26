@@ -2179,7 +2179,7 @@ input[type="range"].onp-volume-slider:focus-visible {
 	100% { scale: 1; }
 }
 
-.note-player-url-hint {
+.onp-url-hint {
 	min-height: var(--font-ui-small);
 	margin-bottom: var(--size-4-2);
 	color: var(--text-error);
@@ -2189,7 +2189,14 @@ input[type="range"].onp-volume-slider:focus-visible {
 	transition: opacity 160ms ease-out, translate 160ms ease-out;
 }
 
-.note-player-url-hint.is-visible {
+.onp-url-hint.is-visible {
 	opacity: 1;
 	translate: 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.onp-url-hint {
+		transition: opacity 160ms ease-out;
+		translate: 0 0;
+	}
 }

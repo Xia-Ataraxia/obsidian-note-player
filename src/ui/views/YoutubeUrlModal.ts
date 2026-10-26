@@ -32,7 +32,7 @@ export class YoutubeUrlModal extends Modal {
 				text.inputEl.focus();
 			});
 
-		this.hintEl = contentEl.createDiv({ cls: 'note-player-url-hint' });
+		this.hintEl = contentEl.createDiv({ cls: 'onp-url-hint' });
 		this.hintEl.setAttr('role', 'status');
 
 		new Setting(contentEl)
