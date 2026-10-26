@@ -1,5 +1,6 @@
 import { normalizePath, TFile, TFolder, type App } from 'obsidian';
 import type { CompanionBaseFile } from '../domain/base-files';
+import { collectScopedFiles } from '../domain/music-scope';
 import type { MarkdownNoteSnapshot } from '../types/notes';
 
 export async function ensureFolder(app: App, folderPath: string): Promise<void> {
@@ -85,20 +86,23 @@ export async function writeBaseFiles(app: App, baseFiles: CompanionBaseFile[]): 
 	}
 }
 
-/** Walks the given folders' own children, never the whole vault. Empty folder = Obsidian's new-note location. */
+const isMarkdown = (file: unknown): file is TFile => file instanceof TFile && file.extension === 'md';
+
+/** Notes in the given folders plus the notes they link to in frontmatter. Empty folder = Obsidian's new-note location. */
 export function collectMusicFiles(app: App, folders: string[]): TFile[] {
-	const files = new Map<string, TFile>();
-	const visit = (folder: TFolder): void => {
-		for (const child of folder.children) {
-			if (child instanceof TFolder) visit(child);
-			else if (child instanceof TFile && child.extension === 'md') files.set(child.path, child);
-		}
-	};
-	for (const path of folders) {
-		const root = app.vault.getFolderByPath(normalizePath(path || app.fileManager.getNewFileParent('').path));
-		if (root) visit(root);
-	}
-	return [...files.values()];
+	const roots = folders
+		.map((path) => app.vault.getFolderByPath(normalizePath(path || app.fileManager.getNewFileParent('').path)))
+		.filter((folder): folder is TFolder => folder !== null)
+		.map((folder) => ({ folder, isVaultRoot: folder.isRoot() }));
+	return collectScopedFiles<TFolder, TFile>(roots, {
+		children: (folder) => ({
+			folders: folder.children.filter((child): child is TFolder => child instanceof TFolder),
+			files: folder.children.filter(isMarkdown),
+		}),
+		linked: (file) => (app.metadataCache.getFileCache(file)?.frontmatterLinks ?? [])
+			.map((link) => app.metadataCache.getFirstLinkpathDest(link.link, file.path))
+			.filter(isMarkdown),
+	});
 }
 
 export function collectNoteSnapshots(app: App, folders: string[]): MarkdownNoteSnapshot[] {

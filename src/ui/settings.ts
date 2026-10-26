@@ -157,7 +157,7 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 				},
 				{
 					name: 'Music folder',
-					desc: 'Vault folder for notes created from pasted YouTube URLs. The library only reads track notes in this folder and its subfolders (and playlists in the playlist folder). Leave empty to use the default location for new notes.',
+					desc: 'Vault folder for notes created from pasted YouTube URLs. The library reads track notes in this folder and its subfolders, plus playlists in the playlist folder. With no folder set, only notes at the vault root and tracks linked from playlists are listed.',
 					control: { type: 'folder', key: 'musicFolder', placeholder: 'Default location' },
 				},
 				],

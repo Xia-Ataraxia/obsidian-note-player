@@ -78,7 +78,7 @@ Note Player is desktop only. It has no telemetry and no accounts, and it sends n
 ### Running programs (yt-dlp and ffmpeg)
 
 - The plugin runs `yt-dlp` as a child process to download audio, resolve stream links and expand playlist links. yt-dlp calls `ffmpeg` to convert audio. No other programs are run.
-- It finds yt-dlp on your `PATH` or in the usual install folders (it tries to start each one and keeps the first that runs) (`~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`).
+- It finds yt-dlp on your `PATH` or in the usual install folders (`~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`); it tries to start each one and keeps the first that runs.
 - To turn this off, don't install yt-dlp (or uninstall it). Local audio files in your vault still play.
 
 ### Files
@@ -88,7 +88,7 @@ Note Player is desktop only. It has no telemetry and no accounts, and it sends n
 
 ### Reading your vault
 
-- To build the music library, the plugin reads the frontmatter of Markdown notes in your **Music folder** (or Obsidian's default location for new notes) and its subfolders, through Obsidian's metadata cache. It does this on startup, when notes change, and when you run **Refresh music library**. Note contents aren't read, and nothing leaves your device.
+- To build the music library, the plugin reads the frontmatter of Markdown notes in your **Music folder** and its subfolders, in your **Playlist folder**, and in the track notes your playlists link to, through Obsidian's metadata cache. With no Music folder set, only notes at the vault root are read, never its subfolders. It does this on startup, when notes change, and when you run **Refresh music library**. Note contents aren't read, and nothing leaves your device.
 - The property fields in settings suggest frontmatter keys found in that same folder.
 
 ### Clipboard
