@@ -1,6 +1,6 @@
 import { setIcon } from 'obsidian';
 import type { Plugin } from 'obsidian';
-import { restingLook, statusLabel } from '../domain/status-look';
+import { restingLabel, restingLook, statusLabel } from '../domain/status-look';
 import type { StatusAction, StatusPlayback, StatusTone } from '../domain/status-look';
 
 const COMPLETION_VISIBLE_MS = 1500;
@@ -81,7 +81,7 @@ export class DownloadStatusBar {
 
 	private rest(): void {
 		const look = restingLook(this.nowPlaying, this.playback, this.streaming);
-		this.show(look.icon, look.text, look.tone);
+		this.show(look.icon, look.text, look.tone, restingLabel(this.nowPlaying, this.playback, look.text));
 	}
 
 	update(percent: number, verb = 'Downloading'): void {
@@ -108,9 +108,9 @@ export class DownloadStatusBar {
 	}
 
 	/** Fades the text out and back in on a change; plain updates (progress ticks) skip the fade. */
-	private show(icon: string, text: string, tone: Tone): void {
+	private show(icon: string, text: string, tone: Tone, label = text): void {
 		this.base = { icon, text, tone };
-		this.container.setAttr('aria-label', statusLabel(text, this.action()));
+		this.container.setAttr('aria-label', statusLabel(label, this.action()));
 		if (this.flashTimer === null) this.paint(icon, text, tone);
 	}
 

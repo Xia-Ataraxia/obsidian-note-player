@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clipTitle, restingLook, statusLabel } from '../src/domain/status-look';
+import { clipTitle, restingLabel, restingLook, statusLabel } from '../src/domain/status-look';
 
 describe('restingLook', () => {
   it('shows the accent state while playing and a pause icon when paused', () => {
@@ -30,5 +30,14 @@ describe('statusLabel', () => {
   it('always names the click action', () => {
     expect(statusLabel('Note Player', 'open')).toBe('Note Player · click to open');
     expect(statusLabel('Downloading 40%', 'cancel')).toContain('cancel');
+  });
+});
+
+describe('restingLabel', () => {
+  it('prefixes the state and keeps the full title', () => {
+    const long = 'A very long track title that the bar would clip';
+    expect(restingLabel(long, 'playing', 'clipped')).toBe(`Playing: ${long}`);
+    expect(restingLabel('Song', 'paused', 'Song')).toBe('Paused: Song');
+    expect(restingLabel(null, 'idle', 'Note Player')).toBe('Note Player');
   });
 });

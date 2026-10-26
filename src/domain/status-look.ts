@@ -23,6 +23,12 @@ export function restingLook(title: string | null, playback: StatusPlayback, stre
 	return { icon: 'audio-lines', text: name, tone: playback === 'playing' ? 'playing' : 'idle' };
 }
 
+/** Screen-reader text for the resting bar: the state, then the full (unclipped) title. */
+export function restingLabel(title: string | null, playback: StatusPlayback, shown: string): string {
+	if (!title || playback === 'idle') return shown;
+	return `${playback === 'paused' ? 'Paused' : 'Playing'}: ${title}`;
+}
+
 const ACTION_HINT: Record<StatusAction, string> = {
 	cancel: 'click to cancel',
 	retry: 'click to retry',

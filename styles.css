@@ -1984,7 +1984,6 @@
 
 .onp-status[data-tone='failed'] {
 	color: var(--text-error);
-	cursor: pointer;
 }
 
 .onp-status[data-tone='warn'] {
