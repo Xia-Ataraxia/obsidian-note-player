@@ -190,7 +190,7 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 			},
 			{
 				type: 'group',
-				heading: 'Companion bases',
+				heading: 'Companion Bases',
 				items: [
 					{
 						name: 'Companion Bases files',

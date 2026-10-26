@@ -299,10 +299,17 @@ export class NotePlayerView extends ItemView {
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
 		meta.createDiv({ cls: 'onp-track-title', text: current.title });
 		this.subtitleEl = meta.createDiv({ cls: 'onp-track-subtitle' });
-		this.subtitleEl.addEventListener('click', () => {
+		const activate = () => {
 			const phase = this.playerSurface.phase;
 			if (phase === 'failed') this.playerSurface.retry();
 			else if (phase === 'missing') this.playerSurface.onNeedSetup?.();
+		};
+		this.subtitleEl.addEventListener('click', activate);
+		this.subtitleEl.addEventListener('keydown', (event) => {
+			if (event.key === 'Enter' || event.key === ' ') {
+				event.preventDefault();
+				activate();
+			}
 		});
 		this.subtitleText = [current.artist, state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'].filter(Boolean).join(' • ');
 		this.showPhase(this.playerSurface.phase);
@@ -342,7 +349,7 @@ export class NotePlayerView extends ItemView {
 				'repeat-1',
 				() => {
 					void this.runAction(
-						state.repeatMode === 'one' ? 'Repeat off.' : 'Repeating this track.',
+						state.repeatMode === 'one' ? 'Repeat off.' : 'Repeat on.',
 						() => this.host.toggleRepeatMode?.() ?? Promise.resolve(),
 					);
 				},
@@ -378,6 +385,7 @@ export class NotePlayerView extends ItemView {
 		const needsAction = phase === 'failed' || phase === 'missing';
 		el.toggleClass('is-failed', needsAction);
 		el.setAttr('role', needsAction ? 'button' : null);
+		el.tabIndex = needsAction ? 0 : -1;
 		if (needsAction) {
 			el.empty();
 			setIcon(el.createSpan(), phase === 'missing' ? 'wrench' : 'cloud-off');

@@ -17,7 +17,7 @@ export function registerCommands(plugin: Plugin, actions: CommandActions): void 
 	const commands: Array<[id: string, name: string, run: () => Promise<void>]> = [
 		['open-youtube-note-playlist', 'Open player view', actions.openView],
 		['refresh-youtube-note-library', 'Refresh music library', actions.refreshLibrary],
-		['refresh-youtube-playlist-bases', 'Create or refresh companion bases files', actions.refreshBases],
+		['refresh-youtube-playlist-bases', 'Create or refresh companion Bases files', actions.refreshBases],
 		['add-active-note-to-selected-playlist', 'Add active note to selected playlist', actions.addActiveNote],
 		['load-active-playlist-note', 'Load active playlist note into player', actions.loadActivePlaylist],
 		['toggle-playback', 'Play or pause', actions.togglePlayback],
