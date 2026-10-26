@@ -139,7 +139,7 @@ export class NotePlayerView extends ItemView {
 	private observeResize(root: HTMLElement, win: Window): void {
 		this.resizeObserver?.disconnect();
 		this.cancelResizeFrame();
-		this.resizeObserver = new win.ResizeObserver((entries) => {
+		this.resizeObserver = new (win as Window & { ResizeObserver: typeof ResizeObserver }).ResizeObserver((entries) => {
 			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
 			this.cancelResizeFrame();
 			this.resizeFrame = { win, id: win.requestAnimationFrame(() => this.applyResponsiveClasses(nextWidth)) };
