@@ -1964,6 +1964,7 @@
 	text-decoration: none;
 	transition: color 200ms ease;
 	cursor: pointer;
+	padding: 0 var(--size-2-2);
 	border-radius: var(--radius-s);
 }
 
