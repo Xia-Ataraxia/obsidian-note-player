@@ -1,8 +1,10 @@
-const PROGRESS_PATTERN = /\[download\]\s+([\d.]+)%/;
+const PROGRESS_PATTERN = /\[download\]\s+([\d.]+)%/g;
 
-export function parseYtdlpProgress(line: string): number | null {
-	const match = PROGRESS_PATTERN.exec(line);
-	return match ? parseFloat(match[1]!) : null;
+/** Latest percent in a chunk; one stdout chunk often holds several `\r`-separated updates. */
+export function parseYtdlpProgress(chunk: string): number | null {
+	const matches = [...chunk.matchAll(PROGRESS_PATTERN)];
+	const last = matches[matches.length - 1];
+	return last ? parseFloat(last[1]!) : null;
 }
 
 export function parseYtdlpError(stderr: string): string {

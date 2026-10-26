@@ -6,6 +6,10 @@ describe('parseYtdlpProgress', () => {
     expect(parseYtdlpProgress('[download]  42.5% of 3.2MiB')).toBe(42.5);
   });
 
+  it('reads the latest percentage from a chunk of carriage-return updates', () => {
+    expect(parseYtdlpProgress('[download]   2.8% of 6.7MiB\r[download]  51.6% of 6.7MiB\r')).toBe(51.6);
+  });
+
   it('returns null for unrelated lines', () => {
     expect(parseYtdlpProgress('[ExtractAudio] Destination')).toBeNull();
   });
