@@ -1,7 +1,7 @@
 import { requestUrl, type App, type TFile } from 'obsidian';
 import { plural } from '../utils/plural';
 import {
-  buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed, type TrackMeta,
+  buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed, trackLabel, type TrackMeta,
 } from '../domain/track-import';
 import type { MusicLibrarySnapshot } from '../types/music';
 import type { NotePlayerSettings } from '../types/settings';
@@ -32,6 +32,8 @@ export class TrackImporter {
   private queue: Promise<void> = Promise.resolve();
   private pending: PendingImport[] = [];
   private nextPendingId = 0;
+  /** Videos added since the queue last drained; one paste of several links gets a single notice. */
+  private added: Array<{ title: string; playlist: string }> = [];
 
   constructor(private readonly deps: TrackImporterDeps) {}
 
@@ -53,9 +55,21 @@ export class TrackImporter {
       .then(() => target.kind === 'video'
         ? this.importVideo(target.videoId, id)
         : this.importPlaylist(target.listId))
-      .finally(() => this.setPending(this.pending.filter((entry) => entry.id !== id)));
+      .finally(() => {
+        this.setPending(this.pending.filter((entry) => entry.id !== id));
+        if (this.pending.length === 0) this.announceAdded();
+      });
     this.queue = run.catch(() => undefined);
     await run;
+  }
+
+  private announceAdded(): void {
+    const added = this.added;
+    this.added = [];
+    const last = added[added.length - 1];
+    if (!last) return;
+    if (added.length === 1) showNotice('track_added', last);
+    else showNotice('tracks_imported', { tracks: plural(added.length, 'video'), playlist: last.playlist });
   }
 
   private setPending(next: PendingImport[]): void {
@@ -74,6 +88,10 @@ export class TrackImporter {
       return;
     }
 
+    // Resolve the stream while oEmbed and the note write run, so the first play skips yt-dlp's round trip.
+    const cache = this.deps.getAudioCache();
+    if (cache?.isAvailable()) cache.prefetchStream?.(videoId);
+
     let trackPath: string;
     let title: string;
     if (plan.action === 'reuse') {
@@ -88,7 +106,7 @@ export class TrackImporter {
       trackPath = file.path;
     }
     await this.deps.addTracks(playlistPath, [trackPath]);
-    showNotice('track_added', { title, playlist: playlist.title });
+    this.added.push({ title: title === videoId ? 'unavailable video' : title.replace(/^Unavailable video$/, 'unavailable video'), playlist: playlist.title });
     this.deps.playIfIdle(trackPath);
   }
 
@@ -118,7 +136,7 @@ export class TrackImporter {
         paths.push(plan.path);
         continue;
       }
-      lastCreated = await this.createTrackNote({ ...entry, thumbnailUrl: buildYoutubeThumbnailUrl(entry.videoId) });
+      lastCreated = await this.createTrackNote({ ...entry, thumbnailUrl: entry.title === entry.videoId ? '' : buildYoutubeThumbnailUrl(entry.videoId) });
       known.push({ path: lastCreated.path, videoId: entry.videoId });
       paths.push(lastCreated.path);
     }
@@ -136,12 +154,12 @@ export class TrackImporter {
   private async fetchMeta(videoId: string): Promise<TrackMeta> {
     const fallback: TrackMeta = {
       videoId,
-      title: `YouTube ${videoId}`,
+      title: videoId,
       author: '',
-      thumbnailUrl: buildYoutubeThumbnailUrl(videoId),
+      thumbnailUrl: '',
     };
     const watchUrl = buildYoutubeWatchUrl(videoId);
-    // A slow or unreachable oEmbed must not hold up the import; the placeholder title is good enough.
+    // A slow or unreachable oEmbed must not hold up the import; the bare id stands in as the title (rows label it as unavailable).
     const oembed = await withTimeout(
       requestUrl({
         url: `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`,
@@ -150,7 +168,7 @@ export class TrackImporter {
       OEMBED_TIMEOUT_MS,
       null,
     );
-    return oembed ? { videoId, ...oembed, thumbnailUrl: oembed.thumbnailUrl || fallback.thumbnailUrl } : fallback;
+    return oembed ? { videoId, ...oembed, thumbnailUrl: oembed.thumbnailUrl || buildYoutubeThumbnailUrl(videoId) } : fallback;
   }
 
   private async createTrackNote(meta: TrackMeta): Promise<TFile> {
@@ -173,6 +191,7 @@ export class TrackImporter {
   }
 
   private titleOf(trackPath: string): string {
-    return this.deps.getLibrary().tracks.find((track) => track.path === trackPath)?.title ?? trackPath;
+    const track = this.deps.getLibrary().tracks.find((entry) => entry.path === trackPath);
+    return track ? trackLabel(track) : trackPath;
   }
 }

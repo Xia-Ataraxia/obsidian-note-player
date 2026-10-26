@@ -6,6 +6,7 @@ import { hasType, asStringArray, asTrimmedString } from '../utils/frontmatter';
 import { buildYoutubeThumbnailUrl, buildYoutubeWatchUrl, extractYoutubeVideoId } from '../utils/youtube';
 import { canonicalizeNotePath, parsePlaylistTrackReference } from '../utils/wikilink';
 import { DEFAULT_PROPERTY_MAPPING } from './config';
+import { isUnavailable } from './track-import';
 
 interface TrackResolver {
   byPath: Map<string, string>;
@@ -59,7 +60,8 @@ function toMusicTrack(
     sourceUrl,
     watchUrl: buildYoutubeWatchUrl(videoId),
     videoId,
-    thumbnailUrl: buildYoutubeThumbnailUrl(videoId),
+    // YouTube serves a grey placeholder for missing videos; the row shows its own empty cover instead.
+    thumbnailUrl: isUnavailable({ title: note.basename, artist, videoId }) ? '' : buildYoutubeThumbnailUrl(videoId),
     imageUrl,
     tags: asStringArray(note.frontmatter?.tags),
   };

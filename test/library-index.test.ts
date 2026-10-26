@@ -3,6 +3,17 @@ import { buildMusicLibrary } from '../src/domain/library-index';
 import type { MarkdownNoteSnapshot } from '../src/types/notes';
 
 describe('buildMusicLibrary', () => {
+  it('leaves the thumbnail empty for an unavailable video', () => {
+    const note = (basename: string, author?: string) => ({
+      path: `${basename}.md`,
+      basename,
+      frontmatter: { type: ['music'], source: 'https://www.youtube.com/watch?v=zzzzzzzzzz1', image: 'https://img.youtube.com/vi/zzzzzzzzzz1/mqdefault.jpg', ...(author && { author }) },
+    });
+    expect(buildMusicLibrary([note('zzzzzzzzzz1')]).tracks[0]?.thumbnailUrl).toBe('');
+    expect(buildMusicLibrary([note('zzzzzzzzzz1', 'Someone')]).tracks[0]?.thumbnailUrl).toContain('zzzzzzzzzz1');
+  });
+
+
   it('indexes music notes and resolves playlist tracks from paths and wikilinks', () => {
     const notes: MarkdownNoteSnapshot[] = [
       {

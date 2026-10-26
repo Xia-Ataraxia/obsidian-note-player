@@ -1,4 +1,5 @@
 import { setIcon } from 'obsidian';
+import { isUnavailable, trackLabel } from '../../domain/track-import';
 import { buildYoutubeThumbnailUrl } from '../../utils/youtube';
 import type { PendingImport, PlaylistSummary, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from '../../types/view';
 import { openTrackMenu } from './view-menus';
@@ -179,8 +180,13 @@ function renderRow(
 	thumb.addEventListener('click', play);
 
 	const body = row.createDiv({ cls: 'onp-row-copy' });
-	body.createDiv({ cls: 'onp-row-title', text: track.title }).setAttribute('title', track.path);
-	if (track.artist) body.createDiv({ cls: 'onp-row-subtitle', text: track.artist });
+	const unavailable = isUnavailable(track);
+	body.createDiv({
+		cls: unavailable ? 'onp-row-title is-unavailable' : 'onp-row-title',
+		text: trackLabel(track),
+	}).setAttribute('title', track.path);
+	const subtitle = track.artist || (unavailable ? track.videoId : '');
+	if (subtitle) body.createDiv({ cls: 'onp-row-subtitle', text: subtitle });
 	body.addEventListener('click', play);
 
 	const rowActions = row.createDiv({ cls: 'onp-row-actions' });

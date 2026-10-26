@@ -48,7 +48,11 @@
 	min-width: 0;
 }
 
-.onp-toolbar-description,
+.onp-row-title.is-unavailable {
+	font-weight: 400;
+	color: var(--text-muted);
+}
+
 .onp-track-subtitle,
 .onp-track-path,
 .onp-row-subtitle,
@@ -106,7 +110,9 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.onp-toolbar-count.is-tick {
-		animation: onp-row-fade 200ms ease-out;
+		animation:
+			onp-row-fade 200ms ease-out,
+			onp-count-flash 480ms ease-out;
 	}
 }
 
@@ -751,7 +757,6 @@
 	padding: 12px;
 }
 
-.onp-view-root.is-compact .onp-toolbar-description,
 .onp-view-root.is-compact .onp-track-path {
 	display: none;
 }

@@ -1,3 +1,4 @@
+import { trackLabel } from '../../domain/track-import';
 import {
 	ItemView,
 	Notice,
@@ -105,7 +106,12 @@ export class NotePlayerView extends ItemView {
 		for (const gesture of ['pointerdown', 'keydown'] as const) {
 			this.registerDomEvent(root, gesture, () => this.sound.unlock(root.win));
 		}
-		this.registerDomEvent(root, 'paste', (event) => this.handlePaste(event));
+		// Rendering empties the panels, which drops focus to body; listen on the document so Cmd+V keeps working.
+		const listenPaste = (doc: Document) => this.registerDomEvent(doc, 'paste', (event) => {
+			if (root.doc === doc && this.app.workspace.getActiveViewOfType(NotePlayerView) === this) this.importPastedLinks(event);
+		});
+		listenPaste(root.doc);
+		this.register(root.onWindowMigrated((win) => listenPaste(win.document)));
 		this.playerSurface.trackLanding(true);
 		this.playerSurface.onCached = (videoId) => void this.loadPeaks(videoId);
 		this.registerEvent(this.app.workspace.on('css-change', () => this.wave?.ui.refreshColors()));
@@ -313,7 +319,7 @@ export class NotePlayerView extends ItemView {
 		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb onp-player-track-card' });
 		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
-		meta.createDiv({ cls: 'onp-track-title', text: current.title });
+		meta.createDiv({ cls: 'onp-track-title', text: trackLabel(current) });
 		this.subtitleEl = meta.createDiv({ cls: 'onp-track-subtitle' });
 		const activate = () => {
 			const phase = this.playerSurface.phase;
@@ -506,13 +512,14 @@ export class NotePlayerView extends ItemView {
 		}
 	}
 
-	private handlePaste(event: ClipboardEvent): void {
-		const target = event.target;
-		if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable="true"]')) return;
+	private importPastedLinks(event: ClipboardEvent): void {
+		const target = event.target as Node | null;
+		if (target?.instanceOf(HTMLElement) && target.closest('input, textarea, select, [contenteditable="true"]')) return;
 		const text = event.clipboardData?.getData('text') ?? '';
-		if (!/youtu/i.test(text) || !parseYoutubeUrl(text)) return;
+		const urls = text.split(/\s+/).filter((part) => /youtu/i.test(part) && parseYoutubeUrl(part));
+		if (urls.length === 0) return;
 		event.preventDefault();
-		this.addFromUrl(text);
+		for (const url of urls) this.addFromUrl(url);
 	}
 
 	private addFromUrl(input: string): void {

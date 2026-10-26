@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROPERTY_MAPPING } from '../src/domain/config';
-import { buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed } from '../src/domain/track-import';
+import { buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed, trackLabel } from '../src/domain/track-import';
 
 describe('parseOembed', () => {
   it('reads title, author and thumbnail', () => {
@@ -19,6 +19,13 @@ describe('parseOembed', () => {
   });
 });
 
+describe('trackLabel', () => {
+  it('labels a bare-id track as unavailable and keeps real titles', () => {
+    expect(trackLabel({ title: 'zzzzzzzzzz1', artist: '', videoId: 'zzzzzzzzzz1' })).toBe('Unavailable video');
+    expect(trackLabel({ title: 'Song', artist: 'Band', videoId: 'zzzzzzzzzz1' })).toBe('Song');
+  });
+});
+
 describe('buildMusicFrontmatter', () => {
   const meta = { videoId: 'Zs3CIgFET_Y', title: 'Song', author: 'Band', thumbnailUrl: 'https://i/x.jpg' };
 
@@ -29,6 +36,10 @@ describe('buildMusicFrontmatter', () => {
       author: 'Band',
       image: 'https://i/x.jpg',
     });
+  });
+
+  it('omits the image for an unavailable video', () => {
+    expect(buildMusicFrontmatter({ ...meta, author: '', thumbnailUrl: '' }, DEFAULT_PROPERTY_MAPPING)).not.toHaveProperty('image');
   });
 
   it('honours custom mapping and omits an empty author', () => {
@@ -71,7 +82,7 @@ describe('parseFlatPlaylistOutput', () => {
       entries: [
         { videoId: 'Zs3CIgFET_Y', title: 'First', author: 'Band' },
         { videoId: 'DEyzYWLvXqA', title: 'Second', author: '' },
-        { videoId: 'wOzHXgqNpe8', title: 'YouTube wOzHXgqNpe8', author: '' },
+        { videoId: 'wOzHXgqNpe8', title: 'wOzHXgqNpe8', author: '' },
       ],
     });
   });
