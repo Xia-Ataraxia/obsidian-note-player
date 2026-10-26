@@ -74,6 +74,10 @@ export class TrackImporter {
       return;
     }
 
+    // Resolve the stream while oEmbed and the note write run, so the first play skips yt-dlp's round trip.
+    const cache = this.deps.getAudioCache();
+    if (cache?.isAvailable()) cache.prefetchStream?.(videoId);
+
     let trackPath: string;
     let title: string;
     if (plan.action === 'reuse') {
