@@ -876,7 +876,12 @@
 	aspect-ratio: 100 / 80;
 	transform-style: preserve-3d;
 	transform: rotateX(calc(var(--onp-tilt) - var(--onp-py, 0) * 1deg)) rotateZ(calc(var(--onp-yaw) + var(--onp-px, 0) * 1deg));
-	transition: transform 520ms cubic-bezier(0.3, 1.35, 0.4, 1);
+	transition: transform 520ms cubic-bezier(0.3, 1.35, 0.4, 1), translate 520ms cubic-bezier(0.3, 1.35, 0.4, 1);
+}
+
+/* Closed lid needs no headroom: lift the deck so it sits centred in its box; opening settles it back. */
+.onp-turntable.is-realistic:not(.is-open) .onp-scene {
+	translate: 0 -20cqw;
 }
 
 /* Black finish: a crisp 1px catch-light on the top and front edges so the plinth separates from the panel. */
