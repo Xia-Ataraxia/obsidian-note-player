@@ -25,8 +25,8 @@ import { createActionButton, createIconButton, type RunAction } from './view-par
 
 export const VIEW_TYPE_NOTE_PLAYER = 'obsidian-note-player-view';
 export const VIEW_TYPE_LEGACY = 'youtube-note-playlist-view';
-/** Matches the onp-count-tick animation duration in styles.css. */
-const COUNT_TICK_MS = 360;
+/** Longest onp-count-* animation in styles.css. */
+const COUNT_TICK_MS = 480;
 
 interface ViewElements {
 	root: HTMLElement;
