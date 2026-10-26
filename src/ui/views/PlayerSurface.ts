@@ -228,6 +228,7 @@ export class PlayerSurface {
 			if (token !== this.downloadToken) return;
 			this.onDownloadProgress?.(100);
 			this.onCached?.(videoId);
+			this.setPhase('idle');
 			this.mountAudio(this.audioCacheService.getFileUrl(videoId), autoplayEnabled);
 			this.activateTrack(videoId, autoplayEnabled);
 		} catch (e) {
