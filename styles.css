@@ -49,6 +49,11 @@
 }
 
 .onp-toolbar-description,
+.onp-row-title.is-unavailable {
+	font-weight: 400;
+	color: var(--text-muted);
+}
+
 .onp-track-subtitle,
 .onp-track-path,
 .onp-row-subtitle,

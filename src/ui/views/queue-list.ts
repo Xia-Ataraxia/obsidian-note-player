@@ -179,10 +179,14 @@ function renderRow(
 	thumb.addEventListener('click', play);
 
 	const body = row.createDiv({ cls: 'onp-row-copy' });
-	body.createDiv({ cls: 'onp-row-title', text: track.title }).setAttribute('title', track.path);
 	// Import saves the bare video id as the title when oEmbed fails (private or removed videos).
-	if (track.artist) body.createDiv({ cls: 'onp-row-subtitle', text: track.artist });
-	else if (track.title === track.videoId) body.createDiv({ cls: 'onp-row-subtitle', text: 'Info unavailable' });
+	const unavailable = !track.artist && track.title === track.videoId;
+	body.createDiv({
+		cls: unavailable ? 'onp-row-title is-unavailable' : 'onp-row-title',
+		text: unavailable ? 'Unavailable video' : track.title,
+	}).setAttribute('title', track.path);
+	const subtitle = track.artist || (unavailable ? track.videoId : '');
+	if (subtitle) body.createDiv({ cls: 'onp-row-subtitle', text: subtitle });
 	body.addEventListener('click', play);
 
 	const rowActions = row.createDiv({ cls: 'onp-row-actions' });
