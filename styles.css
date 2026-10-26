@@ -172,12 +172,31 @@
 	margin-top: 4px;
 }
 
-.onp-track-subtitle,
 .onp-row-subtitle {
-	min-width: 0;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+.onp-track-subtitle {
+	display: flex;
+	min-width: 0;
+}
+
+.onp-track-subtitle.is-failed {
+	display: block;
+}
+
+.onp-subtitle-artist {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.onp-subtitle-state {
+	flex: 0 0 auto;
+	white-space: nowrap;
 }
 
 .onp-track-path {

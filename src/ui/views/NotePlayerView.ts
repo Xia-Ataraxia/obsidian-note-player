@@ -48,7 +48,7 @@ export class NotePlayerView extends ItemView {
 	private lastRenderedTrackPath: string | null = null;
 	private progressIntervalId: number | null = null;
 	private subtitleEl: HTMLElement | null = null;
-	private subtitleText = '';
+	private subtitleParts = { artist: '', state: '' };
 	private wave: { videoId: string; ui: WaveformProgress } | null = null;
 	private isRendering = false;
 	private readonly sound = new TurntableSound(
@@ -306,7 +306,7 @@ export class NotePlayerView extends ItemView {
 			else if (phase === 'missing') this.playerSurface.onNeedSetup?.();
 		};
 		this.subtitleEl.addEventListener('click', activate);
-		this.subtitleText = [current.artist, state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off'].filter(Boolean).join(' • ');
+		this.subtitleParts = { artist: current.artist ?? '', state: state.autoplayEnabled ? 'Autoplay on' : 'Autoplay off' };
 		this.showPhase(this.playerSurface.phase);
 
 		const controls = summary.createDiv({ cls: 'onp-control-row onp-player-controls' });
@@ -384,8 +384,17 @@ export class NotePlayerView extends ItemView {
 			const cue = el.createEl('button', { cls: 'clickable-icon onp-deck-cue' });
 			setIcon(cue.createSpan(), phase === 'missing' ? 'wrench' : 'cloud-off');
 			cue.createSpan({ text: phase === 'missing' ? 'yt-dlp not found · click for setup' : "Couldn't load · click to retry" });
+		} else if (phase === 'connecting') {
+			el.setText('Connecting…');
 		} else {
-			el.setText(phase === 'connecting' ? 'Connecting…' : this.subtitleText);
+			const { artist, state } = this.subtitleParts;
+			el.empty();
+			if (artist) {
+				el.createSpan({ cls: 'onp-subtitle-artist', text: artist, attr: { title: artist } });
+				el.createSpan({ cls: 'onp-subtitle-state', text: ` • ${state}` });
+			} else {
+				el.createSpan({ cls: 'onp-subtitle-state', text: state });
+			}
 		}
 	}
 
