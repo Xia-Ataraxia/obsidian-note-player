@@ -1,5 +1,4 @@
 import { spawn, type ChildProcess } from 'child_process';
-import { existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from 'fs';
 import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { FLAT_PLAYLIST_PRINT } from '../domain/track-import';
@@ -24,28 +23,42 @@ export class AudioCacheService implements AudioCachePort {
 	private adapter: VaultAdapter;
 	private absBase: string;
 
-	constructor(vaultBasePath: string, adapter: VaultAdapter, format: AudioFormat, pluginDir: string, configDir: string, ytdlpPath?: string) {
+	private probing: Promise<boolean> | null = null;
+
+	constructor(vaultBasePath: string, adapter: VaultAdapter, format: AudioFormat, pluginDir: string, ytdlpPath?: string) {
 		this.adapter = adapter;
 		this.format = format;
-		this.ytdlpPath = ytdlpPath ?? AudioCacheService.locateYtdlp() ?? '';
+		this.ytdlpPath = ytdlpPath ?? '';
 		this.absBase = vaultBasePath;
 		this.cacheDir = `${pluginDir}/audio-cache`;
-		const absPath = join(vaultBasePath, this.cacheDir);
-		if (!existsSync(absPath)) mkdirSync(absPath, { recursive: true });
-		this.adoptLegacyCache(join(vaultBasePath, configDir, 'plugins', 'obsidian-note-player', 'audio-cache'), absPath);
+		if (!this.ytdlpPath) void this.checkAvailable();
 	}
 
-	private adoptLegacyCache(legacyDir: string, targetDir: string): void {
-		if (legacyDir === targetDir || !existsSync(legacyDir)) return;
-		for (const file of readdirSync(legacyDir)) {
-			const target = join(targetDir, file);
-			if (!existsSync(target)) renameSync(join(legacyDir, file), target);
+	/** One spawn per candidate in priority order; ENOENT means not installed there. yt-dlp creates the cache folder itself. */
+	private static probe(path: string): Promise<boolean> {
+		return new Promise((resolve) => {
+			const proc = spawn(path, ['--version']);
+			proc.once('error', () => resolve(false));
+			proc.once('spawn', () => { proc.kill('SIGTERM'); resolve(true); });
+		});
+	}
+
+	private async locateYtdlp(): Promise<string> {
+		for (const candidate of ytdlpCandidates(homedir(), process.env.PATH ?? '')) {
+			if (await AudioCacheService.probe(candidate)) return candidate;
 		}
+		return '';
 	}
 
-	/** Existence checks only: a spawn here would block the main thread on every render. */
-	private static locateYtdlp(): string | null {
-		return ytdlpCandidates(homedir(), process.env.PATH ?? '').find((path) => existsSync(path)) ?? null;
+	/** Cached once found; a miss is re-probed on the next call so a fresh install is picked up. */
+	checkAvailable(): Promise<boolean> {
+		if (this.ytdlpPath) return Promise.resolve(true);
+		this.probing ??= this.locateYtdlp().then((path) => {
+			this.ytdlpPath = path;
+			this.probing = null;
+			return path !== '';
+		});
+		return this.probing;
 	}
 
 	async hasCached(videoId: string): Promise<boolean> {
@@ -66,16 +79,17 @@ export class AudioCacheService implements AudioCachePort {
 
 	download(videoId: string, onProgress: (percent: number) => void): Promise<string> {
 		const output = this.absolutePath(videoId);
-		if (existsSync(output)) return Promise.resolve(output);
-
 		const listeners = this.progressListeners.get(videoId) ?? new Set();
 		listeners.add(onProgress);
 		this.progressListeners.set(videoId, listeners);
-		return shareInFlight(this.downloadPromises, videoId, () => this.runDownload(videoId, output));
+		return shareInFlight(this.downloadPromises, videoId, async () => {
+			if (await this.adapter.exists(this.vaultRelativePath(videoId))) return output;
+			await this.cleanIntermediate(videoId);
+			return this.runDownload(videoId, output);
+		});
 	}
 
 	private runDownload(videoId: string, output: string): Promise<string> {
-		this.cleanIntermediate(videoId);
 		return new Promise<string>((resolve, reject) => {
 			let stderrOutput = '';
 			const proc = spawn(this.ytdlpPath, [
@@ -102,12 +116,15 @@ export class AudioCacheService implements AudioCachePort {
 
 			proc.on('close', (code) => {
 				this.forget(videoId, proc);
-				if (code === 0 && existsSync(output)) {
-					this.cleanIntermediate(videoId);
-					resolve(output);
-				} else {
+				if (code !== 0) {
 					reject(new Error(parseYtdlpError(stderrOutput)));
+					return;
 				}
+				void this.adapter.exists(this.vaultRelativePath(videoId)).then(async (found) => {
+					if (!found) throw new Error(parseYtdlpError(stderrOutput));
+					await this.cleanIntermediate(videoId);
+					resolve(output);
+				}).catch(reject);
 			});
 
 			proc.on('error', (err) => {
@@ -186,13 +203,12 @@ export class AudioCacheService implements AudioCachePort {
 		if (proc) {
 			proc.kill('SIGTERM');
 			this.activeDownloads.delete(videoId);
-			this.cleanIntermediate(videoId);
+			void this.cleanIntermediate(videoId);
 		}
 	}
 
 	isAvailable(): boolean {
-		if (this.ytdlpPath && existsSync(this.ytdlpPath)) return true;
-		this.ytdlpPath = AudioCacheService.locateYtdlp() ?? '';
+		if (!this.ytdlpPath) void this.checkAvailable();
 		return this.ytdlpPath !== '';
 	}
 
@@ -205,13 +221,13 @@ export class AudioCacheService implements AudioCachePort {
 		return { ...process.env, PATH: `${ytdlpDir}:${currentPath}` };
 	}
 
-	private cleanIntermediate(videoId: string): void {
-		const absDir = join(this.absBase, this.cacheDir);
+	private async cleanIntermediate(videoId: string): Promise<void> {
+		if (!(await this.adapter.exists(this.cacheDir))) return;
 		const targetExt = `.${this.format}`;
-		for (const file of readdirSync(absDir)) {
-			if (file.startsWith(videoId + '.') && !file.endsWith(targetExt)) {
-				unlinkSync(join(absDir, file));
-			}
+		const { files } = await this.adapter.list(this.cacheDir);
+		for (const file of files) {
+			const name = file.slice(file.lastIndexOf('/') + 1);
+			if (name.startsWith(videoId + '.') && !name.endsWith(targetExt)) await this.adapter.remove(file);
 		}
 	}
 }

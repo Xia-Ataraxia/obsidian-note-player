@@ -37,7 +37,7 @@ Manual: download `main.js`, `manifest.json`, and `styles.css` from the [latest r
 
 Copy a YouTube link, then do any one of these:
 
-- Run the command **Add YouTube URL to playlist** and paste it into the modal.
+- Run the command **Add YouTube URL to playlist** and paste it into the modal. The paste adds the track immediately.
 - Click the link button in the player toolbar.
 - Paste straight into the player view.
 
@@ -78,25 +78,23 @@ Note Player is desktop only. It has no telemetry and no accounts, and it sends n
 ### Running programs (yt-dlp and ffmpeg)
 
 - The plugin runs `yt-dlp` as a child process to download audio, resolve stream links and expand playlist links. yt-dlp calls `ffmpeg` to convert audio. No other programs are run.
-- It finds yt-dlp on your `PATH` or in the usual install folders (`~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`).
+- It finds yt-dlp on your `PATH` or in the usual install folders (`~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`); it tries to start each one and keeps the first that runs.
 - To turn this off, don't install yt-dlp (or uninstall it). Local audio files in your vault still play.
 
-### Files outside the Obsidian API
+### Files
 
-- Downloaded audio and waveform data (`<id>.peaks.json`) are stored in `<vault>/<config folder>/plugins/note-player/audio-cache`. The plugin uses Node's file system module there because yt-dlp writes into this folder directly.
-- Files from an older cache folder (`plugins/obsidian-note-player/audio-cache`) are moved into it once.
+- Downloaded audio and waveform data (`<id>.peaks.json`) are stored in `<vault>/<config folder>/plugins/note-player/audio-cache`. The plugin reads, lists and deletes them through Obsidian's vault adapter. Only yt-dlp itself writes into this folder, using the absolute path of the vault.
 - Nothing outside your vault is written. To clear the cache, delete the folder.
 
 ### Reading your vault
 
-- To build the music library, the plugin lists your Markdown notes and reads their frontmatter from Obsidian's metadata cache. It does this on startup, when notes change, and when you run **Refresh music library**. Note contents aren't read, and nothing leaves your device.
-- The property fields in settings suggest frontmatter keys found in your vault.
+- To build the music library, the plugin reads the frontmatter of Markdown notes in your **Music folder** and its subfolders, in your **Playlist folder**, and in the track notes your playlists link to, through Obsidian's metadata cache. With no Music folder set, only notes at the vault root are read, never its subfolders. It does this on startup, when notes change, and when you run **Refresh music library**. Note contents aren't read, and nothing leaves your device.
+- The property fields in settings suggest frontmatter keys found in that same folder.
 
 ### Clipboard
 
-- When the **Add YouTube URL to playlist** dialog opens, the plugin reads the clipboard once. If it holds a YouTube link, the field is filled in for you. Anything else is ignored, and nothing is stored or sent.
+- The plugin never reads the clipboard. When you paste a YouTube link into the **Add YouTube URL to playlist** field with your own paste (Cmd/Ctrl+V), it is added at once.
 - Pasting a YouTube link into the player view adds that track. Other pasted text is ignored.
-- If you deny clipboard access, the field stays empty and you can paste the link yourself.
 
 ## Troubleshooting
 

@@ -94,7 +94,7 @@ export class TrackImporter {
 
   private async importPlaylist(listId: string): Promise<void> {
     const cache = this.deps.getAudioCache();
-    if (!cache?.isAvailable() || typeof cache.listPlaylist !== 'function') {
+    if (!cache || !(await cache.checkAvailable()) || typeof cache.listPlaylist !== 'function') {
       showNotice('ytdlp_unavailable');
       return;
     }

@@ -8,6 +8,7 @@ import {
 	type SettingDefinitionItem,
 } from 'obsidian';
 import { DEFAULT_PROPERTY_MAPPING } from '../domain/config';
+import { collectMusicFiles } from '../services/vault-io';
 import { parsePropertyList } from '../utils/property-list';
 import type { AudioFormat } from '../types/audio';
 import type { NotePlayerSettings, TurntableStyle } from '../types/settings';
@@ -33,9 +34,9 @@ const NO_REFRESH_KEYS: readonly string[] = ['audioFormat', 'autoOpenOnStartup', 
 const TURNTABLE_STYLE_OPTIONS: Record<TurntableStyle, string> = { realistic: 'Realistic', minimal: 'Minimal' };
 const AUDIO_FORMAT_OPTIONS: Record<AudioFormat, string> = { mp3: 'MP3', wav: 'WAV', opus: 'OPUS', aac: 'AAC' };
 
-function collectVaultProperties(app: App): string[] {
+function collectVaultProperties(app: App, musicFolder: string): string[] {
 	const properties = new Set<string>();
-	for (const file of app.vault.getMarkdownFiles()) {
+	for (const file of collectMusicFiles(app, [musicFolder])) {
 		const cache = app.metadataCache.getFileCache(file);
 		if (cache?.frontmatter) {
 			for (const key of Object.keys(cache.frontmatter)) {
@@ -51,13 +52,14 @@ class PropertySuggest extends AbstractInputSuggest<string> {
 		app: App,
 		private readonly inputEl: HTMLInputElement,
 		private readonly list: boolean,
+		private readonly getMusicFolder: () => string,
 	) {
 		super(app, inputEl);
 	}
 
 	getSuggestions(query: string): string[] {
 		const token = (this.list ? query.split(',').pop() ?? '' : query).trim().toLowerCase();
-		return collectVaultProperties(this.app).filter((p) => p.toLowerCase().includes(token));
+		return collectVaultProperties(this.app, this.getMusicFolder()).filter((p) => p.toLowerCase().includes(token));
 	}
 
 	renderSuggestion(value: string, el: HTMLElement): void {
@@ -155,7 +157,7 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 				},
 				{
 					name: 'Music folder',
-					desc: 'Vault folder for notes created from pasted YouTube URLs. Leave empty to use the default location for new notes.',
+					desc: 'Vault folder for notes created from pasted YouTube URLs. The library reads track notes in this folder and its subfolders, plus playlists in the playlist folder. With no folder set, only notes at the vault root and tracks linked from playlists are listed.',
 					control: { type: 'folder', key: 'musicFolder', placeholder: 'Default location' },
 				},
 				],
@@ -220,7 +222,7 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 						.setPlaceholder(String(placeholder))
 						.setValue(String(this.getControlValue(key)))
 						.onChange((value) => { void this.setControlValue(key, value); });
-					new PropertySuggest(this.app, text.inputEl, list);
+					new PropertySuggest(this.app, text.inputEl, list, () => this.host.settings.musicFolder);
 				});
 			},
 		};

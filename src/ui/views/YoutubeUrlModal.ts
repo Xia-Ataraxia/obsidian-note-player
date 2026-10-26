@@ -19,15 +19,15 @@ export class YoutubeUrlModal extends Modal {
 
 		new Setting(contentEl)
 			.setName('YouTube URL')
-			.setDesc('A video or playlist link. The note is created from YouTube metadata.')
+			.setDesc('Paste a video or playlist link. It is added right away.')
 			.addText((text) => {
 				this.input = text;
-				text.setPlaceholder('Paste a link');
+				text.setPlaceholder('Paste a YouTube URL');
 				text.inputEl.addEventListener('keydown', (event) => {
 					if (event.key === 'Enter') this.submit();
 				});
+				this.registerPasteSubmit(text);
 				text.inputEl.focus();
-				void this.prefillFromClipboard(text);
 			});
 
 		new Setting(contentEl)
@@ -49,15 +49,14 @@ export class YoutubeUrlModal extends Modal {
 		this.onSubmit(value);
 	}
 
-	private async prefillFromClipboard(text: TextComponent): Promise<void> {
-		try {
-			const clip = (await navigator.clipboard.readText()).trim();
-			if (parseYoutubeUrl(clip) && !text.getValue()) {
-				text.setValue(clip);
-				text.inputEl.select();
-			}
-		} catch {
-			// clipboard access denied; leave the field empty
-		}
+	/** Cmd+V of a YouTube URL submits at once; the user's own paste needs no clipboard permission. */
+	private registerPasteSubmit(text: TextComponent): void {
+		text.inputEl.addEventListener('paste', (event) => {
+			const pasted = event.clipboardData?.getData('text').trim() ?? '';
+			if (!parseYoutubeUrl(pasted)) return;
+			event.preventDefault();
+			text.setValue(pasted);
+			this.submit();
+		});
 	}
 }
