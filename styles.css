@@ -48,6 +48,11 @@
 	min-width: 0;
 }
 
+.onp-row-title.is-healed,
+.onp-row-subtitle.is-healed {
+	animation: onp-row-fade 360ms ease-out;
+}
+
 .onp-row-title.is-unavailable {
 	font-weight: 400;
 	color: var(--text-muted);

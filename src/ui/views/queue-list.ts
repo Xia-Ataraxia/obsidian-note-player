@@ -113,6 +113,8 @@ function renderPendingRow(list: HTMLElement, entry: PendingImport, index: number
 	setIcon(placeholder, 'more-vertical');
 }
 
+const unavailableSeen = new Set<string>();
+
 function renderRow(
 	list: HTMLElement,
 	state: PlaylistViewState,
@@ -181,12 +183,15 @@ function renderRow(
 
 	const body = row.createDiv({ cls: 'onp-row-copy' });
 	const unavailable = isUnavailable(track);
+	// A row last drawn as unavailable that now has a real title was just healed; fade the new text in.
+	const healed = !unavailable && unavailableSeen.delete(track.videoId);
+	if (unavailable) unavailableSeen.add(track.videoId);
 	body.createDiv({
-		cls: unavailable ? 'onp-row-title is-unavailable' : 'onp-row-title',
+		cls: buildClass('onp-row-title', { 'is-unavailable': unavailable, 'is-healed': healed }),
 		text: trackLabel(track),
 	}).setAttribute('title', track.path);
 	const subtitle = track.artist || (unavailable ? track.videoId : '');
-	if (subtitle) body.createDiv({ cls: 'onp-row-subtitle', text: subtitle });
+	if (subtitle) body.createDiv({ cls: buildClass('onp-row-subtitle', { 'is-healed': healed }), text: subtitle });
 	body.addEventListener('click', play);
 
 	const rowActions = row.createDiv({ cls: 'onp-row-actions' });
