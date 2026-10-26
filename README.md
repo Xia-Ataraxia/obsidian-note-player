@@ -1,8 +1,10 @@
 # Note Player
 
-Play YouTube audio from playlists that are plain Obsidian notes. Each track is a Markdown note, each playlist is a note listing tracks, and a turntable-style player plays them without leaving your vault.
+Play note-backed playlists with YouTube, cached audio, and local files.
 
-![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Desktop only](https://img.shields.io/badge/platform-desktop--only-gray)
+![The Note Player view in a sample vault: a playlist card, a turntable with the needle on the record, and a now-playing card for a track by Isaiah 6tyOne.](https://raw.githubusercontent.com/Xia-Ataraxia/obsidian-note-player/main/docs/assets/player.png)
+
+Each track is a Markdown note, each playlist is a note listing tracks, and a turntable-style player plays them without leaving your vault.
 
 ## Features
 
@@ -10,11 +12,15 @@ Play YouTube audio from playlists that are plain Obsidian notes. Each track is a
 - Add a track from a YouTube URL; the note is created with the title, channel, and thumbnail.
 - Audio is downloaded once with yt-dlp and cached locally for instant playback.
 - Play local audio files from your vault.
-- Turntable now-playing card with optional needle and crackle sounds.
-- Queue, repeat-one, autoplay, and a persistent selection between sessions.
-- Companion `Music.base` and `Playlists.base` views.
+- Turntable now-playing card with optional needle and crackle sounds, a queue, repeat-one, and autoplay.
 
-## Requirements
+## Installation
+
+From the Community plugins browser, search for **Note Player**, then install and enable it.
+
+Manual: download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/Xia-Ataraxia/obsidian-note-player/releases/latest), copy them into `<vault>/<config folder>/plugins/note-player/`, then enable the plugin.
+
+### Requirements
 
 Desktop only (Obsidian 1.13.0 or later). Downloading audio needs two command-line tools on your `PATH`:
 
@@ -24,12 +30,6 @@ Desktop only (Obsidian 1.13.0 or later). Downloading audio needs two command-lin
 ```bash
 brew install yt-dlp ffmpeg   # macOS; use your package manager elsewhere
 ```
-
-## Installation
-
-From the Community plugins browser, search for **Note Player**, then install and enable it.
-
-Manual: download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/Xia-Ataraxia/obsidian-note-player/releases/latest), copy them into `<vault>/<config folder>/plugins/note-player/`, then enable the plugin.
 
 ## Usage
 
