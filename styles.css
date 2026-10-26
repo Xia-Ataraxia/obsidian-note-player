@@ -182,10 +182,6 @@
 	min-width: 0;
 }
 
-.onp-track-subtitle.is-failed {
-	display: block;
-}
-
 .onp-subtitle-artist {
 	min-width: 0;
 	overflow: hidden;
@@ -196,6 +192,27 @@
 .onp-subtitle-state {
 	flex: 0 0 auto;
 	white-space: nowrap;
+}
+
+.onp-subtitle-artist + .onp-subtitle-state {
+	margin-inline-start: var(--size-4-2);
+}
+
+.onp-subtitle-artist + .onp-subtitle-state::before {
+	content: '•' / '';
+	margin-inline-end: var(--size-4-2);
+}
+
+.onp-view-root.is-compact .onp-track-subtitle {
+	flex-direction: column;
+}
+
+.onp-view-root.is-compact .onp-subtitle-artist + .onp-subtitle-state {
+	margin-inline-start: 0;
+}
+
+.onp-view-root.is-compact .onp-subtitle-artist + .onp-subtitle-state::before {
+	content: none;
 }
 
 .onp-track-path {
@@ -1989,7 +2006,7 @@
 
 .onp-track-subtitle.is-failed {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: var(--size-4-1);
 	color: var(--text-muted);
 	cursor: pointer;
@@ -2000,7 +2017,10 @@
 	display: inline-flex;
 	align-items: center;
 	gap: var(--size-4-1);
+	min-width: 0;
 	width: auto;
+	white-space: normal;
+	text-align: start;
 	height: auto;
 	padding: 0;
 	color: inherit;
