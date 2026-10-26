@@ -64,9 +64,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       if (this.viewPlaybackState !== 'playing') void this.playTrack(path);
     },
     onPendingChange: () => this.notifyChange(),
-    onTrackRename: (from, to) => {
-      if (this.playback.currentTrackPath === from) this.playback.currentTrackPath = to;
-    },
+    onTrackRename: (from, to) => this.playback.followRename(from, to),
   });
 
   async onload(): Promise<void> {

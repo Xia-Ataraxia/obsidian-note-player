@@ -3,6 +3,15 @@ import type { MusicTrack } from '../types/music';
 
 export class PlaybackStateManager {
 	currentTrackPath: string | null = null;
+	/** Where the current track still sits in the index until the rename is indexed. */
+	private renamedFrom: string | null = null;
+
+	/** The path moves at once; the index trails the vault, so the old entry stands in until it catches up. */
+	followRename(from: string, to: string): void {
+		if (this.currentTrackPath !== from) return;
+		this.currentTrackPath = to;
+		this.renamedFrom = from;
+	}
 
 	play(path: string, tracks: MusicTrack[]): void {
 		const track = tracks.find((entry) => entry.path === path);
@@ -62,6 +71,10 @@ export class PlaybackStateManager {
 		const libraryTrack = library.find((track) => track.path === this.currentTrackPath);
 		if (libraryTrack) return toPlaylistTrack(libraryTrack);
 
-		return null;
+		const stale = this.renamedFrom;
+		const old = queue.find((track) => track.path === stale);
+		const oldLibrary = library.find((track) => track.path === stale);
+		const standIn = old ?? (oldLibrary ? toPlaylistTrack(oldLibrary) : null);
+		return standIn && { ...standIn, path: this.currentTrackPath };
 	}
 }
