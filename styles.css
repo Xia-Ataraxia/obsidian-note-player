@@ -1961,7 +1961,7 @@
 }
 
 .onp-status[data-tone='failed'] {
-	color: var(--text-normal);
+	color: var(--text-error);
 	cursor: pointer;
 }
 

@@ -221,7 +221,7 @@ export class NotePlayerView extends ItemView {
 		select.addEventListener('change', () => {
 			const value = select.value;
 			void this.runAction(
-				value ? `Loaded ${this.lookupPlaylistTitle(state.playlists, value)}` : 'Cleared playlist',
+				value ? `Loaded playlist ${this.lookupPlaylistTitle(state.playlists, value)}.` : 'Playlist cleared.',
 				() => this.host.selectPlaylist(value || null),
 			);
 		});
@@ -343,7 +343,7 @@ export class NotePlayerView extends ItemView {
 				'repeat-1',
 				() => {
 					void this.runAction(
-						state.repeatMode === 'one' ? 'Repeat off' : 'Repeat one',
+						state.repeatMode === 'one' ? 'Repeat off.' : 'Repeating this track.',
 						() => this.host.toggleRepeatMode?.() ?? Promise.resolve(),
 					);
 				},
@@ -466,7 +466,7 @@ export class NotePlayerView extends ItemView {
 	private async toggleAutoplay(currentValue: boolean): Promise<void> {
 		if (this.host.setAutoplayEnabled) {
 			await this.runAction(
-				currentValue ? 'Autoplay disabled' : 'Autoplay enabled',
+				currentValue ? 'Autoplay off.' : 'Autoplay on.',
 				() => this.host.setAutoplayEnabled?.(!currentValue) ?? Promise.resolve(),
 			);
 			return;
@@ -474,7 +474,7 @@ export class NotePlayerView extends ItemView {
 
 		if (this.host.toggleAutoplay) {
 			await this.runAction(
-				currentValue ? 'Autoplay disabled' : 'Autoplay enabled',
+				currentValue ? 'Autoplay off.' : 'Autoplay on.',
 				() => this.host.toggleAutoplay?.() ?? Promise.resolve(),
 			);
 		}
@@ -510,8 +510,8 @@ export class NotePlayerView extends ItemView {
 				new Notice(successMessage, 1800);
 			}
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			new Notice(message);
+			console.error('Note Player action failed', error);
+			new Notice("That didn't work. Try again.");
 		} finally {
 			this.render();
 		}

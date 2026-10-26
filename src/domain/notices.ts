@@ -12,12 +12,12 @@ export const NOTICE_CATALOG = {
 	track_already_in_playlist: { template: '{{title}} is already in {{playlist}}.' },
 	invalid_youtube_url: { template: 'Not a YouTube video or playlist URL.' },
 	tracks_imported: { template: 'Added {{tracks}} to {{playlist}}.' },
-	ytdlp_unavailable: { template: 'yt-dlp is not installed. Install via: brew install yt-dlp' },
+	ytdlp_unavailable: { template: 'yt-dlp is not installed. Run brew install yt-dlp, then try again.' },
 } as const;
 
 export type NoticeId = keyof typeof NOTICE_CATALOG;
 
 export function renderNotice(template: string, params: Record<string, string | number> = {}): string {
 	const text = template.replace(/{{\s*([\w.-]+)\s*}}/g, (_match, key: string) => String(params[key] ?? ''));
-	return `[Note Player] ${text}`;
+	return text;
 }

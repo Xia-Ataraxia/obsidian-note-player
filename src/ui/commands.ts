@@ -35,7 +35,8 @@ export function registerCommands(plugin: Plugin, actions: CommandActions): void 
 		callback: () => {
 			new YoutubeUrlModal(plugin.app, (input) => {
 				actions.addTrackFromUrl(input).catch((error: unknown) => {
-					new Notice(error instanceof Error ? error.message : String(error));
+					console.error('Note Player: add URL failed', error);
+					new Notice("Couldn't add that URL. Try again.");
 				});
 			}).open();
 		},
