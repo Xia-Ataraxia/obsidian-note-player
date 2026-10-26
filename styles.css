@@ -730,7 +730,7 @@
 	min-width: 0;
 }
 
-.onp-view-root.is-compact .onp-toolbar-count {
+.onp-view-root.is-compact .onp-toolbar-count-unit {
 	display: none;
 }
 

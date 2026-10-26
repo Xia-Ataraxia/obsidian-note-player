@@ -21,7 +21,6 @@ import { PlayerSurface, type StreamPhase } from './PlayerSurface';
 import { WaveformProgress } from './WaveformProgress';
 import { renderQueue } from './queue-list';
 import { openPlaylistMenu } from './view-menus';
-import { plural } from '../../utils/plural';
 import { createActionButton, createIconButton, type RunAction } from './view-parts';
 
 export const VIEW_TYPE_NOTE_PLAYER = 'obsidian-note-player-view';
@@ -234,7 +233,10 @@ export class NotePlayerView extends ItemView {
 
 		const playlist = this.getSelectedPlaylist(state);
 		if (playlist) {
-			controls.createSpan({ cls: 'onp-toolbar-count', text: plural(state.queue.length, 'track') });
+			const unit = state.queue.length === 1 ? 'track' : 'tracks';
+			const count = controls.createSpan({ cls: 'onp-toolbar-count', attr: { title: `${state.queue.length} ${unit}` } });
+			count.createSpan({ text: String(state.queue.length) });
+			count.createSpan({ cls: 'onp-toolbar-count-unit', text: ` ${unit}` });
 			controls.appendChild(createIconButton('Playlist actions', 'more-vertical', (event) => {
 				openPlaylistMenu(event, this.host, playlist, this.runAction, state);
 			}));
