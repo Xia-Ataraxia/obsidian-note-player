@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseYtdlpError, parseYtdlpProgress } from '../src/domain/ytdlp';
+import { parseStreamOutput, parseYtdlpError, parseYtdlpProgress } from '../src/domain/ytdlp';
 
 describe('parseYtdlpProgress', () => {
   it('reads the download percentage', () => {
@@ -25,5 +25,17 @@ describe('parseYtdlpError', () => {
   it('falls back to the stderr tail', () => {
     expect(parseYtdlpError('boom')).toBe('boom');
     expect(parseYtdlpError('')).toBe('Unknown error.');
+  });
+});
+
+describe('parseStreamOutput', () => {
+  it('reads title, uploader and url in print order', () => {
+    expect(parseStreamOutput('Song\nBand\nhttps://x/y?expire=1\n'))
+      .toEqual({ url: 'https://x/y?expire=1', title: 'Song', author: 'Band' });
+  });
+
+  it('keeps an empty uploader and rejects output without a url', () => {
+    expect(parseStreamOutput('Song\n\nhttps://x/y')?.author).toBe('');
+    expect(parseStreamOutput('Song\nBand\n')).toBeNull();
   });
 });

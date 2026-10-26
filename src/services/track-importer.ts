@@ -1,12 +1,13 @@
-import { requestUrl, type App, type TFile } from 'obsidian';
+import { MarkdownView, normalizePath, requestUrl, type App, type TFile } from 'obsidian';
 import { plural } from '../utils/plural';
 import {
-  buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed, trackLabel, type TrackMeta,
+  buildMusicFrontmatter, classifyImport, isUnavailable, parseFlatPlaylistOutput, parseOembed, trackLabel, type TrackMeta,
 } from '../domain/track-import';
 import type { MusicLibrarySnapshot } from '../types/music';
 import type { NotePlayerSettings } from '../types/settings';
 import type { AudioCachePort, PendingImport } from '../types/view';
 import { sanitizeFileName } from '../utils/dedupe';
+import { retryUntil } from '../utils/retry';
 import { withTimeout } from '../utils/timeout';
 import { buildYoutubeThumbnailUrl, buildYoutubeWatchUrl, parseYoutubeUrl } from '../utils/youtube';
 import { showNotice } from '../ui/notices';
@@ -14,6 +15,7 @@ import { ensureFolder, getAvailablePath, waitForMetadata } from './vault-io';
 
 const INBOX_NAME = 'Inbox';
 const OEMBED_TIMEOUT_MS = 5000;
+const OEMBED_RETRY_DELAY_MS = 400;
 
 export interface TrackImporterDeps {
   app: App;
@@ -26,6 +28,8 @@ export interface TrackImporterDeps {
   /** Starts the track unless something is already playing. */
   playIfIdle(trackPath: string): void;
   onPendingChange(): void;
+  /** Called before a note is renamed, so playback can follow it to the new path. */
+  onTrackRename(from: string, to: string): void;
 }
 
 export class TrackImporter {
@@ -34,6 +38,7 @@ export class TrackImporter {
   private nextPendingId = 0;
   /** Videos added since the queue last drained; one paste of several links gets a single notice. */
   private added: Array<{ title: string; playlist: string }> = [];
+  private readonly healing = new Set<string>();
 
   constructor(private readonly deps: TrackImporterDeps) {}
 
@@ -96,7 +101,7 @@ export class TrackImporter {
     let title: string;
     if (plan.action === 'reuse') {
       trackPath = plan.path;
-      title = this.titleOf(plan.path);
+      title = this.titleOf(plan.path, true);
     } else {
       const meta = await this.fetchMeta(videoId);
       title = meta.title;
@@ -106,8 +111,49 @@ export class TrackImporter {
       trackPath = file.path;
     }
     await this.deps.addTracks(playlistPath, [trackPath]);
-    this.added.push({ title: title === videoId ? 'unavailable video' : title.replace(/^Unavailable video$/, 'unavailable video'), playlist: playlist.title });
+    this.added.push({ title: title === videoId ? 'unavailable video' : title, playlist: playlist.title });
     this.deps.playIfIdle(trackPath);
+    void this.healTrack(videoId);
+  }
+
+  /** Gives a track saved under its bare id the title and artist yt-dlp reported; quiet, no notice. */
+  async healTrack(videoId: string): Promise<void> {
+    const { app } = this.deps;
+    const meta = this.deps.getAudioCache()?.metaFor?.(videoId);
+    const track = this.deps.getLibrary().tracks.find((entry) => entry.videoId === videoId);
+    if (!meta?.title || !track || !isUnavailable(track) || this.healing.has(videoId)) return;
+    const file = app.vault.getFileByPath(track.path);
+    if (!file) return;
+    this.healing.add(videoId);
+    const target = normalizePath(`${file.parent?.path ?? ''}/${sanitizeFileName(meta.title, 'Untitled track')}.md`);
+    const rename = target !== track.path && !app.vault.getAbstractFileByPath(target) && !(await this.hasUnsavedEdits(file));
+    try {
+      if (rename) {
+        this.deps.onTrackRename(track.path, target);
+        await app.fileManager.renameFile(file, target).catch((error: unknown) => {
+          this.deps.onTrackRename(target, track.path);
+          throw error;
+        });
+      }
+      if (meta.author) {
+        const artistProperty = this.deps.getSettings().musicArtistProperties[0] ?? 'author';
+        await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
+          frontmatter[artistProperty] = meta.author;
+        });
+      }
+    } catch (error) {
+      console.error('Note Player title heal failed', error);
+    } finally {
+      this.healing.delete(videoId);
+    }
+  }
+
+  /** An editor holding text the file does not have yet must not have its note renamed under it. */
+  private async hasUnsavedEdits(file: TFile): Promise<boolean> {
+    const { app } = this.deps;
+    const saved = await app.vault.cachedRead(file);
+    return app.workspace.getLeavesOfType('markdown')
+      .some((leaf) => leaf.view instanceof MarkdownView && leaf.view.file === file && leaf.view.getViewData() !== saved);
   }
 
   private async importPlaylist(listId: string): Promise<void> {
@@ -159,15 +205,15 @@ export class TrackImporter {
       thumbnailUrl: '',
     };
     const watchUrl = buildYoutubeWatchUrl(videoId);
-    // A slow or unreachable oEmbed must not hold up the import; the bare id stands in as the title (rows label it as unavailable).
-    const oembed = await withTimeout(
+    // A slow or unreachable oEmbed must not hold up the import; the bare id stands in as the title until yt-dlp heals it.
+    const oembed = await retryUntil(() => withTimeout(
       requestUrl({
         url: `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`,
         throw: false,
       }).then((response) => response.status === 200 ? parseOembed(response.json) : null),
       OEMBED_TIMEOUT_MS,
       null,
-    );
+    ), 2, OEMBED_RETRY_DELAY_MS);
     return oembed ? { videoId, ...oembed, thumbnailUrl: oembed.thumbnailUrl || buildYoutubeThumbnailUrl(videoId) } : fallback;
   }
 
@@ -190,8 +236,8 @@ export class TrackImporter {
     return playlist;
   }
 
-  private titleOf(trackPath: string): string {
+  private titleOf(trackPath: string, midSentence = false): string {
     const track = this.deps.getLibrary().tracks.find((entry) => entry.path === trackPath);
-    return track ? trackLabel(track) : trackPath;
+    return track ? trackLabel(track, midSentence) : trackPath;
   }
 }

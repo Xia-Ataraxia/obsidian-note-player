@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROPERTY_MAPPING } from '../src/domain/config';
-import { buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed, trackLabel } from '../src/domain/track-import';
+import { buildMusicFrontmatter, classifyImport, isUnavailable, parseFlatPlaylistOutput, parseOembed, trackLabel } from '../src/domain/track-import';
 
 describe('parseOembed', () => {
   it('reads title, author and thumbnail', () => {
@@ -23,6 +23,7 @@ describe('trackLabel', () => {
   it('labels a bare-id track as unavailable and keeps real titles', () => {
     expect(trackLabel({ title: 'zzzzzzzzzz1', artist: '', videoId: 'zzzzzzzzzz1' })).toBe('Unavailable video');
     expect(trackLabel({ title: 'Song', artist: 'Band', videoId: 'zzzzzzzzzz1' })).toBe('Song');
+    expect(trackLabel({ title: 'zzzzzzzzzz1', artist: '', videoId: 'zzzzzzzzzz1' }, true)).toBe('unavailable video');
   });
 });
 
@@ -85,5 +86,13 @@ describe('parseFlatPlaylistOutput', () => {
         { videoId: 'wOzHXgqNpe8', title: 'wOzHXgqNpe8', author: '' },
       ],
     });
+  });
+});
+
+describe('isUnavailable', () => {
+  it('heals only a track still titled with its id and no artist', () => {
+    expect(isUnavailable({ title: 'wOzHXgqNpe8', artist: '', videoId: 'wOzHXgqNpe8' })).toBe(true);
+    expect(isUnavailable({ title: 'wOzHXgqNpe8', artist: 'Band', videoId: 'wOzHXgqNpe8' })).toBe(false);
+    expect(isUnavailable({ title: 'Song', artist: '', videoId: 'wOzHXgqNpe8' })).toBe(false);
   });
 });

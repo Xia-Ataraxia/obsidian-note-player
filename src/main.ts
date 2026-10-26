@@ -64,6 +64,9 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
       if (this.viewPlaybackState !== 'playing') void this.playTrack(path);
     },
     onPendingChange: () => this.notifyChange(),
+    onTrackRename: (from, to) => {
+      if (this.playback.currentTrackPath === from) this.playback.currentTrackPath = to;
+    },
   });
 
   async onload(): Promise<void> {
@@ -164,7 +167,9 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
   private createAudioCache(): AudioCacheService | null {
     if (!this.vaultBasePath) return null;
     const pluginDir = this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`;
-    return new AudioCacheService(this.vaultBasePath, this.app.vault.adapter, this.settings.audioFormat, pluginDir);
+    const cache = new AudioCacheService(this.vaultBasePath, this.app.vault.adapter, this.settings.audioFormat, pluginDir);
+    cache.onMeta = (videoId) => void this.importer.healTrack(videoId);
+    return cache;
   }
 
   getState(): PlaylistViewState {
@@ -391,7 +396,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
     const track = this.library.tracks.find((entry) => entry.path === trackPath);
     showNotice('track_added', {
-      title: track ? trackLabel(track) : trackPath,
+      title: track ? trackLabel(track, true) : trackPath,
       playlist: playlist.title,
     });
   }
@@ -402,7 +407,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
     const track = this.library.tracks.find((entry) => entry.path === trackPath);
     showNotice('track_removed', {
-      title: track ? trackLabel(track) : trackPath,
+      title: track ? trackLabel(track, true) : trackPath,
       playlist: playlist.title,
     });
   }

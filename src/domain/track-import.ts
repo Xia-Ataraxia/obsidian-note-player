@@ -35,8 +35,9 @@ export function isUnavailable(track: { title: string; artist: string; videoId: s
   return !track.artist && track.title === track.videoId;
 }
 
-export function trackLabel(track: { title: string; artist: string; videoId: string }): string {
-  return isUnavailable(track) ? 'Unavailable video' : track.title;
+export function trackLabel(track: { title: string; artist: string; videoId: string }, midSentence = false): string {
+  if (!isUnavailable(track)) return track.title;
+  return midSentence ? 'unavailable video' : 'Unavailable video';
 }
 
 export function buildMusicFrontmatter(
