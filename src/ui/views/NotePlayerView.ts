@@ -45,6 +45,7 @@ export class NotePlayerView extends ItemView {
 	private elements: ViewElements | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private resizeObserver: ResizeObserver | null = null;
+	private resizeFrame: { win: Window; id: number } | null = null;
 	private dragFromIndex: number | null = null;
 	private lastRenderedTrackPath: string | null = null;
 	private progressIntervalId: number | null = null;
@@ -128,7 +129,12 @@ export class NotePlayerView extends ItemView {
 
 		this.resizeObserver = new ResizeObserver((entries) => {
 			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
-			root.win.requestAnimationFrame(() => this.applyResponsiveClasses(nextWidth));
+			this.cancelResizeFrame();
+			const win = root.win;
+			this.resizeFrame = {
+				win,
+				id: win.requestAnimationFrame(() => this.applyResponsiveClasses(nextWidth)),
+			};
 		});
 		this.resizeObserver.observe(root);
 		this.applyResponsiveClasses(root.clientWidth);
@@ -141,10 +147,16 @@ export class NotePlayerView extends ItemView {
 		return Promise.resolve();
 	}
 
+	private cancelResizeFrame(): void {
+		this.resizeFrame?.win.cancelAnimationFrame(this.resizeFrame.id);
+		this.resizeFrame = null;
+	}
+
 	onClose(): Promise<void> {
 		this.unsubscribe?.();
 		this.unsubscribe = null;
 		this.resizeObserver?.disconnect();
+		this.cancelResizeFrame();
 		this.resizeObserver = null;
 		this.stopProgressInterval();
 		this.disposeVolumeControl?.();
