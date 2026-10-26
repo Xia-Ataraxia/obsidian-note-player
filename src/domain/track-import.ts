@@ -35,6 +35,10 @@ export function isUnavailable(track: { title: string; artist: string; videoId: s
   return !track.artist && track.title === track.videoId;
 }
 
+export function trackLabel(track: { title: string; artist: string; videoId: string }): string {
+  return isUnavailable(track) ? 'Unavailable video' : track.title;
+}
+
 export function buildMusicFrontmatter(
   meta: TrackMeta,
   mapping: YoutubePlaylistPropertyMapping,

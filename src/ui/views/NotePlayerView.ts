@@ -1,3 +1,4 @@
+import { trackLabel } from '../../domain/track-import';
 import {
 	ItemView,
 	Notice,
@@ -318,7 +319,7 @@ export class NotePlayerView extends ItemView {
 		const trackCard = summary.createDiv({ cls: 'onp-track-card onp-track-card--compact onp-track-card--no-thumb onp-player-track-card' });
 		const meta = trackCard.createDiv({ cls: 'onp-track-meta' });
 		meta.createDiv({ cls: 'onp-now-playing-kicker', text: 'Now playing' });
-		meta.createDiv({ cls: 'onp-track-title', text: current.title });
+		meta.createDiv({ cls: 'onp-track-title', text: trackLabel(current) });
 		this.subtitleEl = meta.createDiv({ cls: 'onp-track-subtitle' });
 		const activate = () => {
 			const phase = this.playerSurface.phase;

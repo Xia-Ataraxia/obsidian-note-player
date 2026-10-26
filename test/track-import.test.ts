@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROPERTY_MAPPING } from '../src/domain/config';
-import { buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed } from '../src/domain/track-import';
+import { buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed, trackLabel } from '../src/domain/track-import';
 
 describe('parseOembed', () => {
   it('reads title, author and thumbnail', () => {
@@ -16,6 +16,13 @@ describe('parseOembed', () => {
     expect(parseOembed(null)).toBeNull();
     expect(parseOembed('x')).toBeNull();
     expect(parseOembed({ author_name: 'Band' })).toBeNull();
+  });
+});
+
+describe('trackLabel', () => {
+  it('labels a bare-id track as unavailable and keeps real titles', () => {
+    expect(trackLabel({ title: 'zzzzzzzzzz1', artist: '', videoId: 'zzzzzzzzzz1' })).toBe('Unavailable video');
+    expect(trackLabel({ title: 'Song', artist: 'Band', videoId: 'zzzzzzzzzz1' })).toBe('Song');
   });
 });
 

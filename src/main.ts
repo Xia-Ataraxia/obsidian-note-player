@@ -3,6 +3,7 @@ import { plural } from './utils/plural';
 import { MUSIC_BASE_NAME, PLAYLISTS_BASE_NAME } from './domain/base-files';
 import { DEFAULT_SETTINGS, normalizeSettings } from './domain/config';
 import { buildMusicLibrary } from './domain/library-index';
+import { trackLabel } from './domain/track-import';
 import { PlaybackStateManager } from './domain/playback-state';
 import { resolveSelectedPlaylistPath, getPlaylistOrThrow, moveItem, moveValue, toPlaylistSummary, toPlaylistTrack } from './domain/playlist-manager';
 import { createPlaylistNoteContent, mergeTrackEntries } from './domain/playlist-storage';
@@ -387,7 +388,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
     const track = this.library.tracks.find((entry) => entry.path === trackPath);
     showNotice('track_added', {
-      title: track?.title ?? trackPath,
+      title: track ? trackLabel(track) : trackPath,
       playlist: playlist.title,
     });
   }
@@ -398,7 +399,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
     const track = this.library.tracks.find((entry) => entry.path === trackPath);
     showNotice('track_removed', {
-      title: track?.title ?? trackPath,
+      title: track ? trackLabel(track) : trackPath,
       playlist: playlist.title,
     });
   }

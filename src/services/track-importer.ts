@@ -1,7 +1,7 @@
 import { requestUrl, type App, type TFile } from 'obsidian';
 import { plural } from '../utils/plural';
 import {
-  buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed, type TrackMeta,
+  buildMusicFrontmatter, classifyImport, parseFlatPlaylistOutput, parseOembed, trackLabel, type TrackMeta,
 } from '../domain/track-import';
 import type { MusicLibrarySnapshot } from '../types/music';
 import type { NotePlayerSettings } from '../types/settings';
@@ -106,7 +106,7 @@ export class TrackImporter {
       trackPath = file.path;
     }
     await this.deps.addTracks(playlistPath, [trackPath]);
-    this.added.push({ title: title === videoId ? 'unavailable video' : title, playlist: playlist.title });
+    this.added.push({ title: title === videoId ? 'unavailable video' : title.replace(/^Unavailable video$/, 'unavailable video'), playlist: playlist.title });
     this.deps.playIfIdle(trackPath);
   }
 
@@ -191,6 +191,7 @@ export class TrackImporter {
   }
 
   private titleOf(trackPath: string): string {
-    return this.deps.getLibrary().tracks.find((track) => track.path === trackPath)?.title ?? trackPath;
+    const track = this.deps.getLibrary().tracks.find((entry) => entry.path === trackPath);
+    return track ? trackLabel(track) : trackPath;
   }
 }
