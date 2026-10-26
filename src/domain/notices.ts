@@ -11,6 +11,7 @@ export const NOTICE_CATALOG = {
 	download_cancelled: { template: 'Download cancelled.' },
 	track_already_in_playlist: { template: '{{title}} is already in {{playlist}}.' },
 	invalid_youtube_url: { template: 'Not a YouTube video or playlist URL.' },
+	paste_youtube_url: { template: 'Paste a YouTube video or playlist URL.' },
 	tracks_imported: { template: 'Added {{tracks}} to {{playlist}}.' },
 	ytdlp_unavailable: { template: 'yt-dlp is not installed. Run brew install yt-dlp, then try again.' },
 } as const;

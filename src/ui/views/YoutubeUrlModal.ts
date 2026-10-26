@@ -77,7 +77,7 @@ export class YoutubeUrlModal extends Modal {
 	private flagInvalid(pulse: boolean): void {
 		const hint = this.hintEl;
 		if (!hint?.hasClass('is-visible')) {
-			if (pulse && hint) hint.setText(NOTICE_CATALOG.invalid_youtube_url.template);
+			if (pulse && hint) hint.setText(NOTICE_CATALOG.paste_youtube_url.template);
 			if (!pulse) return;
 			hint?.addClass('is-visible');
 		}
