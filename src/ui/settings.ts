@@ -173,7 +173,7 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 				type: 'group',
 				heading: 'Playlist note schema',
 				items: [
-					this.propertyRow('Track list property', 'Frontmatter key that stores the ordered track refs for each playlist note.', 'playlistTrackProperty'),
+					this.propertyRow('Track list property', 'Frontmatter key that stores the ordered track links for each playlist note.', 'playlistTrackProperty'),
 					this.propertyRow('Description property', 'Frontmatter key used for playlist description text.', 'playlistDescriptionProperty'),
 					this.propertyRow('Cover property', 'Frontmatter key used for playlist cover artwork.', 'playlistCoverProperty'),
 					{
@@ -193,11 +193,11 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 				heading: 'Companion bases',
 				items: [
 					{
-						name: 'Refresh companion bases files',
+						name: 'Companion Bases files',
 						desc: 'Rewrite music.base and playlists.base beside your playlist folder to match the current mapping. The first property of each music-note mapping list becomes its bases column.',
 						render: (setting) => {
 							setting.addButton((button) =>
-								button.setButtonText('Refresh bases').onClick(() => {
+								button.setButtonText('Refresh').onClick(() => {
 									void this.host.refreshCompanionBases();
 								}),
 							);
