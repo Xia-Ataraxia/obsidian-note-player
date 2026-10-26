@@ -30,7 +30,9 @@ export class YoutubeUrlModal extends Modal {
 				this.input = text;
 				text.setPlaceholder('Paste a YouTube URL');
 				text.onChange(() => this.refresh());
-				text.inputEl.addEventListener('blur', () => this.flagInvalid(false));
+				text.inputEl.addEventListener('blur', (event) => {
+					if (!event.relatedTarget) this.flagInvalid(false);
+				});
 				text.inputEl.addEventListener('keydown', (event) => {
 					if (event.key === 'Enter') this.submit();
 				});
@@ -71,7 +73,7 @@ export class YoutubeUrlModal extends Modal {
 	private flagInvalid(pulse: boolean): void {
 		const hint = this.hintEl;
 		if (!hint?.hasClass('is-visible')) {
-			if (pulse && hint) hint.setText('Paste a YouTube video or playlist URL.');
+			if (pulse && hint) hint.setText(NOTICE_CATALOG.invalid_youtube_url.template);
 			if (!pulse) return;
 			hint?.addClass('is-visible');
 		}
