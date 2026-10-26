@@ -57,7 +57,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     getLibrary: () => this.library,
     getSelectedPlaylistPath: () => this.selectedPlaylist()?.path ?? null,
     getAudioCache: () => this.audioCacheService,
-    createPlaylist: (name) => this.createPlaylistNote(name),
+    createPlaylist: (name) => this.createPlaylistNote(name, [], true),
     addTracks: (playlistPath, paths) => this.addPathsToPlaylist(playlistPath, paths),
     playIfIdle: (path) => {
       if (this.viewPlaybackState !== 'playing') void this.playTrack(path);
@@ -403,7 +403,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     });
   }
 
-  private async createPlaylistNote(name: string, seedTrackPaths: string[] = []): Promise<string> {
+  private async createPlaylistNote(name: string, seedTrackPaths: string[] = [], quiet = false): Promise<string> {
     const filePath = getAvailablePath(this.app, this.settings.playlistFolder, sanitizeFileName(name));
     await ensureFolder(this.app, this.settings.playlistFolder);
     const file = await this.app.vault.create(
@@ -416,7 +416,8 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
     await this.saveSettings();
     await this.refreshIndex();
 
-    showNotice('playlist_created', { name });
+    // An import that auto-creates its playlist reports once, with the "Added" notice.
+    if (!quiet) showNotice('playlist_created', { name });
     return filePath;
   }
 
