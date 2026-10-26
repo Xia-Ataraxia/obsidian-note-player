@@ -118,3 +118,16 @@ describe('buildMusicLibrary', () => {
     expect(snapshot.playlists[0]?.coverUrl).toContain('/mqdefault.jpg');
   });
 });
+
+describe('buildMusicLibrary heal title', () => {
+  const note = (basename: string, title?: string) => ({
+    path: `${basename}.md`,
+    basename,
+    frontmatter: { type: ['music'], source: 'https://www.youtube.com/watch?v=zzzzzzzzzz1', ...(title && { title }) },
+  });
+
+  it('reads a metadata title only for a note named after its video id', () => {
+    expect(buildMusicLibrary([note('zzzzzzzzzz1', 'Real Title')]).tracks[0]?.title).toBe('Real Title');
+    expect(buildMusicLibrary([note('Other name', 'Real Title')]).tracks[0]?.title).toBe('Other name');
+  });
+});

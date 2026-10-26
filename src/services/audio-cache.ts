@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from 'child_process';
 import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { FLAT_PLAYLIST_PRINT } from '../domain/track-import';
-import { isStreamUrlFresh, parseYtdlpError, parseYtdlpProgress, ytdlpCandidates } from '../domain/ytdlp';
+import { isStreamUrlFresh, parseStreamOutput, parseYtdlpError, parseYtdlpProgress, STREAM_PRINT_ARGS, ytdlpCandidates } from '../domain/ytdlp';
 import type { AudioCachePort, VaultAdapter } from '../types/view';
 import type { AudioFormat } from '../types/audio';
 import { shareInFlight } from '../utils/in-flight';
@@ -19,6 +19,9 @@ export class AudioCacheService implements AudioCachePort {
 	private progressListeners = new Map<string, Set<(percent: number) => void>>();
 	private streamPromises = new Map<string, Promise<string>>();
 	private streamUrls = new Map<string, string>();
+	private streamMeta = new Map<string, { title: string; author: string }>();
+	/** Fires when a stream resolve returns the video's title and uploader. */
+	onMeta: ((videoId: string) => void) | null = null;
 	private resolvers = new Set<ChildProcess>();
 	private adapter: VaultAdapter;
 	private absBase: string;
@@ -149,7 +152,7 @@ export class AudioCacheService implements AudioCachePort {
 			let stdout = '';
 			let stderr = '';
 			const proc = spawn(this.ytdlpPath, [
-				'-f', 'bestaudio[ext=m4a]/bestaudio', '-g', '--no-playlist',
+				'-f', 'bestaudio[ext=m4a]/bestaudio', ...STREAM_PRINT_ARGS, '--no-playlist',
 				`https://www.youtube.com/watch?v=${videoId}`,
 			], { env: this.spawnEnv(), timeout: STREAM_RESOLVE_TIMEOUT_MS });
 			this.resolvers.add(proc);
@@ -158,11 +161,20 @@ export class AudioCacheService implements AudioCachePort {
 			proc.on('error', (err) => { this.resolvers.delete(proc); reject(err); });
 			proc.on('close', (code) => {
 				this.resolvers.delete(proc);
-				const url = stdout.trim().split('\n')[0];
-				if (code === 0 && url) { this.streamUrls.set(videoId, url); resolve(url); }
+				const info = parseStreamOutput(stdout);
+				if (code === 0 && info) {
+					this.streamUrls.set(videoId, info.url);
+					this.streamMeta.set(videoId, info);
+					this.onMeta?.(videoId);
+					resolve(info.url);
+				}
 				else reject(new Error(parseYtdlpError(stderr)));
 			});
 		}));
+	}
+
+	metaFor(videoId: string): { title: string; author: string } | undefined {
+		return this.streamMeta.get(videoId);
 	}
 
 	/** Warms the stream-URL cache so the next click skips the yt-dlp round trip. */

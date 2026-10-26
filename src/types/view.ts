@@ -95,6 +95,7 @@ export interface AudioCachePort {
 	cancel(videoId: string): void;
 	resolveStreamUrl?(videoId: string): Promise<string>;
 	prefetchStream?(videoId: string): void;
+	metaFor?(videoId: string): { title: string; author: string } | undefined;
 	isAvailable(): boolean;
 	checkAvailable(): Promise<boolean>;
 	listPlaylist?(listId: string): Promise<string>;

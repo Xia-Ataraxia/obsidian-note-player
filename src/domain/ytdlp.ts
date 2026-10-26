@@ -39,3 +39,17 @@ export function isStreamUrlFresh(url: string, nowMs: number): boolean {
 	const expiry = streamUrlExpiry(url);
 	return expiry === null || expiry - STREAM_EXPIRY_MARGIN_MS > nowMs;
 }
+
+export interface StreamInfo {
+	url: string;
+	title: string;
+	author: string;
+}
+
+export const STREAM_PRINT_ARGS = ['--print', '%(title|)s', '--print', '%(uploader|)s', '--print', 'urls'];
+
+/** Output of STREAM_PRINT_ARGS: title, uploader, then the stream URL. */
+export function parseStreamOutput(stdout: string): StreamInfo | null {
+	const [title = '', author = '', url = ''] = stdout.split('\n').map((line) => line.trim());
+	return url ? { url, title, author } : null;
+}

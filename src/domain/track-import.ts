@@ -35,8 +35,9 @@ export function isUnavailable(track: { title: string; artist: string; videoId: s
   return !track.artist && track.title === track.videoId;
 }
 
-export function trackLabel(track: { title: string; artist: string; videoId: string }): string {
-  return isUnavailable(track) ? 'Unavailable video' : track.title;
+export function trackLabel(track: { title: string; artist: string; videoId: string }, midSentence = false): string {
+  if (!isUnavailable(track)) return track.title;
+  return midSentence ? 'unavailable video' : 'Unavailable video';
 }
 
 export function buildMusicFrontmatter(
@@ -50,6 +51,19 @@ export function buildMusicFrontmatter(
   if (meta.author) frontmatter[mapping.musicArtistProperties[0] ?? 'author'] = meta.author;
   if (meta.thumbnailUrl) frontmatter[mapping.musicThumbnailProperties[0] ?? 'image'] = meta.thumbnailUrl;
   return frontmatter;
+}
+
+/** Notes linking to `filePath`, split into playlists (relinked by the heal) and anything else (renaming would break those). */
+export function classifyBacklinks(
+  resolvedLinks: Record<string, Record<string, number>>,
+  filePath: string,
+  playlistPaths: ReadonlySet<string>,
+): { playlistSources: string[]; elsewhere: boolean } {
+  const sources = Object.keys(resolvedLinks).filter((source) => resolvedLinks[source]?.[filePath]);
+  return {
+    playlistSources: sources.filter((source) => playlistPaths.has(source)),
+    elsewhere: sources.some((source) => !playlistPaths.has(source)),
+  };
 }
 
 export function classifyImport(

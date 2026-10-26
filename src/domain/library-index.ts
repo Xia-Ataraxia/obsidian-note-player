@@ -55,7 +55,8 @@ function toMusicTrack(
 
   return {
     path: note.path,
-    title: note.basename,
+    // A note saved under its bare id may carry the real title in metadata when renaming it would break links.
+    title: note.basename === videoId ? asTrimmedString(note.frontmatter?.title) ?? note.basename : note.basename,
     artist,
     sourceUrl,
     watchUrl: buildYoutubeWatchUrl(videoId),

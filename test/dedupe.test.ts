@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dedupe, sanitizeFileName } from '../src/utils/dedupe';
+import { dedupe, sanitizeFileName, uniqueName } from '../src/utils/dedupe';
 
 describe('dedupe', () => {
 	it('removes duplicate values', () => {
@@ -51,4 +51,11 @@ describe('sanitizeFileName', () => {
 	it('trims leading and trailing whitespace', () => {
 		expect(sanitizeFileName('  My Playlist  ')).toBe('My Playlist');
 	});
+});
+
+describe('uniqueName', () => {
+  it('keeps a free name and numbers a taken one from 2', () => {
+    expect(uniqueName('Song', () => false)).toBe('Song');
+    expect(uniqueName('Song', (name) => ['Song', 'Song 2'].includes(name))).toBe('Song 3');
+  });
 });
