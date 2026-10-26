@@ -12,6 +12,7 @@ describe('renderNotice', () => {
 
   it('gives confirmations one short duration and leaves warnings at the default', () => {
     expect(noticeDuration('track_added')).toBe(SUCCESS_NOTICE_MS);
+    expect(noticeDuration('action_succeeded')).toBe(SUCCESS_NOTICE_MS);
     expect(noticeDuration('invalid_youtube_url')).toBeUndefined();
   });
 });

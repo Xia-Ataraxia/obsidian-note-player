@@ -29,6 +29,7 @@ const SUCCESS_NOTICES: ReadonlySet<NoticeId> = new Set([
 	'track_added',
 	'track_removed',
 	'tracks_imported',
+	'action_succeeded',
 ]);
 
 export function noticeDuration(id: NoticeId): number | undefined {
