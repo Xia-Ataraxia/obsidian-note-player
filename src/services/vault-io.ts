@@ -26,14 +26,15 @@ export function waitForMetadata(app: App, file: TFile, timeoutMs = 2000): Promis
 
 function nextMetadataChange(app: App, file: TFile, timeoutMs = 2000): Promise<void> {
 	const { metadataCache } = app;
+	const win = activeWindow;
 	return new Promise((resolve) => {
 		const done = () => {
-			window.clearTimeout(timer);
+			win.clearTimeout(timer);
 			metadataCache.offref(ref);
 			resolve();
 		};
 		const ref = metadataCache.on('changed', (changed) => { if (changed.path === file.path) done(); });
-		const timer = window.setTimeout(done, timeoutMs);
+		const timer = win.setTimeout(done, timeoutMs);
 	});
 }
 

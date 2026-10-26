@@ -78,6 +78,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
     const player = createPlayer(this, {
       onEnded: () => this.playNext(false),
+      openView: () => void this.activateView(),
       onStateChange: (state) => {
         if (this.viewPlaybackState === state) return;
         this.viewPlaybackState = state;
@@ -566,7 +567,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
   private syncStatusBar(): void {
     const track = this.viewPlaybackState === 'idle' ? null : this.getState().currentTrack;
-    this.downloadStatusBar?.setNowPlaying(track ? trackLabel(track) : null);
+    this.downloadStatusBar?.setNowPlaying(track ? trackLabel(track) : null, this.viewPlaybackState);
   }
 
   private notifyChange(): void {

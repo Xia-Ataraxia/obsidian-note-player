@@ -10,13 +10,14 @@ import type { VolumeState } from '../types/volume';
 interface PlayerCallbacks {
 	onEnded: () => Promise<void>;
 	onStateChange: (state: PlaybackState) => void;
+	openView: () => void;
 	volume: { level: number; muted: boolean; persist: (state: VolumeState) => void };
 }
 
 export function createPlayer(plugin: Plugin, callbacks: PlayerCallbacks) {
 	const hostEl = createDiv({ cls: 'onp-player-video' });
 	const surface = new PlayerSurface(hostEl, callbacks.onEnded, callbacks.onStateChange);
-	const statusBar = new DownloadStatusBar(plugin, () => surface.cancelDownload(), () => surface.retry());
+	const statusBar = new DownloadStatusBar(plugin, () => surface.cancelDownload(), () => surface.retry(), callbacks.openView);
 
 	surface.onDownloadProgress = (percent: number) => statusBar.update(percent);
 

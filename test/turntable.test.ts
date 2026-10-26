@@ -69,10 +69,11 @@ describe('needleDelayMs', () => {
     expect(needleDelayMs(AUDIO_START_MS + 500)).toBe(0);
   });
 
-  it('slows the wait under reduced motion but still lands the needle first', () => {
-    expect(swingMs(true)).toBeGreaterThan(SWING_MS);
+  it('softens the swing under reduced motion without making a resume wait longer', () => {
+    expect(swingMs(true)).toBeGreaterThan(0);
+    expect(swingMs(true)).toBeLessThanOrEqual(SWING_MS);
     expect(needleDelayMs(0, true)).toBeGreaterThan(swingMs(true));
-    expect(needleDelayMs(0, true)).toBeGreaterThan(needleDelayMs(0));
+    expect(needleDelayMs(0, true)).toBeLessThanOrEqual(needleDelayMs(0));
   });
 });
 

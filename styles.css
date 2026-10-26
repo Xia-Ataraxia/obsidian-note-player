@@ -1695,7 +1695,7 @@
 	}
 
 	.onp-turntable {
-		--onp-arm-swing: 900ms;
+		--onp-arm-swing: 350ms;
 		--onp-bounce: 0.4;
 	}
 
@@ -1949,7 +1949,7 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.onp-min-arm {
-		--onp-arm-swing: 900ms;
+		--onp-arm-swing: 350ms;
 	}
 }
 
@@ -1964,13 +1964,26 @@
 }
 
 .onp-status[data-tone='live'],
+.onp-status[data-tone='playing'],
 .onp-status[data-tone='done'] {
 	color: var(--interactive-accent);
 }
 
+.onp-status {
+	cursor: pointer;
+	border-radius: var(--radius-s);
+}
+
+.onp-status[data-tone='idle']:hover {
+	color: var(--text-normal);
+}
+
+.onp-status:focus-visible {
+	box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
 .onp-status[data-tone='failed'] {
 	color: var(--text-error);
-	cursor: pointer;
 }
 
 .onp-status[data-tone='warn'] {

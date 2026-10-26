@@ -4,6 +4,8 @@ export const LID_OPEN_MS = 650;
 export const REDUCED_LID_MS = 1400;
 /** Beat between the arm reaching its rest and the lid starting to close. */
 export const LID_CLOSE_HOLD_MS = 350;
+/** A pause this short keeps the lid open so resuming starts at once; a resume cancels the pending close. */
+export const LID_PAUSE_REST_MS = 8000;
 
 export interface DeckPose {
   open: boolean;
@@ -21,7 +23,7 @@ export interface DeckStep {
  * One timeline driven by play state, planned from the pose the deck is in right now so an
  * interruption reverses from where it is. Play: lid, arm, needle. Stop: arm, then lid.
  */
-export function deckSteps(playing: boolean, from: DeckPose, hasLid: boolean, reduced: boolean): DeckStep[] {
+export function deckSteps(playing: boolean, from: DeckPose, hasLid: boolean, reduced: boolean, paused = false): DeckStep[] {
   const swing = swingMs(reduced);
   if (playing) {
     const wait = hasLid && !from.open ? (reduced ? REDUCED_LID_MS : LID_OPEN_MS) : 0;
@@ -30,6 +32,9 @@ export function deckSteps(playing: boolean, from: DeckPose, hasLid: boolean, red
     return steps;
   }
   const steps: DeckStep[] = [{ atMs: 0, pose: { armed: false } }];
-  if (hasLid) steps.push({ atMs: from.armed ? swing + LID_CLOSE_HOLD_MS : 0, pose: { open: false } });
+  if (hasLid) {
+    const home = from.armed ? swing : 0;
+    steps.push({ atMs: paused ? home + LID_PAUSE_REST_MS : home + (from.armed ? LID_CLOSE_HOLD_MS : 0), pose: { open: false } });
+  }
   return steps;
 }

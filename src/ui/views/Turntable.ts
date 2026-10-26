@@ -141,7 +141,7 @@ export class Turntable {
     const win = this.el.win;
     this.timerWin = win;
     if (!playing && wasPlaying && soundsOn) this.sound.lift();
-    for (const step of deckSteps(playing, this.pose, this.style === 'realistic', this.slowdown > 1)) {
+    for (const step of deckSteps(playing, this.pose, this.style === 'realistic', this.slowdown > 1, this.state === 'paused')) {
       const run = () => this.applyStep(step.pose, step.land === true, soundsOn);
       if (step.atMs <= 0) run();
       else this.timers.push(win.setTimeout(run, step.atMs));
