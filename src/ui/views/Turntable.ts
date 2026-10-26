@@ -1,3 +1,4 @@
+import { observeResize } from './observe-resize';
 import type { PlaybackState } from '../../types/playback';
 import { deckSteps, type DeckPose } from '../../domain/deck-sequence';
 import { SPIN_DOWN_MS, SPIN_UP_MS, strobeSharpness } from '../../domain/turntable';
@@ -72,14 +73,13 @@ export class Turntable {
   private frameWin: Window | null = null;
   private tilt = TILT_WIDE;
   private yaw = YAW_WIDE;
-  private readonly resizer: ResizeObserver;
+  private readonly stopResize: () => void;
   private knob: VolumeKnob | null = null;
 
   constructor(private readonly sound: TurntableSound, private readonly host: TurntableHost) {
     this.el = createDiv({ cls: 'onp-turntable is-idle' });
     this.el.setAttribute('aria-hidden', 'true');
-    this.resizer = new ResizeObserver(([entry]) => this.setTilt(entry?.contentRect.width ?? 0));
-    this.resizer.observe(this.el);
+    this.stopResize = observeResize(this.el, (rect) => this.setTilt(rect.width));
     this.el.addEventListener('pointermove', (e) => this.parallax(e));
     this.el.addEventListener('pointerleave', () => this.el.setCssProps({ '--onp-px': '0', '--onp-py': '0' }));
     this.mount();
@@ -178,7 +178,7 @@ export class Turntable {
 
   destroy(): void {
     this.knob?.destroy();
-    this.resizer.disconnect();
+    this.stopResize();
     this.cancelTimers();
     this.frameWin?.cancelAnimationFrame(this.frame);
     this.frame = 0;
@@ -246,9 +246,12 @@ export class Turntable {
   }
 
   private kick(): void {
-    if (this.frame) return;
-    if (this.target === 0 && Math.abs(this.spin.omega) < 1e-5 && !this.drag) return;
     const win = this.el.win;
+    if (this.frame && this.frameWin === win) return;
+    // A frame requested before the deck moved into a popout may never fire in a hidden window.
+    this.frameWin?.cancelAnimationFrame(this.frame);
+    this.frame = 0;
+    if (this.target === 0 && Math.abs(this.spin.omega) < 1e-5 && !this.drag) return;
     this.frameWin = win;
     this.lastNow = win.performance.now();
     this.lastVisibleCheck = this.lastNow;
@@ -270,7 +273,8 @@ export class Turntable {
         this.lastVisibleCheck = now;
         if (!this.el.isShown()) return;
       }
-      this.frame = this.el.win.requestAnimationFrame((next) => this.tick(next));
+      this.frameWin = this.el.win;
+      this.frame = this.frameWin.requestAnimationFrame((next) => this.tick(next));
     } else {
       this.spin = { omega: 0, alpha: 0 };
     }

@@ -1,3 +1,4 @@
+import { observeResize } from './observe-resize';
 import { meterStep, nudgeRatio, placeholderHeight, ratioAt, resamplePeaks, smoothBars, springStep } from '../../domain/peaks';
 import { formatTime } from './PlayerSurface';
 import { barCountFor, drawMeter, drawWave, readColors, type WaveColors } from './waveform-draw';
@@ -27,7 +28,7 @@ export class WaveformProgress {
 	private readonly tipEl: HTMLElement;
 	private readonly elapsedEl: HTMLElement;
 	private readonly remainEl: HTMLElement;
-	private readonly observer: ResizeObserver;
+	private readonly stopResize: () => void;
 	private colors: WaveColors;
 	private peaks: number[] | null = null;
 	private pooled: number[] = [];
@@ -39,7 +40,7 @@ export class WaveformProgress {
 	private height = 0;
 	private level = 0;
 	private hold = 0;
-	private raf = 0;
+	private raf: { win: Window; id: number } | null = null;
 	private last = 0;
 	private destroyed = false;
 
@@ -75,11 +76,7 @@ export class WaveformProgress {
 
 		this.colors = readColors(this.el);
 		this.bindStage();
-		this.observer = new ResizeObserver((entries) => {
-			const rect = entries.at(0)?.contentRect;
-			if (rect) this.resize(rect.width, rect.height);
-		});
-		this.observer.observe(this.canvas);
+		this.stopResize = observeResize(this.canvas, (rect) => this.resize(rect.width, rect.height));
 		this.update(true);
 	}
 
@@ -108,9 +105,9 @@ export class WaveformProgress {
 
 	destroy(): void {
 		this.destroyed = true;
-		this.observer.disconnect();
-		if (this.raf) this.el.win.cancelAnimationFrame(this.raf);
-		this.raf = 0;
+		this.stopResize();
+		this.raf?.win.cancelAnimationFrame(this.raf.id);
+		this.raf = null;
 	}
 
 	private bindStage(): void {
@@ -178,12 +175,15 @@ export class WaveformProgress {
 	}
 
 	private schedule(): void {
-		if (this.destroyed || this.raf) return;
-		this.raf = this.el.win.requestAnimationFrame((now) => this.frame(now));
+		const win = this.el.win;
+		if (this.destroyed || this.raf?.win === win) return;
+		// A frame requested before the canvas moved into a popout may never fire in a hidden window.
+		this.raf?.win.cancelAnimationFrame(this.raf.id);
+		this.raf = { win, id: win.requestAnimationFrame((now) => this.frame(now)) };
 	}
 
 	private frame(now: number): void {
-		this.raf = 0;
+		this.raf = null;
 		if (this.destroyed || !this.canvas.isShown()) return;
 		const dt = this.last ? Math.min((now - this.last) / 1000, 0.05) : 1 / 60;
 		this.last = now;
