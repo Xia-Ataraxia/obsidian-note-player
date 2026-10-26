@@ -10,6 +10,7 @@ export class YoutubeUrlModal extends Modal {
 	private addButton: ButtonComponent | null = null;
 	private hintEl: HTMLElement | null = null;
 	private idleTimer: number | null = null;
+	private leaving = false;
 
 	constructor(
 		app: App,
@@ -21,6 +22,9 @@ export class YoutubeUrlModal extends Modal {
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
+		this.modalEl.addEventListener('pointerdown', (event) => {
+			this.leaving = event.target instanceof Element && !!event.target.closest('.modal-close-button, button:not(.mod-cta)');
+		});
 		new Setting(contentEl).setHeading().setName('Add YouTube URL to playlist');
 
 		new Setting(contentEl)
@@ -30,8 +34,8 @@ export class YoutubeUrlModal extends Modal {
 				this.input = text;
 				text.setPlaceholder('Paste a YouTube URL');
 				text.onChange(() => this.refresh());
-				text.inputEl.addEventListener('blur', (event) => {
-					if (!event.relatedTarget) this.flagInvalid(false);
+				text.inputEl.addEventListener('blur', () => {
+					if (!this.leaving) this.flagInvalid(false);
 				});
 				text.inputEl.addEventListener('keydown', (event) => {
 					if (event.key === 'Enter') this.submit();
