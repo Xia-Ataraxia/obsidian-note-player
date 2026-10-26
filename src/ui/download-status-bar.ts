@@ -57,7 +57,7 @@ export class DownloadStatusBar {
 		if (phase === 'connecting') this.show('loader', 'Connecting…', 'busy');
 		else if (phase === 'streaming') this.show('radio', this.nowPlayingText() ?? 'Streaming', 'live');
 		else if (phase === 'missing') this.show('wrench', 'yt-dlp not found · click for setup', 'failed');
-		else this.show('cloud-off', 'Unavailable · click to retry', 'failed');
+		else this.show('cloud-off', "Couldn't load · click to retry", 'failed');
 	}
 
 	/** The resting bar names the playing track; busy and failed states keep priority. */

@@ -218,7 +218,8 @@ export class PlayerSurface {
 		if (!this.audioCacheService) return;
 		this.onNeedleWait?.(false);
 		this.emit('paused');
-		this.onDownloadProgress?.(0);
+		// yt-dlp prints no progress while it reaches YouTube; "Downloading 0%" there reads as stuck.
+		this.setPhase('connecting');
 
 		try {
 			await this.audioCacheService.download(videoId, (percent) => {
