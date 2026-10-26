@@ -6,7 +6,7 @@ const SWAP_MS = 140;
 const FLASH_MS = 1400;
 const TITLE_MAX = 28;
 
-export type Tone = 'idle' | 'busy' | 'live' | 'done' | 'failed';
+export type Tone = 'idle' | 'busy' | 'live' | 'done' | 'warn' | 'failed';
 
 export class DownloadStatusBar {
 	private readonly container: HTMLElement;
@@ -56,8 +56,9 @@ export class DownloadStatusBar {
 		this.canRetry = phase === 'failed' || phase === 'missing';
 		if (phase === 'connecting') this.show('loader', 'Connecting…', 'busy');
 		else if (phase === 'streaming') this.show('radio', this.nowPlayingText() ?? 'Streaming', 'live');
-		else if (phase === 'missing') this.show('wrench', 'yt-dlp not found · click for setup', 'failed');
-		else this.show('cloud-off', "Couldn't load · click to retry", 'failed');
+		else if (phase === 'missing') this.show('wrench', 'yt-dlp missing', 'warn');
+		else this.show('cloud-off', "Couldn't load", 'failed');
+		if (this.canRetry) this.container.setAttr('aria-label', phase === 'missing' ? 'yt-dlp not found · click for setup' : "Couldn't load · click to retry");
 	}
 
 	/** The resting bar names the playing track; busy and failed states keep priority. */
@@ -100,6 +101,7 @@ export class DownloadStatusBar {
 	/** Fades the text out and back in on a change; plain updates (progress ticks) skip the fade. */
 	private show(icon: string, text: string, tone: Tone): void {
 		this.base = { icon, text, tone };
+		this.container.removeAttribute('aria-label');
 		if (this.flashTimer === null) this.paint(icon, text, tone);
 	}
 

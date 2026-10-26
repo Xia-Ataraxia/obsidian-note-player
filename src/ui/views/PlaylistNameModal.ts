@@ -13,13 +13,11 @@ export class PlaylistNameModal extends Modal {
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
-		new Setting(contentEl).setHeading().setName('Create playlist');
-		contentEl.createEl('p', {
-			text: 'This creates a note-backed playlist note in your configured playlist folder.',
-		});
+		this.setTitle('Create playlist');
 
 		new Setting(contentEl)
 			.setName('Playlist name')
+			.setDesc('Saved as a note in your playlist folder.')
 			.addText((text) => {
 				this.input = text;
 				text.setPlaceholder('Late-night queue');
