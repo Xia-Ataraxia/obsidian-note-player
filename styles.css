@@ -159,10 +159,6 @@
 	min-width: 0;
 }
 
-.onp-track-subtitle.is-failed {
-	display: block;
-}
-
 .onp-subtitle-artist {
 	min-width: 0;
 	overflow: hidden;
@@ -1998,7 +1994,10 @@
 	display: inline-flex;
 	align-items: center;
 	gap: var(--size-4-1);
+	min-width: 0;
 	width: auto;
+	white-space: normal;
+	text-align: start;
 	height: auto;
 	padding: 0;
 	color: inherit;
