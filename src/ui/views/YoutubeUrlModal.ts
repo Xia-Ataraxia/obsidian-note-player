@@ -20,6 +20,7 @@ export class YoutubeUrlModal extends Modal {
 	}
 
 	onOpen(): void {
+		this.modalEl.addClass('onp-modal');
 		const { contentEl } = this;
 		contentEl.empty();
 		this.modalEl.addEventListener('pointerdown', (event) => {

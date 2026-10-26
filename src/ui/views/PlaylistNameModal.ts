@@ -11,6 +11,7 @@ export class PlaylistNameModal extends Modal {
 	}
 
 	onOpen(): void {
+		this.modalEl.addClass('onp-modal');
 		const { contentEl } = this;
 		contentEl.empty();
 		this.setTitle('Create playlist');

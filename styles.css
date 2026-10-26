@@ -2232,3 +2232,15 @@ input[type="range"].onp-volume-slider:focus-visible {
 		animation-name: onp-row-fade;
 	}
 }
+
+/* A disabled button reads as inert in every theme: flat muted fill and text, never the accent. */
+.onp-modal button:disabled,
+.onp-modal button:disabled:hover,
+.onp-button:disabled,
+.onp-button:disabled:hover {
+	background-color: var(--background-modifier-border);
+	color: var(--text-faint);
+	box-shadow: none;
+	opacity: 1;
+	cursor: not-allowed;
+}
