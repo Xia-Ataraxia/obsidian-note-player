@@ -114,14 +114,51 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		return [
 			{
-				name: 'Playlist folder',
-				desc: 'Vault folder where new playlist notes are created.',
-				control: { type: 'folder', key: 'playlistFolder', placeholder: '90. System/playlists' },
+				type: 'group',
+				heading: 'Playback',
+				items: [
+					{
+						name: 'Audio format',
+						desc: 'Format for audio downloaded with yt-dlp.',
+						control: { type: 'dropdown', key: 'audioFormat', options: AUDIO_FORMAT_OPTIONS },
+					},
+					{
+						name: 'Autoplay next track',
+						desc: 'Play the next track in the queue when one ends.',
+						control: { type: 'toggle', key: 'autoplayEnabled' },
+					},
+					{
+						name: 'Turntable style',
+						desc: 'Realistic is a 3D deck with a lid and a volume knob. Minimal is a flat record and arm.',
+						control: { type: 'dropdown', key: 'turntableStyle', options: TURNTABLE_STYLE_OPTIONS },
+					},
+					{
+						name: 'Turntable sounds',
+						desc: 'Play a synthesized needle drop, lift, and vinyl crackle with the turntable animation.',
+						control: { type: 'toggle', key: 'turntableSounds' },
+					},
+					{
+						name: 'Open on startup',
+						desc: 'Open the playlist view automatically when Obsidian finishes loading.',
+						control: { type: 'toggle', key: 'autoOpenOnStartup' },
+					},
+				],
 			},
 			{
-				name: 'Music folder',
-				desc: 'Vault folder for notes created from pasted YouTube URLs. Leave empty to use the default location for new notes.',
-				control: { type: 'folder', key: 'musicFolder', placeholder: 'Default location' },
+				type: 'group',
+				heading: 'Library',
+				items: [
+				{
+					name: 'Playlist folder',
+					desc: 'Vault folder where new playlist notes are created.',
+					control: { type: 'folder', key: 'playlistFolder', placeholder: '90. System/playlists' },
+				},
+				{
+					name: 'Music folder',
+					desc: 'Vault folder for notes created from pasted YouTube URLs. Leave empty to use the default location for new notes.',
+					control: { type: 'folder', key: 'musicFolder', placeholder: 'Default location' },
+				},
+				],
 			},
 			{
 				type: 'group',
@@ -165,37 +202,6 @@ export class NotePlayerSettingsTab extends PluginSettingTab {
 								}),
 							);
 						},
-					},
-				],
-			},
-			{
-				type: 'group',
-				heading: 'Playback',
-				items: [
-					{
-						name: 'Audio format',
-						desc: 'The format used when downloading audio via yt-dlp.',
-						control: { type: 'dropdown', key: 'audioFormat', options: AUDIO_FORMAT_OPTIONS },
-					},
-					{
-						name: 'Autoplay next track',
-						desc: 'Advance to the next queued track when the player reports the current track ended.',
-						control: { type: 'toggle', key: 'autoplayEnabled' },
-					},
-					{
-						name: 'Turntable style',
-						desc: 'Realistic is a 3D deck with a lid and a volume knob. Minimal is a flat record and arm.',
-						control: { type: 'dropdown', key: 'turntableStyle', options: TURNTABLE_STYLE_OPTIONS },
-					},
-					{
-						name: 'Turntable sounds',
-						desc: 'Play a synthesized needle drop, lift, and vinyl crackle with the turntable animation.',
-						control: { type: 'toggle', key: 'turntableSounds' },
-					},
-					{
-						name: 'Open on startup',
-						desc: 'Open the playlist view automatically when Obsidian finishes loading.',
-						control: { type: 'toggle', key: 'autoOpenOnStartup' },
 					},
 				],
 			},
