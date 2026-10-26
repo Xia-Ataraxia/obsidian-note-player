@@ -13,8 +13,9 @@ export function leadRemainingMs(sinceLandedMs: number): number {
 export const FADE_OUT_MS = 250;
 export const GROOVE_SECONDS = 2;
 
-export const REDUCED_SWING_MS = 900;
-const REDUCED_AUDIO_START_MS = 950;
+/** A soft, short settle: reduced motion gentles the arm but never makes the music wait on it. */
+export const REDUCED_SWING_MS = 350;
+const REDUCED_AUDIO_START_MS = 400;
 
 export function swingMs(reduced: boolean): number {
   return reduced ? REDUCED_SWING_MS : SWING_MS;

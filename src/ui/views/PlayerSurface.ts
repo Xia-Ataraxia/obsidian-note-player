@@ -29,7 +29,7 @@ export class PlayerSurface {
 	private downloadToken = 0;
 	private downloadCancelled = false;
 	private repeatMode: RepeatMode = 'none';
-	private startTimer: number | null = null;
+	private startTimer: { win: Window; id: number } | null = null;
 	private pendingAudio: HTMLAudioElement | null = null;
 	private landed = false;
 	private landedAt = 0;
@@ -103,9 +103,8 @@ export class PlayerSurface {
 			this.releasePrevious(this.currentVideoId);
 		}
 
-		this.silentPauseAudio();
+		this.fadeOutPrevious();
 		this.leaving = false;
-		this.audioElement = null;
 		this.lastTrack = track;
 		this.setPhase(autoplayEnabled ? 'connecting' : 'idle');
 
@@ -318,7 +317,7 @@ export class PlayerSurface {
 		if (this.landed) return this.releasePending();
 		// Without a turntable view to report the touchdown, fall back to the nominal swing time.
 		if (this.landingTracked) return;
-		this.startTimer = window.setTimeout(() => this.needleLanded(), needleDelayMs(performance.now() - (this.armMovedAt ?? performance.now()), this.reducedMotion()));
+		this.startTimer = this.later(() => this.needleLanded(), needleDelayMs(performance.now() - (this.armMovedAt ?? performance.now()), this.reducedMotion()));
 	}
 
 	/** The turntable reports touchdown; this is the only gate that lets music start. */
@@ -333,11 +332,10 @@ export class PlayerSurface {
 	}
 
 	private releasePending(): void {
-		if (this.startTimer !== null) window.clearTimeout(this.startTimer);
-		this.startTimer = null;
+		this.clearStartTimer();
 		const audio = this.pendingAudio;
 		if (!audio) return;
-		this.startTimer = window.setTimeout(() => {
+		this.startTimer = this.later(() => {
 			this.startTimer = null;
 			this.pendingAudio = null;
 			this.beginPlayback(audio);
@@ -366,12 +364,42 @@ export class PlayerSurface {
 	private cancelPendingStart(): boolean {
 		const waiting = this.pendingAudio !== null || this.cancelReadyWait !== null;
 		this.pendingAudio = null;
-		if (this.startTimer !== null) window.clearTimeout(this.startTimer);
-		this.startTimer = null;
+		this.clearStartTimer();
 		this.cancelReadyWait?.();
 		this.cancelReadyWait = null;
 		this.onNeedleWait?.(false);
 		return waiting;
+	}
+
+	/** Timers belong to the window the player is in, so a popout keeps its own clock. */
+	private later(fn: () => void, ms: number): { win: Window; id: number } {
+		const win = this.host.win;
+		return { win, id: win.setTimeout(fn, ms) };
+	}
+
+	private clearStartTimer(): void {
+		if (!this.startTimer) return;
+		this.startTimer.win.clearTimeout(this.startTimer.id);
+		this.startTimer = null;
+	}
+
+	/** Track switch: the old music fades out under the new arrival instead of cutting. */
+	private fadeOutPrevious(): void {
+		const old = this.audioElement;
+		this.audioElement = null;
+		this.cancelPendingStart();
+		if (!old) return;
+		if (old.paused) return;
+		const from = old.volume;
+		const startedAt = performance.now();
+		const win = this.host.win;
+		const step = () => {
+			const elapsed = performance.now() - startedAt;
+			if (elapsed >= FADE_OUT_MS) return old.pause();
+			old.volume = Math.min(1, Math.max(0, rampRate(from, 0, elapsed, FADE_OUT_MS)));
+			win.setTimeout(step, FADE_STEP_MS);
+		};
+		step();
 	}
 
 	/** Resolves true when the ramp completed, false when a newer fade took over. */
@@ -384,7 +412,7 @@ export class PlayerSurface {
 				if (token !== this.fadeToken) return resolve(false);
 				const elapsed = performance.now() - startedAt;
 				audio.volume = Math.min(1, Math.max(0, rampRate(from, to, elapsed, durationMs)));
-				if (elapsed < durationMs) window.setTimeout(step, FADE_STEP_MS);
+				if (elapsed < durationMs) this.host.win.setTimeout(step, FADE_STEP_MS);
 				else resolve(true);
 			};
 			step();
@@ -448,7 +476,7 @@ export class PlayerSurface {
 
 		const audio = new Audio(url);
 		audio.addEventListener('ended', () => {
-			if (this.suppressCallbacks) return;
+			if (this.suppressCallbacks || audio !== this.audioElement) return;
 			if (this.repeatMode === 'one') {
 				audio.currentTime = 0;
 				void audio.play();
@@ -458,11 +486,11 @@ export class PlayerSurface {
 			void this.onEnded();
 		});
 		audio.addEventListener('play', () => {
-			if (this.suppressCallbacks) return;
+			if (this.suppressCallbacks || audio !== this.audioElement) return;
 			this.emit('playing');
 		});
 		audio.addEventListener('pause', () => {
-			if (this.suppressCallbacks) return;
+			if (this.suppressCallbacks || audio !== this.audioElement) return;
 			this.emit('paused');
 		});
 		if (onError) audio.addEventListener('error', onError);

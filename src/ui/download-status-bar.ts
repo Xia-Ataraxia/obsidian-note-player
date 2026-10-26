@@ -1,12 +1,13 @@
 import { setIcon } from 'obsidian';
 import type { Plugin } from 'obsidian';
+import { restingLook, statusLabel } from '../domain/status-look';
+import type { StatusAction, StatusPlayback, StatusTone } from '../domain/status-look';
 
 const COMPLETION_VISIBLE_MS = 1500;
 const SWAP_MS = 140;
 const FLASH_MS = 1400;
-const TITLE_MAX = 28;
 
-export type Tone = 'idle' | 'busy' | 'live' | 'done' | 'warn' | 'failed';
+export type Tone = StatusTone;
 
 export class DownloadStatusBar {
 	private readonly container: HTMLElement;
@@ -18,19 +19,28 @@ export class DownloadStatusBar {
 	private swapTimer: number | null = null;
 	private pendingText = '';
 	private nowPlaying: string | null = null;
+	private playback: StatusPlayback = 'idle';
+	private streaming = false;
 	private base = { icon: 'music', text: 'Note Player', tone: 'idle' as Tone };
 	private flashTimer: number | null = null;
 
-	constructor(plugin: Plugin, onCancel: () => void, onRetry: () => void) {
+	constructor(plugin: Plugin, onCancel: () => void, onRetry: () => void, onOpen: () => void) {
 		const item = plugin.addStatusBarItem();
-		this.container = item.createEl('a', { cls: 'onp-status' });
+		this.container = item.createEl('a', { cls: 'onp-status', attr: { role: 'button', tabindex: '0' } });
 		this.iconEl = this.container.createDiv({ cls: 'onp-status-icon' });
 		this.msgEl = this.container.createSpan({ cls: 'onp-status-msg' });
 		this.show('music', 'Note Player', 'idle');
 
-		plugin.registerDomEvent(this.container, 'click', () => {
+		const activate = () => {
 			if (this.isDownloading) onCancel();
 			else if (this.canRetry) onRetry();
+			else onOpen();
+		};
+		plugin.registerDomEvent(this.container, 'click', activate);
+		plugin.registerDomEvent(this.container, 'keydown', (event) => {
+			if (event.key !== 'Enter' && event.key !== ' ') return;
+			event.preventDefault();
+			activate();
 		});
 	}
 
@@ -42,7 +52,7 @@ export class DownloadStatusBar {
 	flash(icon: string, text: string, tone: Tone = 'done'): void {
 		this.clearFlashTimer();
 		this.paint(icon, text, tone);
-		this.flashTimer = window.setTimeout(() => {
+		this.flashTimer = this.container.win.setTimeout(() => {
 			this.flashTimer = null;
 			this.paint(this.base.icon, this.base.text, this.base.tone);
 		}, FLASH_MS);
@@ -50,29 +60,28 @@ export class DownloadStatusBar {
 
 	/** Shows the live-source state; progress and completion from `update` take over from it. */
 	showStream(phase: 'connecting' | 'streaming' | 'failed' | 'missing' | 'idle'): void {
+		this.streaming = phase === 'streaming';
 		if (phase === 'idle') return this.reset();
 		this.clearCompletionTimer();
 		this.isDownloading = false;
 		this.canRetry = phase === 'failed' || phase === 'missing';
 		if (phase === 'connecting') this.show('loader', 'Connecting…', 'busy');
-		else if (phase === 'streaming') this.show('radio', this.nowPlayingText() ?? 'Streaming', 'live');
+		else if (phase === 'streaming') this.rest();
 		else if (phase === 'missing') this.show('wrench', 'yt-dlp missing', 'warn');
 		else this.show('cloud-off', "Couldn't load", 'failed');
-		if (this.canRetry) this.container.setAttr('aria-label', phase === 'missing' ? 'yt-dlp not found · click for setup' : "Couldn't load · click to retry");
 	}
 
-	/** The resting bar names the playing track; busy and failed states keep priority. */
-	setNowPlaying(title: string | null): void {
+	/** The resting bar names the playing track and its state; busy and failed states keep priority. */
+	setNowPlaying(title: string | null, playback: StatusPlayback): void {
 		this.nowPlaying = title;
+		this.playback = playback;
 		const tone = this.base.tone;
-		if (tone === 'idle') this.reset();
-		else if (tone === 'live') this.show('radio', this.nowPlayingText() ?? 'Streaming', 'live');
+		if (tone === 'idle' || tone === 'live' || tone === 'playing') this.rest();
 	}
 
-	private nowPlayingText(): string | null {
-		const title = this.nowPlaying;
-		if (!title) return null;
-		return title.length > TITLE_MAX ? `${title.slice(0, TITLE_MAX - 1).trimEnd()}…` : title;
+	private rest(): void {
+		const look = restingLook(this.nowPlaying, this.playback, this.streaming);
+		this.show(look.icon, look.text, look.tone);
 	}
 
 	update(percent: number, verb = 'Downloading'): void {
@@ -86,7 +95,7 @@ export class DownloadStatusBar {
 			this.isDownloading = false;
 			this.canRetry = false;
 			this.show('check', verb === 'Saving' ? 'Saved' : 'Downloaded', 'done');
-			this.completionTimer = window.setTimeout(() => this.reset(), COMPLETION_VISIBLE_MS);
+			this.completionTimer = this.container.win.setTimeout(() => this.reset(), COMPLETION_VISIBLE_MS);
 		} else if (!this.canRetry) {
 			this.reset();
 		}
@@ -101,8 +110,13 @@ export class DownloadStatusBar {
 	/** Fades the text out and back in on a change; plain updates (progress ticks) skip the fade. */
 	private show(icon: string, text: string, tone: Tone): void {
 		this.base = { icon, text, tone };
-		this.container.removeAttribute('aria-label');
+		this.container.setAttr('aria-label', statusLabel(text, this.action()));
 		if (this.flashTimer === null) this.paint(icon, text, tone);
+	}
+
+	private action(): StatusAction {
+		if (this.isDownloading) return 'cancel';
+		return this.canRetry ? 'retry' : 'open';
 	}
 
 	private paint(icon: string, text: string, tone: Tone): void {
@@ -116,7 +130,7 @@ export class DownloadStatusBar {
 		}
 		this.clearSwapTimer();
 		this.container.addClass('is-swapping');
-		this.swapTimer = window.setTimeout(() => {
+		this.swapTimer = this.container.win.setTimeout(() => {
 			this.swapTimer = null;
 			setIcon(this.iconEl, icon);
 			this.msgEl.setText(this.pendingText);
@@ -126,19 +140,19 @@ export class DownloadStatusBar {
 
 	private clearFlashTimer(): void {
 		if (this.flashTimer === null) return;
-		window.clearTimeout(this.flashTimer);
+		this.container.win.clearTimeout(this.flashTimer);
 		this.flashTimer = null;
 	}
 
 	private clearCompletionTimer(): void {
 		if (this.completionTimer === null) return;
-		window.clearTimeout(this.completionTimer);
+		this.container.win.clearTimeout(this.completionTimer);
 		this.completionTimer = null;
 	}
 
 	private clearSwapTimer(): void {
 		if (this.swapTimer === null) return;
-		window.clearTimeout(this.swapTimer);
+		this.container.win.clearTimeout(this.swapTimer);
 		this.swapTimer = null;
 	}
 
@@ -146,8 +160,6 @@ export class DownloadStatusBar {
 		this.completionTimer = null;
 		this.isDownloading = false;
 		this.canRetry = false;
-		const title = this.nowPlayingText();
-		if (title) this.show('audio-lines', title, 'idle');
-		else this.show('music', 'Note Player', 'idle');
+		this.rest();
 	}
 }

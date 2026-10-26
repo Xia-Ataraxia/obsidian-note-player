@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deckSteps, LID_CLOSE_HOLD_MS, LID_OPEN_MS } from '../src/domain/deck-sequence';
+import { deckSteps, LID_CLOSE_HOLD_MS, LID_OPEN_MS, LID_PAUSE_REST_MS } from '../src/domain/deck-sequence';
 import { SWING_MS } from '../src/domain/turntable';
 
 const shut = { open: false, armed: false };
@@ -32,5 +32,16 @@ describe('deckSteps', () => {
     const steps = deckSteps(true, shut, true, true);
     expect(at(steps, 'armed')?.atMs).toBeGreaterThan(0);
     expect(at(steps, 'armed')?.atMs).toBeGreaterThan(LID_OPEN_MS);
+  });
+
+  it('keeps the lid open through a short pause, then closes it if the pause lasts', () => {
+    const steps = deckSteps(false, { open: true, armed: true }, true, false, true);
+    expect(at(steps, 'armed')).toMatchObject({ atMs: 0, pose: { armed: false } });
+    expect(at(steps, 'open')?.atMs).toBe(SWING_MS + LID_PAUSE_REST_MS);
+  });
+
+  it('resuming after a pause skips the lid wait', () => {
+    const steps = deckSteps(true, { open: true, armed: false }, true, false);
+    expect(at(steps, 'armed')?.atMs).toBe(0);
   });
 });
