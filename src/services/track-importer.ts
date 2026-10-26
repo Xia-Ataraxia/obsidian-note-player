@@ -122,7 +122,7 @@ export class TrackImporter {
         paths.push(plan.path);
         continue;
       }
-      lastCreated = await this.createTrackNote({ ...entry, thumbnailUrl: buildYoutubeThumbnailUrl(entry.videoId) });
+      lastCreated = await this.createTrackNote({ ...entry, thumbnailUrl: entry.title === entry.videoId ? '' : buildYoutubeThumbnailUrl(entry.videoId) });
       known.push({ path: lastCreated.path, videoId: entry.videoId });
       paths.push(lastCreated.path);
     }
@@ -142,7 +142,7 @@ export class TrackImporter {
       videoId,
       title: videoId,
       author: '',
-      thumbnailUrl: buildYoutubeThumbnailUrl(videoId),
+      thumbnailUrl: '',
     };
     const watchUrl = buildYoutubeWatchUrl(videoId);
     // A slow or unreachable oEmbed must not hold up the import; the bare id stands in as the title (rows label it as unavailable).
@@ -154,7 +154,7 @@ export class TrackImporter {
       OEMBED_TIMEOUT_MS,
       null,
     );
-    return oembed ? { videoId, ...oembed, thumbnailUrl: oembed.thumbnailUrl || fallback.thumbnailUrl } : fallback;
+    return oembed ? { videoId, ...oembed, thumbnailUrl: oembed.thumbnailUrl || buildYoutubeThumbnailUrl(videoId) } : fallback;
   }
 
   private async createTrackNote(meta: TrackMeta): Promise<TFile> {

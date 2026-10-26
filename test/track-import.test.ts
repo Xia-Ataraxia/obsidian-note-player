@@ -31,6 +31,10 @@ describe('buildMusicFrontmatter', () => {
     });
   });
 
+  it('omits the image for an unavailable video', () => {
+    expect(buildMusicFrontmatter({ ...meta, author: '', thumbnailUrl: '' }, DEFAULT_PROPERTY_MAPPING)).not.toHaveProperty('image');
+  });
+
   it('honours custom mapping and omits an empty author', () => {
     const mapping = { ...DEFAULT_PROPERTY_MAPPING, musicNoteType: 'song', musicUrlProperties: ['yt'] };
     expect(buildMusicFrontmatter({ ...meta, author: '' }, mapping)).toEqual({

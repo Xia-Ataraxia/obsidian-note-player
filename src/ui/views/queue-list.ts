@@ -1,4 +1,5 @@
 import { setIcon } from 'obsidian';
+import { isUnavailable } from '../../domain/track-import';
 import { buildYoutubeThumbnailUrl } from '../../utils/youtube';
 import type { PendingImport, PlaylistSummary, PlaylistTrack, PlaylistViewHost, PlaylistViewState } from '../../types/view';
 import { openTrackMenu } from './view-menus';
@@ -179,8 +180,7 @@ function renderRow(
 	thumb.addEventListener('click', play);
 
 	const body = row.createDiv({ cls: 'onp-row-copy' });
-	// Import saves the bare video id as the title when oEmbed fails (private or removed videos).
-	const unavailable = !track.artist && track.title === track.videoId;
+	const unavailable = isUnavailable(track);
 	body.createDiv({
 		cls: unavailable ? 'onp-row-title is-unavailable' : 'onp-row-title',
 		text: unavailable ? 'Unavailable video' : track.title,
