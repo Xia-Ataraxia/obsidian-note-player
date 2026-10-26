@@ -25,6 +25,8 @@ import { createActionButton, createIconButton, type RunAction } from './view-par
 
 export const VIEW_TYPE_NOTE_PLAYER = 'obsidian-note-player-view';
 export const VIEW_TYPE_LEGACY = 'youtube-note-playlist-view';
+/** Matches the onp-count-tick animation duration in styles.css. */
+const COUNT_TICK_MS = 360;
 
 interface ViewElements {
 	root: HTMLElement;
@@ -47,7 +49,7 @@ export class NotePlayerView extends ItemView {
 	private resizeFrame: { win: Window; id: number } | null = null;
 	private dragFromIndex: number | null = null;
 	private lastRenderedTrackPath: string | null = null;
-	private lastCount: { path: string; count: number } | null = null;
+	private lastCount: { path: string; count: number; changedAt: number } | null = null;
 	private progressIntervalId: number | null = null;
 	private subtitleEl: HTMLElement | null = null;
 	private subtitleParts = { artist: '', state: '' };
@@ -235,10 +237,17 @@ export class NotePlayerView extends ItemView {
 		const playlist = this.getSelectedPlaylist(state);
 		if (playlist) {
 			const unit = state.queue.length === 1 ? 'track' : 'tracks';
-			const ticked = this.lastCount?.path === playlist.path && this.lastCount.count !== state.queue.length;
-			this.lastCount = { path: playlist.path, count: state.queue.length };
+			const now = performance.now();
+			if (this.lastCount?.path !== playlist.path || this.lastCount.count !== state.queue.length) {
+				this.lastCount = { path: playlist.path, count: state.queue.length, changedAt: this.lastCount?.path === playlist.path ? now : -Infinity };
+			}
+			const elapsed = now - this.lastCount.changedAt;
 			const count = controls.createSpan({ cls: 'onp-toolbar-count', attr: { title: `${state.queue.length} ${unit}` } });
-			count.toggleClass('is-tick', ticked);
+			// A count change is followed by more renders (metadata re-parse) that rebuild the span; resume the tick where it was.
+			if (elapsed < COUNT_TICK_MS) {
+				count.addClass('is-tick');
+				for (const animation of count.getAnimations()) animation.currentTime = elapsed;
+			}
 			count.createSpan({ text: String(state.queue.length) });
 			count.createSpan({ cls: 'onp-toolbar-count-unit', text: ` ${unit}` });
 			controls.appendChild(createIconButton('Playlist actions', 'more-vertical', (event) => {
