@@ -19,6 +19,7 @@ export class DownloadStatusBar {
 	private swapTimer: number | null = null;
 	private pendingText = '';
 	private nowPlaying: string | null = null;
+	private loading = false;
 	private playback: StatusPlayback = 'idle';
 	private streaming = false;
 	private base = { icon: 'music', text: 'Note Player', tone: 'idle' as Tone };
@@ -72,8 +73,9 @@ export class DownloadStatusBar {
 	}
 
 	/** The resting bar names the playing track and its state; busy and failed states keep priority. */
-	setNowPlaying(title: string | null, playback: StatusPlayback): void {
+	setNowPlaying(title: string | null, playback: StatusPlayback, loading = false): void {
 		this.nowPlaying = title;
+		this.loading = loading;
 		this.playback = playback;
 		const tone = this.base.tone;
 		if (tone === 'idle' || tone === 'live' || tone === 'playing') this.rest();
@@ -81,7 +83,7 @@ export class DownloadStatusBar {
 
 	private rest(): void {
 		const look = restingLook(this.nowPlaying, this.playback, this.streaming);
-		this.show(look.icon, look.text, look.tone, restingLabel(this.nowPlaying, this.playback, look.text));
+		this.show(look.icon, look.text, look.tone, restingLabel(this.nowPlaying, this.playback, look.text, this.loading));
 	}
 
 	update(percent: number, verb = 'Downloading'): void {

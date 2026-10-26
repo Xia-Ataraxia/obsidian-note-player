@@ -570,7 +570,7 @@ export default class NotePlayerPlugin extends Plugin implements PlaylistViewHost
 
   private syncStatusBar(): void {
     const track = this.viewPlaybackState === 'idle' ? null : this.getState().currentTrack;
-    this.downloadStatusBar?.setNowPlaying(track ? trackLabel(track) : null, this.viewPlaybackState);
+    this.downloadStatusBar?.setNowPlaying(track ? trackLabel(track) : null, this.viewPlaybackState, !!track && isUnavailable(track));
   }
 
   private notifyChange(): void {

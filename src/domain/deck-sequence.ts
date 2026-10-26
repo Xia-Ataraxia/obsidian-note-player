@@ -1,7 +1,7 @@
 import { swingMs } from './turntable';
 
 export const LID_OPEN_MS = 650;
-export const REDUCED_LID_MS = 1400;
+export const REDUCED_LID_MS = 400;
 /** Beat between the arm reaching its rest and the lid starting to close. */
 export const LID_CLOSE_HOLD_MS = 350;
 /** A pause this short keeps the lid open so resuming starts at once; a resume cancels the pending close. */
