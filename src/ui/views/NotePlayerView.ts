@@ -127,7 +127,7 @@ export class NotePlayerView extends ItemView {
 			queuePanel,
 		};
 
-		this.resizeObserver = new ResizeObserver((entries) => {
+		this.resizeObserver = new root.win.ResizeObserver((entries) => {
 			const nextWidth = entries.at(0)?.contentRect.width ?? root.clientWidth;
 			this.cancelResizeFrame();
 			const win = root.win;
