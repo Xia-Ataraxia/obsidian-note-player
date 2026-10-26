@@ -48,18 +48,11 @@
 	min-width: 0;
 }
 
-.onp-section-title {
-	font-size: var(--font-ui-medium);
-	font-weight: 600;
-	color: var(--text-normal);
-}
-
 .onp-toolbar-description,
 .onp-track-subtitle,
 .onp-track-path,
 .onp-row-subtitle,
-.onp-empty-copy,
-.onp-section-meta {
+.onp-empty-copy {
 	font-size: var(--font-ui-small);
 	line-height: 1.45;
 	color: var(--text-muted);
@@ -88,27 +81,10 @@
 	color: var(--text-muted);
 }
 
-.onp-section-actions {
-	margin-left: auto;
-}
-
-.onp-section-header {
-	display: flex;
-	align-items: center;
-	justify-content: flex-start;
-	gap: 8px 12px;
-	padding-top: 2px;
-}
-
-.onp-section-header .onp-section-title {
-	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.onp-section-header .onp-section-meta {
+.onp-toolbar-count {
 	flex: 0 0 auto;
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
 }
 
 .onp-now-playing-shell {
@@ -746,12 +722,16 @@
 
 .onp-view-root.is-compact .onp-toolbar-controls {
 	width: 100%;
+	flex-wrap: nowrap;
 }
 
 .onp-view-root.is-compact .onp-toolbar-select {
-	flex: 1 1 auto;
+	flex: 1 1 0;
 	min-width: 0;
-	width: 100%;
+}
+
+.onp-view-root.is-compact .onp-toolbar-count-unit {
+	display: none;
 }
 
 .onp-view-root.is-compact .onp-track-row {
