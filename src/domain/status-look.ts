@@ -24,9 +24,9 @@ export function restingLook(title: string | null, playback: StatusPlayback, stre
 }
 
 /** Screen-reader text for the resting bar: the state, then the full (unclipped) title. */
-export function restingLabel(title: string | null, playback: StatusPlayback, shown: string): string {
+export function restingLabel(title: string | null, playback: StatusPlayback, shown: string, loading = false): string {
 	if (!title || playback === 'idle') return shown;
-	return `${playback === 'paused' ? 'Paused' : 'Playing'}: ${title}`;
+	return `${playback === 'paused' ? 'Paused' : 'Playing'}: ${loading ? 'loading title…' : title}`;
 }
 
 const ACTION_HINT: Record<StatusAction, string> = {

@@ -39,5 +39,6 @@ describe('restingLabel', () => {
     expect(restingLabel(long, 'playing', 'clipped')).toBe(`Playing: ${long}`);
     expect(restingLabel('Song', 'paused', 'Song')).toBe('Paused: Song');
     expect(restingLabel(null, 'idle', 'Note Player')).toBe('Note Player');
+    expect(restingLabel('Unavailable video', 'playing', 'x', true)).toBe('Playing: loading title…');
   });
 });

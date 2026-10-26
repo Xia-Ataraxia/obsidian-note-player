@@ -49,11 +49,13 @@
 }
 
 .onp-row-title.is-healed,
-.onp-row-subtitle.is-healed {
+.onp-row-subtitle.is-healed,
+.onp-track-title.is-healed,
+.onp-track-subtitle.is-healed {
 	animation: onp-row-fade 360ms ease-out;
 }
 
-.onp-track-title.is-unavailable {
+.onp-now-playing-summary .onp-track-title {
 	white-space: normal;
 	display: -webkit-box;
 	-webkit-line-clamp: 2;
@@ -1700,7 +1702,7 @@
 	}
 
 	.onp-lid {
-		transition: transform 1400ms ease-in-out;
+		transition: transform 400ms ease-in-out;
 	}
 
 	.onp-scene {
@@ -1961,17 +1963,15 @@
 	color: var(--text-muted);
 	text-decoration: none;
 	transition: color 200ms ease;
+	cursor: pointer;
+	padding: 0 var(--size-2-2);
+	border-radius: var(--radius-s);
 }
 
 .onp-status[data-tone='live'],
 .onp-status[data-tone='playing'],
 .onp-status[data-tone='done'] {
 	color: var(--interactive-accent);
-}
-
-.onp-status {
-	cursor: pointer;
-	border-radius: var(--radius-s);
 }
 
 .onp-status[data-tone='idle']:hover {
@@ -1988,7 +1988,6 @@
 
 .onp-status[data-tone='warn'] {
 	color: var(--text-warning);
-	cursor: pointer;
 }
 
 .onp-status[data-tone='warn']:hover,
