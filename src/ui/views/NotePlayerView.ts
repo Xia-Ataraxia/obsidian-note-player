@@ -512,8 +512,8 @@ export class NotePlayerView extends ItemView {
 	}
 
 	private handlePaste(event: ClipboardEvent): void {
-		const target = event.target;
-		if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable="true"]')) return;
+		const target = event.target as Node | null;
+		if (target?.instanceOf(HTMLElement) && target.closest('input, textarea, select, [contenteditable="true"]')) return;
 		const text = event.clipboardData?.getData('text') ?? '';
 		if (!/youtu/i.test(text) || !parseYoutubeUrl(text)) return;
 		event.preventDefault();
