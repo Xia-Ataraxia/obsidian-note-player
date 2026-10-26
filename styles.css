@@ -1983,7 +1983,7 @@
 
 .onp-track-subtitle.is-failed {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: var(--size-4-1);
 	color: var(--text-muted);
 	cursor: pointer;
