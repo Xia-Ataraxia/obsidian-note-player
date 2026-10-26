@@ -6,6 +6,7 @@ import {
 	moveValue,
 	toPlaylistTrack,
 	moveItem,
+	successorAfterRemoval,
 } from '../src/domain/playlist-manager';
 import type { MusicTrack, PlaylistNote } from '../src/types/music';
 
@@ -119,5 +120,22 @@ describe('moveValue', () => {
 	it('clamps the target and ignores missing items', () => {
 		expect(moveValue(['a', 'b'], 'a', 5)).toEqual(['b', 'a']);
 		expect(moveValue(['a', 'b'], 'x', 0)).toEqual(['a', 'b']);
+	});
+});
+
+describe('successorAfterRemoval', () => {
+	const queue = ['a', 'b', 'c'];
+
+	it('picks the track that followed the removed one', () => {
+		expect(successorAfterRemoval(queue, 'a')).toBe('b');
+		expect(successorAfterRemoval(queue, 'b')).toBe('c');
+	});
+
+	it('wraps to the first track only at the end', () => {
+		expect(successorAfterRemoval(queue, 'c')).toBe('a');
+	});
+
+	it('returns null when nothing is left', () => {
+		expect(successorAfterRemoval(['a'], 'a')).toBeNull();
 	});
 });
